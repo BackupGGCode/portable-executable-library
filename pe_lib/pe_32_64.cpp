@@ -675,7 +675,7 @@ const pe_base::image_directory pe<PEClassType>::rebuild_imports(const imported_f
 
 	std::string& raw_data = import_section.get_raw_data();
 
-	//This will be done only is image_section is latest section of image or for section with unaligned raw length of data
+	//This will be done only is image_section is the last section of image or for section with unaligned raw length of data
 	if(raw_data.length() < needed_size + import_settings.get_offset_from_section_start())
 		raw_data.resize(needed_size + import_settings.get_offset_from_section_start()); //Expand section raw data
 	
@@ -944,7 +944,7 @@ const pe_base::image_directory pe<PEClassType>::rebuild_tls(const tls_info& info
 
 	std::string& raw_data = tls_section.get_raw_data();
 
-	//This will be done only is tls_section is latest section of image or for section with unaligned raw length of data
+	//This will be done only is tls_section is the last section of image or for section with unaligned raw length of data
 	if(raw_data.length() < needed_size + offset_from_section_start)
 		raw_data.resize(needed_size + offset_from_section_start); //Expand section raw data
 

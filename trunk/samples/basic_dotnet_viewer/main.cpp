@@ -1,9 +1,9 @@
-#include <iostream>
+п»ї#include <iostream>
 #include <fstream>
 #include <pe_factory.h>
 #include "lib.h"
 
-//Пример, показывающий, как получить базовую информацию о .NET PE-файле
+//РџСЂРёРјРµСЂ, РїРѕРєР°Р·С‹РІР°СЋС‰РёР№, РєР°Рє РїРѕР»СѓС‡РёС‚СЊ Р±Р°Р·РѕРІСѓСЋ РёРЅС„РѕСЂРјР°С†РёСЋ Рѕ .NET PE-С„Р°Р№Р»Рµ
 int main(int argc, char* argv[])
 {
 	if(argc != 2)
@@ -12,7 +12,7 @@ int main(int argc, char* argv[])
 		return 0;
 	}
 
-	//Открываем файл
+	//РћС‚РєСЂС‹РІР°РµРј С„Р°Р№Р»
 	std::ifstream pe_file(argv[1], std::ios::in | std::ios::binary);
 	if(!pe_file)
 	{
@@ -22,10 +22,10 @@ int main(int argc, char* argv[])
 
 	try
 	{
-		//Создаем экземпляр PE или PE+ класса с помощью фабрики
+		//РЎРѕР·РґР°РµРј СЌРєР·РµРјРїР»СЏСЂ PE РёР»Рё PE+ РєР»Р°СЃСЃР° СЃ РїРѕРјРѕС‰СЊСЋ С„Р°Р±СЂРёРєРё
 		std::auto_ptr<pe_base> image = pe_factory::create_pe(pe_file);
 
-		//Если образ не .NET, выходим
+		//Р•СЃР»Рё РѕР±СЂР°Р· РЅРµ .NET, РІС‹С…РѕРґРёРј
 		if(!image->is_dotnet())
 		{
 			std::cout << "Image is not .NET" << std::endl;
@@ -34,19 +34,19 @@ int main(int argc, char* argv[])
 		
 		std::cout << "Reading basic dotnet info..." << std::hex << std::showbase << std::endl << std::endl;
 		
-		//Получаем .NET-заголовок PE-файла
+		//РџРѕР»СѓС‡Р°РµРј .NET-Р·Р°РіРѕР»РѕРІРѕРє PE-С„Р°Р№Р»Р°
 		const pe_base::basic_dotnet_info info(image->get_basic_dotnet_info());
 
-		//Выводим некоторую информацию
-		std::cout << "Major runtime version: " << info.get_major_runtime_version() << std::endl //Версия рантайма
+		//Р’С‹РІРѕРґРёРј РЅРµРєРѕС‚РѕСЂСѓСЋ РёРЅС„РѕСЂРјР°С†РёСЋ
+		std::cout << "Major runtime version: " << info.get_major_runtime_version() << std::endl //Р’РµСЂСЃРёСЏ СЂР°РЅС‚Р°Р№РјР°
 			<< "Minor runtime version: " << info.get_minor_runtime_version() << std::endl
-			<< "Flags: " << info.get_flags() << std::endl //Флаги
-			<< "RVA of resources: " << info.get_rva_of_resources() << std::endl //RVA ресурсов
-			<< "RVA of metadata: " << info.get_rva_of_metadata() << std::endl //RVA метаданных
-			<< "Size of resources: " << info.get_size_of_resources() << std::endl //Размер ресурсов
-			<< "Size of metadata: " << info.get_size_of_metadata() << std::endl; //Размер метаданных
+			<< "Flags: " << info.get_flags() << std::endl //Р¤Р»Р°РіРё
+			<< "RVA of resources: " << info.get_rva_of_resources() << std::endl //RVA СЂРµСЃСѓСЂСЃРѕРІ
+			<< "RVA of metadata: " << info.get_rva_of_metadata() << std::endl //RVA РјРµС‚Р°РґР°РЅРЅС‹С…
+			<< "Size of resources: " << info.get_size_of_resources() << std::endl //Р Р°Р·РјРµСЂ СЂРµСЃСѓСЂСЃРѕРІ
+			<< "Size of metadata: " << info.get_size_of_metadata() << std::endl; //Р Р°Р·РјРµСЂ РјРµС‚Р°РґР°РЅРЅС‹С…
 
-		//Определим точку входа .NET
+		//РћРїСЂРµРґРµР»РёРј С‚РѕС‡РєСѓ РІС…РѕРґР° .NET
 		if(info.is_native_entry_point())
 			std::cout << "Entry point RVA: ";
 		else
@@ -56,7 +56,7 @@ int main(int argc, char* argv[])
 	}
 	catch(const pe_exception& e)
 	{
-		//Если возникла ошибка
+		//Р•СЃР»Рё РІРѕР·РЅРёРєР»Р° РѕС€РёР±РєР°
 		std::cout << "Error: " << e.what() << std::endl;
 		return -1;
 	}

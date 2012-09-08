@@ -1,9 +1,9 @@
-#include <iostream>
+п»ї#include <iostream>
 #include <fstream>
 #include <pe_factory.h>
 #include "lib.h"
 
-//Пример, показывающий, как изменить базовый адрес загрузки PE-файла при условии наличия релокаций
+//РџСЂРёРјРµСЂ, РїРѕРєР°Р·С‹РІР°СЋС‰РёР№, РєР°Рє РёР·РјРµРЅРёС‚СЊ Р±Р°Р·РѕРІС‹Р№ Р°РґСЂРµСЃ Р·Р°РіСЂСѓР·РєРё PE-С„Р°Р№Р»Р° РїСЂРё СѓСЃР»РѕРІРёРё РЅР°Р»РёС‡РёСЏ СЂРµР»РѕРєР°С†РёР№
 int main(int argc, char* argv[])
 {
 	if(argc != 2)
@@ -12,7 +12,7 @@ int main(int argc, char* argv[])
 		return 0;
 	}
 
-	//Открываем файл
+	//РћС‚РєСЂС‹РІР°РµРј С„Р°Р№Р»
 	std::ifstream pe_file(argv[1], std::ios::in | std::ios::binary);
 	if(!pe_file)
 	{
@@ -22,24 +22,24 @@ int main(int argc, char* argv[])
 
 	try
 	{
-		//Создаем экземпляр PE или PE+ класса с помощью фабрики
+		//РЎРѕР·РґР°РµРј СЌРєР·РµРјРїР»СЏСЂ PE РёР»Рё PE+ РєР»Р°СЃСЃР° СЃ РїРѕРјРѕС‰СЊСЋ С„Р°Р±СЂРёРєРё
 		std::auto_ptr<pe_base> image = pe_factory::create_pe(pe_file);
 		
-		//Проверим, есть ли релокации у образа
+		//РџСЂРѕРІРµСЂРёРј, РµСЃС‚СЊ Р»Рё СЂРµР»РѕРєР°С†РёРё Сѓ РѕР±СЂР°Р·Р°
 		if(!image->has_reloc())
 		{
 			std::cout << "Image has no relocations, rebase is not possible" << std::endl;
 			return 0;
 		}
 
-		//Получим значение базового адреса загрузки образа (64-бита, универсально для PE и PE+)
+		//РџРѕР»СѓС‡РёРј Р·РЅР°С‡РµРЅРёРµ Р±Р°Р·РѕРІРѕРіРѕ Р°РґСЂРµСЃР° Р·Р°РіСЂСѓР·РєРё РѕР±СЂР°Р·Р° (64-Р±РёС‚Р°, СѓРЅРёРІРµСЂСЃР°Р»СЊРЅРѕ РґР»СЏ PE Рё PE+)
 		ULONGLONG base = image->get_image_base_64();
-		base += 0x100000; //Изменим базовый адрес загрузки
+		base += 0x100000; //РР·РјРµРЅРёРј Р±Р°Р·РѕРІС‹Р№ Р°РґСЂРµСЃ Р·Р°РіСЂСѓР·РєРё
 		
-		//Произведем пересчет необходимых байтов
+		//РџСЂРѕРёР·РІРµРґРµРј РїРµСЂРµСЃС‡РµС‚ РЅРµРѕР±С…РѕРґРёРјС‹С… Р±Р°Р№С‚РѕРІ
 		image->rebase_image(image->get_relocations(), base);
 
-		//Создаем новый PE-файл
+		//РЎРѕР·РґР°РµРј РЅРѕРІС‹Р№ PE-С„Р°Р№Р»
 		std::string base_file_name(argv[1]);
 		std::string::size_type slash_pos;
 		if((slash_pos = base_file_name.find_last_of("/\\")) != std::string::npos)
@@ -53,14 +53,14 @@ int main(int argc, char* argv[])
 			return -1;
 		}
 
-		//Пересобираем PE-файл
+		//РџРµСЂРµСЃРѕР±РёСЂР°РµРј PE-С„Р°Р№Р»
 		image->rebuild_pe(new_pe_file);
 
 		std::cout << "PE was rebuilt and saved to " << base_file_name << std::endl;
 	}
 	catch(const pe_exception& e)
 	{
-		//Если возникла ошибка
+		//Р•СЃР»Рё РІРѕР·РЅРёРєР»Р° РѕС€РёР±РєР°
 		std::cout << "Error: " << e.what() << std::endl;
 		return -1;
 	}

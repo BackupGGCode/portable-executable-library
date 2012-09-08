@@ -1,9 +1,9 @@
-#include <iostream>
+п»ї#include <iostream>
 #include <fstream>
 #include <pe_factory.h>
 #include "lib.h"
 
-//Пример, показывающий, как считать и получить информацию о Image Config (конфигурация исполняемого файла) PE или PE+
+//РџСЂРёРјРµСЂ, РїРѕРєР°Р·С‹РІР°СЋС‰РёР№, РєР°Рє СЃС‡РёС‚Р°С‚СЊ Рё РїРѕР»СѓС‡РёС‚СЊ РёРЅС„РѕСЂРјР°С†РёСЋ Рѕ Image Config (РєРѕРЅС„РёРіСѓСЂР°С†РёСЏ РёСЃРїРѕР»РЅСЏРµРјРѕРіРѕ С„Р°Р№Р»Р°) PE РёР»Рё PE+
 int main(int argc, char* argv[])
 {
 	if(argc != 2)
@@ -12,7 +12,7 @@ int main(int argc, char* argv[])
 		return 0;
 	}
 
-	//Открываем файл
+	//РћС‚РєСЂС‹РІР°РµРј С„Р°Р№Р»
 	std::ifstream pe_file(argv[1], std::ios::in | std::ios::binary);
 	if(!pe_file)
 	{
@@ -22,16 +22,16 @@ int main(int argc, char* argv[])
 
 	try
 	{
-		//Создаем экземпляр PE или PE+ класса с помощью фабрики
+		//РЎРѕР·РґР°РµРј СЌРєР·РµРјРїР»СЏСЂ PE РёР»Рё PE+ РєР»Р°СЃСЃР° СЃ РїРѕРјРѕС‰СЊСЋ С„Р°Р±СЂРёРєРё
 		std::auto_ptr<pe_base> image = pe_factory::create_pe(pe_file);
 
 		std::cout << "Reading PE image config info..." << std::hex << std::showbase << std::endl << std::endl;
 		
-		//Получаем конфигурацию
+		//РџРѕР»СѓС‡Р°РµРј РєРѕРЅС„РёРіСѓСЂР°С†РёСЋ
 		const pe_base::image_config_info info = image->get_image_config();
 
-		//Выводим данные конфигурации
-		//Подробнее о полях - в MSDN
+		//Р’С‹РІРѕРґРёРј РґР°РЅРЅС‹Рµ РєРѕРЅС„РёРіСѓСЂР°С†РёРё
+		//РџРѕРґСЂРѕР±РЅРµРµ Рѕ РїРѕР»СЏС… - РІ MSDN
 		std::cout << "Critical section default timeout: " << info.get_critical_section_default_timeout() << std::endl
 			<< "Decommit free block threshold: " << info.get_decommit_free_block_threshold() << std::endl
 			<< "Decommit total free threshold: " << info.get_decommit_total_free_threshold() << std::endl
@@ -47,14 +47,14 @@ int main(int argc, char* argv[])
 			<< "Virtual memory threshold: " << info.get_virtual_memory_threshold() << std::endl
 			<< std::endl;
 
-		//Выведем адреса SE-хендлеров
+		//Р’С‹РІРµРґРµРј Р°РґСЂРµСЃР° SE-С…РµРЅРґР»РµСЂРѕРІ
 		const pe_base::image_config_info::se_handler_list& se_handlers = info.get_se_handler_rvas();
 		for(pe_base::image_config_info::se_handler_list::const_iterator it = se_handlers.begin(); it != se_handlers.end(); ++it)
 			std::cout << "SE Handler: " << (*it) << std::endl;
 	}
 	catch(const pe_exception& e)
 	{
-		//Если возникла ошибка
+		//Р•СЃР»Рё РІРѕР·РЅРёРєР»Р° РѕС€РёР±РєР°
 		std::cout << "Error: " << e.what() << std::endl;
 		return -1;
 	}

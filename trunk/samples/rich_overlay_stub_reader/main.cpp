@@ -1,9 +1,9 @@
-#include <iostream>
+п»ї#include <iostream>
 #include <fstream>
 #include <pe_factory.h>
 #include "lib.h"
 
-//Пример, показывающий, как получить информацию о стабе PE-файла и rich overlay, который добавляет при компиляции MS Visual Studio
+//РџСЂРёРјРµСЂ, РїРѕРєР°Р·С‹РІР°СЋС‰РёР№, РєР°Рє РїРѕР»СѓС‡РёС‚СЊ РёРЅС„РѕСЂРјР°С†РёСЋ Рѕ СЃС‚Р°Р±Рµ PE-С„Р°Р№Р»Р° Рё rich overlay, РєРѕС‚РѕСЂС‹Р№ РґРѕР±Р°РІР»СЏРµС‚ РїСЂРё РєРѕРјРїРёР»СЏС†РёРё MS Visual Studio
 int main(int argc, char* argv[])
 {
 	if(argc != 2)
@@ -12,7 +12,7 @@ int main(int argc, char* argv[])
 		return 0;
 	}
 
-	//Открываем файл
+	//РћС‚РєСЂС‹РІР°РµРј С„Р°Р№Р»
 	std::ifstream pe_file(argv[1], std::ios::in | std::ios::binary);
 	if(!pe_file)
 	{
@@ -22,29 +22,29 @@ int main(int argc, char* argv[])
 
 	try
 	{
-		//Создаем экземпляр PE или PE+ класса с помощью фабрики
+		//РЎРѕР·РґР°РµРј СЌРєР·РµРјРїР»СЏСЂ PE РёР»Рё PE+ РєР»Р°СЃСЃР° СЃ РїРѕРјРѕС‰СЊСЋ С„Р°Р±СЂРёРєРё
 		std::auto_ptr<pe_base> image = pe_factory::create_pe(pe_file);
 
-		//Выведем длину DOS stub'а
+		//Р’С‹РІРµРґРµРј РґР»РёРЅСѓ DOS stub'Р°
 		std::cout << "Image stub length: " << image->get_stub_overlay().length() << std::endl << std::endl;
 
-		//Перечисляем все RICH-записи
+		//РџРµСЂРµС‡РёСЃР»СЏРµРј РІСЃРµ RICH-Р·Р°РїРёСЃРё
 		pe_base::rich_data_list data = image->get_rich_data();
 		for(pe_base::rich_data_list::const_iterator it = data.begin(); it != data.end(); ++it)
 		{
-			//Выводим информацию о записи
+			//Р’С‹РІРѕРґРёРј РёРЅС„РѕСЂРјР°С†РёСЋ Рѕ Р·Р°РїРёСЃРё
 			std::cout << "Number: " << (*it).get_number() << std::endl
 				<< "Times: " << (*it).get_times() << std::endl
 				<< "Version: " << (*it).get_version() << std::endl
 				<< std::endl;
 		}
 
-		//Отобразим информацию о том, есть ли у файла оверлей в конце (у некоторых инсталляторов, например, есть)
+		//РћС‚РѕР±СЂР°Р·РёРј РёРЅС„РѕСЂРјР°С†РёСЋ Рѕ С‚РѕРј, РµСЃС‚СЊ Р»Рё Сѓ С„Р°Р№Р»Р° РѕРІРµСЂР»РµР№ РІ РєРѕРЅС†Рµ (Сѓ РЅРµРєРѕС‚РѕСЂС‹С… РёРЅСЃС‚Р°Р»Р»СЏС‚РѕСЂРѕРІ, РЅР°РїСЂРёРјРµСЂ, РµСЃС‚СЊ)
 		std::cout << "Has overlay in the end: " << (image->has_overlay() ? "YES" : "NO") << std::endl;
 	}
 	catch(const pe_exception& e)
 	{
-		//Если возникла ошибка
+		//Р•СЃР»Рё РІРѕР·РЅРёРєР»Р° РѕС€РёР±РєР°
 		std::cout << "Error: " << e.what() << std::endl;
 		return -1;
 	}

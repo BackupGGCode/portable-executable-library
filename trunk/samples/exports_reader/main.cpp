@@ -1,9 +1,9 @@
-#include <iostream>
+п»ї#include <iostream>
 #include <fstream>
 #include <pe_factory.h>
 #include "lib.h"
 
-//Пример, показывающий, как считать и получить информацию об экспортах PE или PE+ файла
+//РџСЂРёРјРµСЂ, РїРѕРєР°Р·С‹РІР°СЋС‰РёР№, РєР°Рє СЃС‡РёС‚Р°С‚СЊ Рё РїРѕР»СѓС‡РёС‚СЊ РёРЅС„РѕСЂРјР°С†РёСЋ РѕР± СЌРєСЃРїРѕСЂС‚Р°С… PE РёР»Рё PE+ С„Р°Р№Р»Р°
 int main(int argc, char* argv[])
 {
 	if(argc != 2)
@@ -12,7 +12,7 @@ int main(int argc, char* argv[])
 		return 0;
 	}
 
-	//Открываем файл
+	//РћС‚РєСЂС‹РІР°РµРј С„Р°Р№Р»
 	std::ifstream pe_file(argv[1], std::ios::in | std::ios::binary);
 	if(!pe_file)
 	{
@@ -22,10 +22,10 @@ int main(int argc, char* argv[])
 
 	try
 	{
-		//Создаем экземпляр PE или PE+ класса с помощью фабрики
+		//РЎРѕР·РґР°РµРј СЌРєР·РµРјРїР»СЏСЂ PE РёР»Рё PE+ РєР»Р°СЃСЃР° СЃ РїРѕРјРѕС‰СЊСЋ С„Р°Р±СЂРёРєРё
 		std::auto_ptr<pe_base> image = pe_factory::create_pe(pe_file);
 
-		//Проверим, есть ли экспорты у PE-файла
+		//РџСЂРѕРІРµСЂРёРј, РµСЃС‚СЊ Р»Рё СЌРєСЃРїРѕСЂС‚С‹ Сѓ PE-С„Р°Р№Р»Р°
 		if(!image->has_exports())
 		{
 			std::cout << "Image has no exports" << std::endl;
@@ -34,29 +34,29 @@ int main(int argc, char* argv[])
 
 		std::cout << "Reading PE exports..." << std::hex << std::showbase << std::endl << std::endl;
 		
-		//Получаем полную информацию об экспортах и список экспортируемых функций
+		//РџРѕР»СѓС‡Р°РµРј РїРѕР»РЅСѓСЋ РёРЅС„РѕСЂРјР°С†РёСЋ РѕР± СЌРєСЃРїРѕСЂС‚Р°С… Рё СЃРїРёСЃРѕРє СЌРєСЃРїРѕСЂС‚РёСЂСѓРµРјС‹С… С„СѓРЅРєС†РёР№
 		pe_base::export_info info;
 		const pe_base::exported_functions_list exports = image->get_exported_functions(info);
 
-		//Выведем некоторую информацию об экспорте:
+		//Р’С‹РІРµРґРµРј РЅРµРєРѕС‚РѕСЂСѓСЋ РёРЅС„РѕСЂРјР°С†РёСЋ РѕР± СЌРєСЃРїРѕСЂС‚Рµ:
 		std::cout << "Export info" << std::endl
-			<< "Library name: " << info.get_name() << std::endl //Имя библиотеки
-			<< "Timestamp: " << info.get_timestamp() << std::endl //Временная метка
-			<< "Ordinal base: " << info.get_ordinal_base() << std::endl //База ординалов
+			<< "Library name: " << info.get_name() << std::endl //РРјСЏ Р±РёР±Р»РёРѕС‚РµРєРё
+			<< "Timestamp: " << info.get_timestamp() << std::endl //Р’СЂРµРјРµРЅРЅР°СЏ РјРµС‚РєР°
+			<< "Ordinal base: " << info.get_ordinal_base() << std::endl //Р‘Р°Р·Р° РѕСЂРґРёРЅР°Р»РѕРІ
 			<< std::endl;
 
-		//Перечисляем секции и выводим информацию о них
+		//РџРµСЂРµС‡РёСЃР»СЏРµРј СЃРµРєС†РёРё Рё РІС‹РІРѕРґРёРј РёРЅС„РѕСЂРјР°С†РёСЋ Рѕ РЅРёС…
 		for(pe_base::exported_functions_list::const_iterator it = exports.begin(); it != exports.end(); ++it)
 		{
-			const pe_base::exported_function& func = *it; //Экспортируемая функция
+			const pe_base::exported_function& func = *it; //Р­РєСЃРїРѕСЂС‚РёСЂСѓРµРјР°СЏ С„СѓРЅРєС†РёСЏ
 			std::cout << "[+] ";
-			if(func.has_name()) //Если функция имеет имя, выведем его и ординал имени
+			if(func.has_name()) //Р•СЃР»Рё С„СѓРЅРєС†РёСЏ РёРјРµРµС‚ РёРјСЏ, РІС‹РІРµРґРµРј РµРіРѕ Рё РѕСЂРґРёРЅР°Р» РёРјРµРЅРё
 				std::cout << func.get_name() << ", name ordinal: " << func.get_name_ordinal() << " ";
 
-			//Ординал функции
+			//РћСЂРґРёРЅР°Р» С„СѓРЅРєС†РёРё
 			std::cout << "ORD: " << func.get_ordinal();
 			
-			//Если функция - форвард (переадресация в другую DLL), выведем имя форварда
+			//Р•СЃР»Рё С„СѓРЅРєС†РёСЏ - С„РѕСЂРІР°СЂРґ (РїРµСЂРµР°РґСЂРµСЃР°С†РёСЏ РІ РґСЂСѓРіСѓСЋ DLL), РІС‹РІРµРґРµРј РёРјСЏ С„РѕСЂРІР°СЂРґР°
 			if(func.is_forwarded())
 				std::cout << std::endl << " -> " << func.get_forwarded_name();
 
@@ -65,7 +65,7 @@ int main(int argc, char* argv[])
 	}
 	catch(const pe_exception& e)
 	{
-		//Если возникла ошибка
+		//Р•СЃР»Рё РІРѕР·РЅРёРєР»Р° РѕС€РёР±РєР°
 		std::cout << "Error: " << e.what() << std::endl;
 		return -1;
 	}

@@ -1,9 +1,9 @@
-#include <iostream>
+п»ї#include <iostream>
 #include <fstream>
 #include <pe_factory.h>
 #include "lib.h"
 
-//Пример, показывающий, как получить базовую информацию о PE-файле
+//РџСЂРёРјРµСЂ, РїРѕРєР°Р·С‹РІР°СЋС‰РёР№, РєР°Рє РїРѕР»СѓС‡РёС‚СЊ Р±Р°Р·РѕРІСѓСЋ РёРЅС„РѕСЂРјР°С†РёСЋ Рѕ PE-С„Р°Р№Р»Рµ
 int main(int argc, char* argv[])
 {
 	if(argc != 2)
@@ -12,7 +12,7 @@ int main(int argc, char* argv[])
 		return 0;
 	}
 
-	//Открываем файл
+	//РћС‚РєСЂС‹РІР°РµРј С„Р°Р№Р»
 	std::ifstream pe_file(argv[1], std::ios::in | std::ios::binary);
 	if(!pe_file)
 	{
@@ -22,38 +22,38 @@ int main(int argc, char* argv[])
 
 	try
 	{
-		//Создаем экземпляр PE или PE+ класса с помощью фабрики
+		//РЎРѕР·РґР°РµРј СЌРєР·РµРјРїР»СЏСЂ PE РёР»Рё PE+ РєР»Р°СЃСЃР° СЃ РїРѕРјРѕС‰СЊСЋ С„Р°Р±СЂРёРєРё
 		std::auto_ptr<pe_base> image = pe_factory::create_pe(pe_file);
 
-		//Фабрика автоматически получает тип PE-файла и создает экземпляр нужного класса,
-		//но можно получить тип PE-файла и вручную, воспользовавшись одной из перегрузок функции get_pe_type
-		//Здесь мы просто выведем уже известный тип PE-файла:
+		//Р¤Р°Р±СЂРёРєР° Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРё РїРѕР»СѓС‡Р°РµС‚ С‚РёРї PE-С„Р°Р№Р»Р° Рё СЃРѕР·РґР°РµС‚ СЌРєР·РµРјРїР»СЏСЂ РЅСѓР¶РЅРѕРіРѕ РєР»Р°СЃСЃР°,
+		//РЅРѕ РјРѕР¶РЅРѕ РїРѕР»СѓС‡РёС‚СЊ С‚РёРї PE-С„Р°Р№Р»Р° Рё РІСЂСѓС‡РЅСѓСЋ, РІРѕСЃРїРѕР»СЊР·РѕРІР°РІС€РёСЃСЊ РѕРґРЅРѕР№ РёР· РїРµСЂРµРіСЂСѓР·РѕРє С„СѓРЅРєС†РёРё get_pe_type
+		//Р—РґРµСЃСЊ РјС‹ РїСЂРѕСЃС‚Рѕ РІС‹РІРµРґРµРј СѓР¶Рµ РёР·РІРµСЃС‚РЅС‹Р№ С‚РёРї PE-С„Р°Р№Р»Р°:
 		std::cout << "PE file type: " << (image->get_pe_type() == pe_base::pe_type_32 ? "PE32 (PE)" : "PE64 (PE+)") << std::endl;
 		
-		//Вычислим контрольную сумму PE-файла
+		//Р’С‹С‡РёСЃР»РёРј РєРѕРЅС‚СЂРѕР»СЊРЅСѓСЋ СЃСѓРјРјСѓ PE-С„Р°Р№Р»Р°
 		std::cout << "Calculated checksum: "<< std::hex << std::showbase << pe_base::calculate_checksum(pe_file) << std::endl;
-		//Выведем контрольную сумму из заголовка файла (для не-драйверов она обычно равна 0)
+		//Р’С‹РІРµРґРµРј РєРѕРЅС‚СЂРѕР»СЊРЅСѓСЋ СЃСѓРјРјСѓ РёР· Р·Р°РіРѕР»РѕРІРєР° С„Р°Р№Р»Р° (РґР»СЏ РЅРµ-РґСЂР°Р№РІРµСЂРѕРІ РѕРЅР° РѕР±С‹С‡РЅРѕ СЂР°РІРЅР° 0)
 		std::cout << "Stored checksum: " << image->get_checksum() << std::endl;
 
-		//Выведем характеристики PE-файла
+		//Р’С‹РІРµРґРµРј С…Р°СЂР°РєС‚РµСЂРёСЃС‚РёРєРё PE-С„Р°Р№Р»Р°
 		std::cout << "Characteristics: " << image->get_characteristics() << std::endl;
 		
-		//Выведем адрес точки входа
+		//Р’С‹РІРµРґРµРј Р°РґСЂРµСЃ С‚РѕС‡РєРё РІС…РѕРґР°
 		std::cout << "Entry point: " << image->get_ep() << std::endl;
 		
-		//Выведем выравнивание
+		//Р’С‹РІРµРґРµРј РІС‹СЂР°РІРЅРёРІР°РЅРёРµ
 		std::cout << "File alignment: " << image->get_file_alignment() << std::endl;
 		std::cout << "Section alignment: " << image->get_section_alignment() << std::endl;
 		
-		//Выведем базу образа в 64-битном виде (универсально для PE и PE+)
+		//Р’С‹РІРµРґРµРј Р±Р°Р·Сѓ РѕР±СЂР°Р·Р° РІ 64-Р±РёС‚РЅРѕРј РІРёРґРµ (СѓРЅРёРІРµСЂСЃР°Р»СЊРЅРѕ РґР»СЏ PE Рё PE+)
 		std::cout << "Image base: " << image->get_image_base_64() << std::endl;
 		
-		//Выведем подсистему
+		//Р’С‹РІРµРґРµРј РїРѕРґСЃРёСЃС‚РµРјСѓ
 		std::cout << "Subsystem: " << image->get_subsystem() << std::endl;
 		std::cout << "Is console: " << (image->is_console() ? "YES" : "NO") << std::endl;
 		std::cout << "Is windows GUI: " << (image->is_gui() ? "YES" : "NO") << std::endl;
 		
-		//Выведем, какие директории есть у файла
+		//Р’С‹РІРµРґРµРј, РєР°РєРёРµ РґРёСЂРµРєС‚РѕСЂРёРё РµСЃС‚СЊ Сѓ С„Р°Р№Р»Р°
 		std::cout << "Has bound import: " << (image->has_bound_import() ? "YES" : "NO") << std::endl;
 		std::cout << "Has config: " << (image->has_config() ? "YES" : "NO") << std::endl;
 		std::cout << "Has debug: " << (image->has_debug() ? "YES" : "NO") << std::endl;
@@ -69,7 +69,7 @@ int main(int argc, char* argv[])
 	}
 	catch(const pe_exception& e)
 	{
-		//Если возникла ошибка
+		//Р•СЃР»Рё РІРѕР·РЅРёРєР»Р° РѕС€РёР±РєР°
 		std::cout << "Error: " << e.what() << std::endl;
 		return -1;
 	}

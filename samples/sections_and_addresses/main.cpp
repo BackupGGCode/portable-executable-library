@@ -1,9 +1,9 @@
-#include <iostream>
+п»ї#include <iostream>
 #include <fstream>
 #include <pe_factory.h>
 #include "lib.h"
 
-//Пример, показывающий, как работать с секциями в PE-файле
+//РџСЂРёРјРµСЂ, РїРѕРєР°Р·С‹РІР°СЋС‰РёР№, РєР°Рє СЂР°Р±РѕС‚Р°С‚СЊ СЃ СЃРµРєС†РёСЏРјРё РІ PE-С„Р°Р№Р»Рµ
 int main(int argc, char* argv[])
 {
 	if(argc != 2)
@@ -12,7 +12,7 @@ int main(int argc, char* argv[])
 		return 0;
 	}
 
-	//Открываем файл
+	//РћС‚РєСЂС‹РІР°РµРј С„Р°Р№Р»
 	std::ifstream pe_file(argv[1], std::ios::in | std::ios::binary);
 	if(!pe_file)
 	{
@@ -22,22 +22,22 @@ int main(int argc, char* argv[])
 
 	try
 	{
-		//Создаем экземпляр PE или PE+ класса с помощью фабрики
+		//РЎРѕР·РґР°РµРј СЌРєР·РµРјРїР»СЏСЂ PE РёР»Рё PE+ РєР»Р°СЃСЃР° СЃ РїРѕРјРѕС‰СЊСЋ С„Р°Р±СЂРёРєРё
 		std::auto_ptr<pe_base> image = pe_factory::create_pe(pe_file);
 
-		//Выведем имя секции, в которой находится точка входа PE-файла
-		//В хитрых PE-файлах точка входа может находиться в заголовке, тогда section_from_rva бросит исключение
+		//Р’С‹РІРµРґРµРј РёРјСЏ СЃРµРєС†РёРё, РІ РєРѕС‚РѕСЂРѕР№ РЅР°С…РѕРґРёС‚СЃСЏ С‚РѕС‡РєР° РІС…РѕРґР° PE-С„Р°Р№Р»Р°
+		//Р’ С…РёС‚СЂС‹С… PE-С„Р°Р№Р»Р°С… С‚РѕС‡РєР° РІС…РѕРґР° РјРѕР¶РµС‚ РЅР°С…РѕРґРёС‚СЊСЃСЏ РІ Р·Р°РіРѕР»РѕРІРєРµ, С‚РѕРіРґР° section_from_rva Р±СЂРѕСЃРёС‚ РёСЃРєР»СЋС‡РµРЅРёРµ
 		std::cout << "EP section name: " << image->section_from_rva(image->get_ep()).get_name() << std::endl;
-		//Длина "сырых" (raw) данных секции
+		//Р”Р»РёРЅР° "СЃС‹СЂС‹С…" (raw) РґР°РЅРЅС‹С… СЃРµРєС†РёРё
 		std::cout << "EP section data length: " << image->section_data_length_from_rva(image->get_ep()) << std::endl;
 
-		//Если у PE-файла есть импорты, выведем имя секции, в которой они находятся
+		//Р•СЃР»Рё Сѓ PE-С„Р°Р№Р»Р° РµСЃС‚СЊ РёРјРїРѕСЂС‚С‹, РІС‹РІРµРґРµРј РёРјСЏ СЃРµРєС†РёРё, РІ РєРѕС‚РѕСЂРѕР№ РѕРЅРё РЅР°С…РѕРґСЏС‚СЃСЏ
 		if(image->has_imports())
 			std::cout << "Import section name: " << image->section_from_directory(IMAGE_DIRECTORY_ENTRY_IMPORT).get_name() << std::endl;
 	}
 	catch(const pe_exception& e)
 	{
-		//Если возникла ошибка
+		//Р•СЃР»Рё РІРѕР·РЅРёРєР»Р° РѕС€РёР±РєР°
 		std::cout << "Error: " << e.what() << std::endl;
 		return -1;
 	}

@@ -1,9 +1,9 @@
-#include <iostream>
+п»ї#include <iostream>
 #include <fstream>
 #include <pe_factory.h>
 #include "lib.h"
 
-//Пример, показывающий, как считать и получить информацию о привязанном импорте PE-файла
+//РџСЂРёРјРµСЂ, РїРѕРєР°Р·С‹РІР°СЋС‰РёР№, РєР°Рє СЃС‡РёС‚Р°С‚СЊ Рё РїРѕР»СѓС‡РёС‚СЊ РёРЅС„РѕСЂРјР°С†РёСЋ Рѕ РїСЂРёРІСЏР·Р°РЅРЅРѕРј РёРјРїРѕСЂС‚Рµ PE-С„Р°Р№Р»Р°
 int main(int argc, char* argv[])
 {
 	if(argc != 2)
@@ -12,7 +12,7 @@ int main(int argc, char* argv[])
 		return 0;
 	}
 
-	//Открываем файл
+	//РћС‚РєСЂС‹РІР°РµРј С„Р°Р№Р»
 	std::ifstream pe_file(argv[1], std::ios::in | std::ios::binary);
 	if(!pe_file)
 	{
@@ -22,10 +22,10 @@ int main(int argc, char* argv[])
 
 	try
 	{
-		//Создаем экземпляр PE или PE+ класса с помощью фабрики
+		//РЎРѕР·РґР°РµРј СЌРєР·РµРјРїР»СЏСЂ PE РёР»Рё PE+ РєР»Р°СЃСЃР° СЃ РїРѕРјРѕС‰СЊСЋ С„Р°Р±СЂРёРєРё
 		std::auto_ptr<pe_base> image = pe_factory::create_pe(pe_file);
 		
-		//Проверим, есть ли привязанный импорт у PE-файла
+		//РџСЂРѕРІРµСЂРёРј, РµСЃС‚СЊ Р»Рё РїСЂРёРІСЏР·Р°РЅРЅС‹Р№ РёРјРїРѕСЂС‚ Сѓ PE-С„Р°Р№Р»Р°
 		if(!image->has_bound_import())
 		{
 			std::cout << "Image has no bound import" << std::endl;
@@ -34,28 +34,28 @@ int main(int argc, char* argv[])
 
 		std::cout << "Reading PE bound import..." << std::hex << std::showbase << std::endl << std::endl;
 		
-		//Получаем информацию о привязанном импорте
+		//РџРѕР»СѓС‡Р°РµРј РёРЅС„РѕСЂРјР°С†РёСЋ Рѕ РїСЂРёРІСЏР·Р°РЅРЅРѕРј РёРјРїРѕСЂС‚Рµ
 		const pe_base::bound_import_module_list modules = image->get_bound_import_module_list();
 
-		//Выведем импортируемые модули и форварды
+		//Р’С‹РІРµРґРµРј РёРјРїРѕСЂС‚РёСЂСѓРµРјС‹Рµ РјРѕРґСѓР»Рё Рё С„РѕСЂРІР°СЂРґС‹
 		for(pe_base::bound_import_module_list::const_iterator it = modules.begin(); it != modules.end(); ++it)
 		{
-			const pe_base::bound_import& import = *it; //Импортируемая библиотека
-			std::cout << "Module: " << import.get_module_name() << std::endl //Имя модуля
-				<< "Timestamp: " << import.get_timestamp() << std::endl; //Временная метка
+			const pe_base::bound_import& import = *it; //РРјРїРѕСЂС‚РёСЂСѓРµРјР°СЏ Р±РёР±Р»РёРѕС‚РµРєР°
+			std::cout << "Module: " << import.get_module_name() << std::endl //РРјСЏ РјРѕРґСѓР»СЏ
+				<< "Timestamp: " << import.get_timestamp() << std::endl; //Р’СЂРµРјРµРЅРЅР°СЏ РјРµС‚РєР°
 
-			//Перечислим форварды для модуля - модули, на которые ссылается этот:
+			//РџРµСЂРµС‡РёСЃР»РёРј С„РѕСЂРІР°СЂРґС‹ РґР»СЏ РјРѕРґСѓР»СЏ - РјРѕРґСѓР»Рё, РЅР° РєРѕС‚РѕСЂС‹Рµ СЃСЃС‹Р»Р°РµС‚СЃСЏ СЌС‚РѕС‚:
 			const pe_base::bound_import::ref_list& refs = import.get_module_ref_list();
 			for(pe_base::bound_import::ref_list::const_iterator ref_it = refs.begin(); ref_it != refs.end(); ++ref_it)
 			{
-				std::cout << " -> Module: " << (*ref_it).get_module_name() << std::endl //Имя модуля, на который ссылается родительский модуль
-					<< " -> Timestamp: " << (*ref_it).get_timestamp() << std::endl; //Временная метка
+				std::cout << " -> Module: " << (*ref_it).get_module_name() << std::endl //РРјСЏ РјРѕРґСѓР»СЏ, РЅР° РєРѕС‚РѕСЂС‹Р№ СЃСЃС‹Р»Р°РµС‚СЃСЏ СЂРѕРґРёС‚РµР»СЊСЃРєРёР№ РјРѕРґСѓР»СЊ
+					<< " -> Timestamp: " << (*ref_it).get_timestamp() << std::endl; //Р’СЂРµРјРµРЅРЅР°СЏ РјРµС‚РєР°
 			}
 		}
 	}
 	catch(const pe_exception& e)
 	{
-		//Если возникла ошибка
+		//Р•СЃР»Рё РІРѕР·РЅРёРєР»Р° РѕС€РёР±РєР°
 		std::cout << "Error: " << e.what() << std::endl;
 		return -1;
 	}

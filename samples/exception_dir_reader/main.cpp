@@ -1,10 +1,10 @@
-#include <iostream>
+п»ї#include <iostream>
 #include <fstream>
 #include <pe_factory.h>
 #include "lib.h"
 
-//Пример, показывающий, как считать и получить информацию о директории исключений
-//Она существует только для 64-разрядных PE-файлов (PE+)
+//РџСЂРёРјРµСЂ, РїРѕРєР°Р·С‹РІР°СЋС‰РёР№, РєР°Рє СЃС‡РёС‚Р°С‚СЊ Рё РїРѕР»СѓС‡РёС‚СЊ РёРЅС„РѕСЂРјР°С†РёСЋ Рѕ РґРёСЂРµРєС‚РѕСЂРёРё РёСЃРєР»СЋС‡РµРЅРёР№
+//РћРЅР° СЃСѓС‰РµСЃС‚РІСѓРµС‚ С‚РѕР»СЊРєРѕ РґР»СЏ 64-СЂР°Р·СЂСЏРґРЅС‹С… PE-С„Р°Р№Р»РѕРІ (PE+)
 int main(int argc, char* argv[])
 {
 	if(argc != 2)
@@ -13,7 +13,7 @@ int main(int argc, char* argv[])
 		return 0;
 	}
 
-	//Открываем файл
+	//РћС‚РєСЂС‹РІР°РµРј С„Р°Р№Р»
 	std::ifstream pe_file(argv[1], std::ios::in | std::ios::binary);
 	if(!pe_file)
 	{
@@ -23,10 +23,10 @@ int main(int argc, char* argv[])
 
 	try
 	{
-		//Создаем экземпляр PE или PE+ класса с помощью фабрики
+		//РЎРѕР·РґР°РµРј СЌРєР·РµРјРїР»СЏСЂ PE РёР»Рё PE+ РєР»Р°СЃСЃР° СЃ РїРѕРјРѕС‰СЊСЋ С„Р°Р±СЂРёРєРё
 		std::auto_ptr<pe_base> image = pe_factory::create_pe(pe_file);
 		
-		//Проверим, есть ли директория информации об исключениях у PE-файла
+		//РџСЂРѕРІРµСЂРёРј, РµСЃС‚СЊ Р»Рё РґРёСЂРµРєС‚РѕСЂРёСЏ РёРЅС„РѕСЂРјР°С†РёРё РѕР± РёСЃРєР»СЋС‡РµРЅРёСЏС… Сѓ PE-С„Р°Р№Р»Р°
 		if(!image->has_exception_directory())
 		{
 			std::cout << "Image has no exception directory" << std::endl;
@@ -35,16 +35,16 @@ int main(int argc, char* argv[])
 
 		std::cout << "Reading exception directory..." << std::hex << std::showbase << std::endl << std::endl;
 		
-		//Получаем информацию из exception directory
+		//РџРѕР»СѓС‡Р°РµРј РёРЅС„РѕСЂРјР°С†РёСЋ РёР· exception directory
 		const pe_base::exception_entry_list info = image->get_exception_directory_data();
 
-		//Выведем записи из exception directory
-		//Подробное описание всех этих структур есть в MSDN
+		//Р’С‹РІРµРґРµРј Р·Р°РїРёСЃРё РёР· exception directory
+		//РџРѕРґСЂРѕР±РЅРѕРµ РѕРїРёСЃР°РЅРёРµ РІСЃРµС… СЌС‚РёС… СЃС‚СЂСѓРєС‚СѓСЂ РµСЃС‚СЊ РІ MSDN
 		for(pe_base::exception_entry_list::const_iterator it = info.begin(); it != info.end(); ++it)
 		{
-			const pe_base::exception_entry& entry = *it; //Запись из таблицы
+			const pe_base::exception_entry& entry = *it; //Р—Р°РїРёСЃСЊ РёР· С‚Р°Р±Р»РёС†С‹
 
-			//Выведем информацию
+			//Р’С‹РІРµРґРµРј РёРЅС„РѕСЂРјР°С†РёСЋ
 			std::cout << "Addresses: [" << entry.get_begin_address() << ":" << entry.get_end_address() << "]:" << std::endl
 				<< "Flags: " << static_cast<unsigned long>(entry.get_flags()) << std::endl
 				<< "Frame pointer register number: " << static_cast<unsigned long>(entry.get_frame_pointer_register_number()) << std::endl
@@ -58,7 +58,7 @@ int main(int argc, char* argv[])
 	}
 	catch(const pe_exception& e)
 	{
-		//Если возникла ошибка
+		//Р•СЃР»Рё РІРѕР·РЅРёРєР»Р° РѕС€РёР±РєР°
 		std::cout << "Error: " << e.what() << std::endl;
 		return -1;
 	}

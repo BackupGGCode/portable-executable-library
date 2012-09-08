@@ -1,9 +1,9 @@
-#include <iostream>
+п»ї#include <iostream>
 #include <fstream>
 #include <pe_factory.h>
 #include "lib.h"
 
-//Пример, показывающий, как конвертировать адреса для PE-файла
+//РџСЂРёРјРµСЂ, РїРѕРєР°Р·С‹РІР°СЋС‰РёР№, РєР°Рє РєРѕРЅРІРµСЂС‚РёСЂРѕРІР°С‚СЊ Р°РґСЂРµСЃР° РґР»СЏ PE-С„Р°Р№Р»Р°
 int main(int argc, char* argv[])
 {
 	if(argc != 2)
@@ -12,7 +12,7 @@ int main(int argc, char* argv[])
 		return 0;
 	}
 
-	//Открываем файл
+	//РћС‚РєСЂС‹РІР°РµРј С„Р°Р№Р»
 	std::ifstream pe_file(argv[1], std::ios::in | std::ios::binary);
 	if(!pe_file)
 	{
@@ -22,27 +22,27 @@ int main(int argc, char* argv[])
 
 	try
 	{
-		//Создаем экземпляр PE или PE+ класса с помощью фабрики
+		//РЎРѕР·РґР°РµРј СЌРєР·РµРјРїР»СЏСЂ PE РёР»Рё PE+ РєР»Р°СЃСЃР° СЃ РїРѕРјРѕС‰СЊСЋ С„Р°Р±СЂРёРєРё
 		std::auto_ptr<pe_base> image = pe_factory::create_pe(pe_file);
 
-		//Получаем список секций
+		//РџРѕР»СѓС‡Р°РµРј СЃРїРёСЃРѕРє СЃРµРєС†РёР№
 		std::cout << "Reading PE sections..." << std::hex << std::showbase << std::endl << std::endl;
 		const pe_base::section_list sections = image->get_image_sections();
 
-		//Перечисляем секции и выводим информацию о них
+		//РџРµСЂРµС‡РёСЃР»СЏРµРј СЃРµРєС†РёРё Рё РІС‹РІРѕРґРёРј РёРЅС„РѕСЂРјР°С†РёСЋ Рѕ РЅРёС…
 		for(pe_base::section_list::const_iterator it = sections.begin(); it != sections.end(); ++it)
 		{
-			const pe_base::section& s = *it; //Секция
-			std::cout << "Section [" << s.get_name() << "]" << std::endl //Имя секции
-				<< " -> RVA: " << s.get_virtual_address() << std::endl //Виртуальный адрес (RVA)
-				<< " -> VA: " << image->rva_to_va_64(s.get_virtual_address()) << std::endl //Виртуальный адрес (VA)
-				<< " -> File offset: " << image->rva_to_file_offset(s.get_virtual_address()) //Файловое смещение секции, вычисленное из ее RVA
+			const pe_base::section& s = *it; //РЎРµРєС†РёСЏ
+			std::cout << "Section [" << s.get_name() << "]" << std::endl //РРјСЏ СЃРµРєС†РёРё
+				<< " -> RVA: " << s.get_virtual_address() << std::endl //Р’РёСЂС‚СѓР°Р»СЊРЅС‹Р№ Р°РґСЂРµСЃ (RVA)
+				<< " -> VA: " << image->rva_to_va_64(s.get_virtual_address()) << std::endl //Р’РёСЂС‚СѓР°Р»СЊРЅС‹Р№ Р°РґСЂРµСЃ (VA)
+				<< " -> File offset: " << image->rva_to_file_offset(s.get_virtual_address()) //Р¤Р°Р№Р»РѕРІРѕРµ СЃРјРµС‰РµРЅРёРµ СЃРµРєС†РёРё, РІС‹С‡РёСЃР»РµРЅРЅРѕРµ РёР· РµРµ RVA
 				<< std::endl << std::endl;
 		}
 	}
 	catch(const pe_exception& e)
 	{
-		//Если возникла ошибка
+		//Р•СЃР»Рё РІРѕР·РЅРёРєР»Р° РѕС€РёР±РєР°
 		std::cout << "Error: " << e.what() << std::endl;
 		return -1;
 	}

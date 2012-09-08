@@ -1,10 +1,10 @@
-#include <iostream>
+п»ї#include <iostream>
 #include <fstream>
 #include <pe_factory.h>
 #include "lib.h"
 
-//Пример, показывающий, как считать и получить информацию о статическом TLS (Thread Local Storage, локальная память потока)
-//PE или PE+ файла
+//РџСЂРёРјРµСЂ, РїРѕРєР°Р·С‹РІР°СЋС‰РёР№, РєР°Рє СЃС‡РёС‚Р°С‚СЊ Рё РїРѕР»СѓС‡РёС‚СЊ РёРЅС„РѕСЂРјР°С†РёСЋ Рѕ СЃС‚Р°С‚РёС‡РµСЃРєРѕРј TLS (Thread Local Storage, Р»РѕРєР°Р»СЊРЅР°СЏ РїР°РјСЏС‚СЊ РїРѕС‚РѕРєР°)
+//PE РёР»Рё PE+ С„Р°Р№Р»Р°
 int main(int argc, char* argv[])
 {
 	if(argc != 2)
@@ -13,7 +13,7 @@ int main(int argc, char* argv[])
 		return 0;
 	}
 
-	//Открываем файл
+	//РћС‚РєСЂС‹РІР°РµРј С„Р°Р№Р»
 	std::ifstream pe_file(argv[1], std::ios::in | std::ios::binary);
 	if(!pe_file)
 	{
@@ -23,29 +23,29 @@ int main(int argc, char* argv[])
 
 	try
 	{
-		//Создаем экземпляр PE или PE+ класса с помощью фабрики
+		//РЎРѕР·РґР°РµРј СЌРєР·РµРјРїР»СЏСЂ PE РёР»Рё PE+ РєР»Р°СЃСЃР° СЃ РїРѕРјРѕС‰СЊСЋ С„Р°Р±СЂРёРєРё
 		std::auto_ptr<pe_base> image = pe_factory::create_pe(pe_file);
 
 		std::cout << "Reading PE TLS info..." << std::hex << std::showbase << std::endl << std::endl;
 		
-		//Получаем информацию о TLS
+		//РџРѕР»СѓС‡Р°РµРј РёРЅС„РѕСЂРјР°С†РёСЋ Рѕ TLS
 		const pe_base::tls_info info = image->get_tls_info();
 
-		//Выводим информацию о TLS
+		//Р’С‹РІРѕРґРёРј РёРЅС„РѕСЂРјР°С†РёСЋ Рѕ TLS
 		std::cout << "Callbacks RVA: " << info.get_callbacks_rva() << std::endl
 			<< "Index RVA: " << info.get_index_rva() << std::endl
 			<< "Raw data start RVA: " << info.get_raw_data_start_rva() << std::endl
 			<< "Raw data end RVA: " << info.get_raw_data_end_rva() << std::endl
 			<< "Size of zero fill: " << info.get_size_of_zero_fill() << std::endl;
 
-		//Выведем TLS-коллбеки:
+		//Р’С‹РІРµРґРµРј TLS-РєРѕР»Р»Р±РµРєРё:
 		const pe_base::tls_info::tls_callback_list& tls_callbacks = info.get_tls_callbacks();
 		for(pe_base::tls_info::tls_callback_list::const_iterator it = tls_callbacks.begin(); it != tls_callbacks.end(); ++it)
 			std::cout << "Callback: " << (*it) << std::endl;
 	}
 	catch(const pe_exception& e)
 	{
-		//Если возникла ошибка
+		//Р•СЃР»Рё РІРѕР·РЅРёРєР»Р° РѕС€РёР±РєР°
 		std::cout << "Error: " << e.what() << std::endl;
 		return -1;
 	}

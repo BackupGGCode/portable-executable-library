@@ -1,9 +1,9 @@
-#include <iostream>
+п»ї#include <iostream>
 #include <fstream>
 #include <pe_factory.h>
 #include "lib.h"
 
-//Пример, показывающий, как считать и получить информацию об импортах PE или PE+ файла
+//РџСЂРёРјРµСЂ, РїРѕРєР°Р·С‹РІР°СЋС‰РёР№, РєР°Рє СЃС‡РёС‚Р°С‚СЊ Рё РїРѕР»СѓС‡РёС‚СЊ РёРЅС„РѕСЂРјР°С†РёСЋ РѕР± РёРјРїРѕСЂС‚Р°С… PE РёР»Рё PE+ С„Р°Р№Р»Р°
 int main(int argc, char* argv[])
 {
 	if(argc != 2)
@@ -12,7 +12,7 @@ int main(int argc, char* argv[])
 		return 0;
 	}
 
-	//Открываем файл
+	//РћС‚РєСЂС‹РІР°РµРј С„Р°Р№Р»
 	std::ifstream pe_file(argv[1], std::ios::in | std::ios::binary);
 	if(!pe_file)
 	{
@@ -22,10 +22,10 @@ int main(int argc, char* argv[])
 
 	try
 	{
-		//Создаем экземпляр PE или PE+ класса с помощью фабрики
+		//РЎРѕР·РґР°РµРј СЌРєР·РµРјРїР»СЏСЂ PE РёР»Рё PE+ РєР»Р°СЃСЃР° СЃ РїРѕРјРѕС‰СЊСЋ С„Р°Р±СЂРёРєРё
 		std::auto_ptr<pe_base> image = pe_factory::create_pe(pe_file);
 		
-		//Проверим, есть ли импорты у файла
+		//РџСЂРѕРІРµСЂРёРј, РµСЃС‚СЊ Р»Рё РёРјРїРѕСЂС‚С‹ Сѓ С„Р°Р№Р»Р°
 		if(!image->has_imports())
 		{
 			std::cout << "Image has no imports" << std::endl;
@@ -34,30 +34,30 @@ int main(int argc, char* argv[])
 
 		std::cout << "Reading PE imports..." << std::hex << std::showbase << std::endl << std::endl;
 
-		//Получаем список импортируемых библиотек с функциями
+		//РџРѕР»СѓС‡Р°РµРј СЃРїРёСЃРѕРє РёРјРїРѕСЂС‚РёСЂСѓРµРјС‹С… Р±РёР±Р»РёРѕС‚РµРє СЃ С„СѓРЅРєС†РёСЏРјРё
 		const pe_base::imported_functions_list imports = image->get_imported_functions();
 
-		//Перечисляем импортированные библиотеки и выводим информацию о них
+		//РџРµСЂРµС‡РёСЃР»СЏРµРј РёРјРїРѕСЂС‚РёСЂРѕРІР°РЅРЅС‹Рµ Р±РёР±Р»РёРѕС‚РµРєРё Рё РІС‹РІРѕРґРёРј РёРЅС„РѕСЂРјР°С†РёСЋ Рѕ РЅРёС…
 		for(pe_base::imported_functions_list::const_iterator it = imports.begin(); it != imports.end(); ++it)
 		{
-			const pe_base::import_library& lib = *it; //Импортируемая библиотека
-			std::cout << "Library [" << lib.get_name() << "]" << std::endl //Имя
-				<< "Timestamp: " << lib.get_timestamp() << std::endl //Временная метка
-				<< "RVA to IAT: " << lib.get_rva_to_iat() << std::endl //Относительный адрес к import address table
+			const pe_base::import_library& lib = *it; //РРјРїРѕСЂС‚РёСЂСѓРµРјР°СЏ Р±РёР±Р»РёРѕС‚РµРєР°
+			std::cout << "Library [" << lib.get_name() << "]" << std::endl //РРјСЏ
+				<< "Timestamp: " << lib.get_timestamp() << std::endl //Р’СЂРµРјРµРЅРЅР°СЏ РјРµС‚РєР°
+				<< "RVA to IAT: " << lib.get_rva_to_iat() << std::endl //РћС‚РЅРѕСЃРёС‚РµР»СЊРЅС‹Р№ Р°РґСЂРµСЃ Рє import address table
 				<< "========" << std::endl;
 
-			//Перечисляем импортированные функции для библиотеки
+			//РџРµСЂРµС‡РёСЃР»СЏРµРј РёРјРїРѕСЂС‚РёСЂРѕРІР°РЅРЅС‹Рµ С„СѓРЅРєС†РёРё РґР»СЏ Р±РёР±Р»РёРѕС‚РµРєРё
 			const pe_base::import_library::imported_list& functions = lib.get_imported_functions();
 			for(pe_base::import_library::imported_list::const_iterator func_it = functions.begin(); func_it != functions.end(); ++func_it)
 			{
-				const pe_base::imported_function& func = *func_it; //Импортированная функция
+				const pe_base::imported_function& func = *func_it; //РРјРїРѕСЂС‚РёСЂРѕРІР°РЅРЅР°СЏ С„СѓРЅРєС†РёСЏ
 				std::cout << "[+] ";
-				if(func.has_name()) //Если функция имеет имя - выведем его
+				if(func.has_name()) //Р•СЃР»Рё С„СѓРЅРєС†РёСЏ РёРјРµРµС‚ РёРјСЏ - РІС‹РІРµРґРµРј РµРіРѕ
 					std::cout << func.get_name();
 				else
-					std::cout << "#" << func.get_ordinal(); //Иначе она импортирована по ординалу
+					std::cout << "#" << func.get_ordinal(); //РРЅР°С‡Рµ РѕРЅР° РёРјРїРѕСЂС‚РёСЂРѕРІР°РЅР° РїРѕ РѕСЂРґРёРЅР°Р»Сѓ
 
-				//Хинт
+				//РҐРёРЅС‚
 				std::cout << " hint: " << func.get_hint() << std::endl;
 			}
 
@@ -66,7 +66,7 @@ int main(int argc, char* argv[])
 	}
 	catch(const pe_exception& e)
 	{
-		//Если возникла ошибка
+		//Р•СЃР»Рё РІРѕР·РЅРёРєР»Р° РѕС€РёР±РєР°
 		std::cout << "Error: " << e.what() << std::endl;
 		return -1;
 	}

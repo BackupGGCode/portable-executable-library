@@ -1,9 +1,9 @@
-#include <iostream>
+п»ї#include <iostream>
 #include <fstream>
 #include <pe_factory.h>
 #include "lib.h"
 
-//Пример, показывающий, как считать и обработать отладочную информацию PE или PE+ файла
+//РџСЂРёРјРµСЂ, РїРѕРєР°Р·С‹РІР°СЋС‰РёР№, РєР°Рє СЃС‡РёС‚Р°С‚СЊ Рё РѕР±СЂР°Р±РѕС‚Р°С‚СЊ РѕС‚Р»Р°РґРѕС‡РЅСѓСЋ РёРЅС„РѕСЂРјР°С†РёСЋ PE РёР»Рё PE+ С„Р°Р№Р»Р°
 int main(int argc, char* argv[])
 {
 	if(argc != 2)
@@ -12,7 +12,7 @@ int main(int argc, char* argv[])
 		return 0;
 	}
 
-	//Открываем файл
+	//РћС‚РєСЂС‹РІР°РµРј С„Р°Р№Р»
 	std::ifstream pe_file(argv[1], std::ios::in | std::ios::binary);
 	if(!pe_file)
 	{
@@ -22,10 +22,10 @@ int main(int argc, char* argv[])
 
 	try
 	{
-		//Создаем экземпляр PE или PE+ класса с помощью фабрики
+		//РЎРѕР·РґР°РµРј СЌРєР·РµРјРїР»СЏСЂ PE РёР»Рё PE+ РєР»Р°СЃСЃР° СЃ РїРѕРјРѕС‰СЊСЋ С„Р°Р±СЂРёРєРё
 		std::auto_ptr<pe_base> image = pe_factory::create_pe(pe_file);
 		
-		//Проверим, есть ли отладочная информация у файла
+		//РџСЂРѕРІРµСЂРёРј, РµСЃС‚СЊ Р»Рё РѕС‚Р»Р°РґРѕС‡РЅР°СЏ РёРЅС„РѕСЂРјР°С†РёСЏ Сѓ С„Р°Р№Р»Р°
 		if(!image->has_debug())
 		{
 			std::cout << "Image has no debug information" << std::endl;
@@ -34,15 +34,15 @@ int main(int argc, char* argv[])
 
 		std::cout << "Reading PE debug information..." << std::hex << std::showbase << std::endl << std::endl;
 
-		//Получаем отладочную информацию, находящуюся в PE-файле
+		//РџРѕР»СѓС‡Р°РµРј РѕС‚Р»Р°РґРѕС‡РЅСѓСЋ РёРЅС„РѕСЂРјР°С†РёСЋ, РЅР°С…РѕРґСЏС‰СѓСЋСЃСЏ РІ PE-С„Р°Р№Р»Рµ
 		const pe_base::debug_info_list info_list = image->get_debug_information();
 		
-		//Перечисоляем все отладочные записи
+		//РџРµСЂРµС‡РёСЃРѕР»СЏРµРј РІСЃРµ РѕС‚Р»Р°РґРѕС‡РЅС‹Рµ Р·Р°РїРёСЃРё
 		for(pe_base::debug_info_list::const_iterator it = info_list.begin(); it != info_list.end(); ++it)
 		{
 			const pe_base::debug_info& info = *it;
 
-			//Выведем тип отладочной информации
+			//Р’С‹РІРµРґРµРј С‚РёРї РѕС‚Р»Р°РґРѕС‡РЅРѕР№ РёРЅС„РѕСЂРјР°С†РёРё
 			std::cout << "Debug info type: ";
 			switch(info.get_type())
 			{
@@ -92,17 +92,17 @@ int main(int argc, char* argv[])
 
 			std::cout << std::endl;
 
-			std::cout << "Timestamp: " << info.get_time_stamp() << std::endl << std::endl; //Временная метка
+			std::cout << "Timestamp: " << info.get_time_stamp() << std::endl << std::endl; //Р’СЂРµРјРµРЅРЅР°СЏ РјРµС‚РєР°
 
-			//Получим дополнительную информацию, если таковая имеется
+			//РџРѕР»СѓС‡РёРј РґРѕРїРѕР»РЅРёС‚РµР»СЊРЅСѓСЋ РёРЅС„РѕСЂРјР°С†РёСЋ, РµСЃР»Рё С‚Р°РєРѕРІР°СЏ РёРјРµРµС‚СЃСЏ
 			switch(info.get_advanced_info_type())
 			{
 			case pe_base::debug_info::advanced_info_pdb_7_0:
 				{
 					std::cout << "Advanced info - PDB 7.0" << std::endl; //PDB 7.0
 					pe_base::pdb_7_0_info advanced = info.get_advanced_debug_info<pe_base::pdb_7_0_info>();
-					std::cout << "PDB file name: " << advanced.get_pdb_file_name() << std::endl; //Имя файла PDB
-					std::cout << "Age: " << advanced.get_age() << std::endl; //Возраст (билд)
+					std::cout << "PDB file name: " << advanced.get_pdb_file_name() << std::endl; //РРјСЏ С„Р°Р№Р»Р° PDB
+					std::cout << "Age: " << advanced.get_age() << std::endl; //Р’РѕР·СЂР°СЃС‚ (Р±РёР»Рґ)
 				}
 				break;
 
@@ -110,8 +110,8 @@ int main(int argc, char* argv[])
 				{
 					std::cout << "Advanced info - PDB 2.0" << std::endl; //PDB 2.0
 					pe_base::pdb_2_0_info advanced = info.get_advanced_debug_info<pe_base::pdb_2_0_info>();
-					std::cout << "PDB file name: " << advanced.get_pdb_file_name() << std::endl; //Имя файла PDB
-					std::cout << "Age: " << advanced.get_age() << std::endl; //Возраст (билд)
+					std::cout << "PDB file name: " << advanced.get_pdb_file_name() << std::endl; //РРјСЏ С„Р°Р№Р»Р° PDB
+					std::cout << "Age: " << advanced.get_age() << std::endl; //Р’РѕР·СЂР°СЃС‚ (Р±РёР»Рґ)
 				}
 				break;
 
@@ -119,9 +119,9 @@ int main(int argc, char* argv[])
 				{
 					std::cout << "Advanced info - Misc" << std::endl; //Misc
 					pe_base::misc_debug_info advanced = info.get_advanced_debug_info<pe_base::misc_debug_info>();
-					std::cout << "Advanced data is EXE name: " << (advanced.is_exe_name() ? "YES" : "NO") << std::endl; //Если данные в структуре - имя EXE-файла
+					std::cout << "Advanced data is EXE name: " << (advanced.is_exe_name() ? "YES" : "NO") << std::endl; //Р•СЃР»Рё РґР°РЅРЅС‹Рµ РІ СЃС‚СЂСѓРєС‚СѓСЂРµ - РёРјСЏ EXE-С„Р°Р№Р»Р°
 
-					//Выведем строковые данные
+					//Р’С‹РІРµРґРµРј СЃС‚СЂРѕРєРѕРІС‹Рµ РґР°РЅРЅС‹Рµ
 					if(advanced.is_unicode())
 						std::wcout << advanced.get_data_unicode() << std::endl;
 					else
@@ -133,23 +133,23 @@ int main(int argc, char* argv[])
 				{
 					std::cout << "Advanced info - COFF" << std::endl; //COFF
 					pe_base::coff_debug_info advanced = info.get_advanced_debug_info<pe_base::coff_debug_info>();
-					std::cout << "LVA to first line number: " << advanced.get_lva_to_first_line_number() << std::endl; //Адрес первого элемента в массиве номеров строк
-					std::cout << "LVA to first symbol: " << advanced.get_lva_to_first_symbol() << std::endl; //Адрес первого элемента в массиве символов
-					std::cout << "Number of line numbers: " << advanced.get_number_of_line_numbers() << std::endl; //Количество номеров строк
-					std::cout << "Number of symbols: " << advanced.get_number_of_symbols() << std::endl; //Количество номеров строк
-					std::cout << "RVA of first byte of code: " << advanced.get_rva_to_first_byte_of_code() << std::endl; //RVA первого байта кода
-					std::cout << "RVA of first byte of data: " << advanced.get_rva_to_first_byte_of_data() << std::endl; //RVA первого байта данных
-					std::cout << "RVA of last byte of code " << advanced.get_rva_to_last_byte_of_code() << std::endl; //RVA последнего байта кода
-					std::cout << "RVA of last byte of data: " << advanced.get_rva_to_last_byte_of_data() << std::endl; //RVA последнего байта данных
+					std::cout << "LVA to first line number: " << advanced.get_lva_to_first_line_number() << std::endl; //РђРґСЂРµСЃ РїРµСЂРІРѕРіРѕ СЌР»РµРјРµРЅС‚Р° РІ РјР°СЃСЃРёРІРµ РЅРѕРјРµСЂРѕРІ СЃС‚СЂРѕРє
+					std::cout << "LVA to first symbol: " << advanced.get_lva_to_first_symbol() << std::endl; //РђРґСЂРµСЃ РїРµСЂРІРѕРіРѕ СЌР»РµРјРµРЅС‚Р° РІ РјР°СЃСЃРёРІРµ СЃРёРјРІРѕР»РѕРІ
+					std::cout << "Number of line numbers: " << advanced.get_number_of_line_numbers() << std::endl; //РљРѕР»РёС‡РµСЃС‚РІРѕ РЅРѕРјРµСЂРѕРІ СЃС‚СЂРѕРє
+					std::cout << "Number of symbols: " << advanced.get_number_of_symbols() << std::endl; //РљРѕР»РёС‡РµСЃС‚РІРѕ РЅРѕРјРµСЂРѕРІ СЃС‚СЂРѕРє
+					std::cout << "RVA of first byte of code: " << advanced.get_rva_to_first_byte_of_code() << std::endl; //RVA РїРµСЂРІРѕРіРѕ Р±Р°Р№С‚Р° РєРѕРґР°
+					std::cout << "RVA of first byte of data: " << advanced.get_rva_to_first_byte_of_data() << std::endl; //RVA РїРµСЂРІРѕРіРѕ Р±Р°Р№С‚Р° РґР°РЅРЅС‹С…
+					std::cout << "RVA of last byte of code " << advanced.get_rva_to_last_byte_of_code() << std::endl; //RVA РїРѕСЃР»РµРґРЅРµРіРѕ Р±Р°Р№С‚Р° РєРѕРґР°
+					std::cout << "RVA of last byte of data: " << advanced.get_rva_to_last_byte_of_data() << std::endl; //RVA РїРѕСЃР»РµРґРЅРµРіРѕ Р±Р°Р№С‚Р° РґР°РЅРЅС‹С…
 
 					std::cout << std::endl << "Symbol list:" << std::endl;
 
-					//Получим список символов
+					//РџРѕР»СѓС‡РёРј СЃРїРёСЃРѕРє СЃРёРјРІРѕР»РѕРІ
 					const pe_base::coff_debug_info::coff_symbols_list& symbols = advanced.get_symbols();
 					for(pe_base::coff_debug_info::coff_symbols_list::const_iterator symbol_it = symbols.begin(); symbol_it != symbols.end(); ++symbol_it)
 					{
-						//Выведем информацию об отладочных символах
-						const pe_base::coff_debug_info::coff_symbol& symbol = *symbol_it; //Отладочный символ
+						//Р’С‹РІРµРґРµРј РёРЅС„РѕСЂРјР°С†РёСЋ РѕР± РѕС‚Р»Р°РґРѕС‡РЅС‹С… СЃРёРјРІРѕР»Р°С…
+						const pe_base::coff_debug_info::coff_symbol& symbol = *symbol_it; //РћС‚Р»Р°РґРѕС‡РЅС‹Р№ СЃРёРјРІРѕР»
 						std::cout << "Index: " << symbol.get_index() << std::endl
 							<< "RVA: " << symbol.get_rva() << std::endl
 							<< "Section number: " << symbol.get_section_number() << std::endl
@@ -175,7 +175,7 @@ int main(int argc, char* argv[])
 	}
 	catch(const pe_exception& e)
 	{
-		//Если возникла ошибка
+		//Р•СЃР»Рё РІРѕР·РЅРёРєР»Р° РѕС€РёР±РєР°
 		std::cout << "Error: " << e.what() << std::endl;
 		return -1;
 	}

@@ -1,9 +1,9 @@
-#include <iostream>
+п»ї#include <iostream>
 #include <fstream>
 #include <pe_factory.h>
 #include "lib.h"
 
-//Пример, показывающий, как изменить файловое выравнивание PE-файлов
+//РџСЂРёРјРµСЂ, РїРѕРєР°Р·С‹РІР°СЋС‰РёР№, РєР°Рє РёР·РјРµРЅРёС‚СЊ С„Р°Р№Р»РѕРІРѕРµ РІС‹СЂР°РІРЅРёРІР°РЅРёРµ PE-С„Р°Р№Р»РѕРІ
 int main(int argc, char* argv[])
 {
 	if(argc != 2)
@@ -12,7 +12,7 @@ int main(int argc, char* argv[])
 		return 0;
 	}
 
-	//Открываем файл
+	//РћС‚РєСЂС‹РІР°РµРј С„Р°Р№Р»
 	std::ifstream pe_file(argv[1], std::ios::in | std::ios::binary);
 	if(!pe_file)
 	{
@@ -22,20 +22,20 @@ int main(int argc, char* argv[])
 
 	try
 	{
-		//Создаем экземпляр PE или PE+ класса с помощью фабрики
+		//РЎРѕР·РґР°РµРј СЌРєР·РµРјРїР»СЏСЂ PE РёР»Рё PE+ РєР»Р°СЃСЃР° СЃ РїРѕРјРѕС‰СЊСЋ С„Р°Р±СЂРёРєРё
 		std::auto_ptr<pe_base> image = pe_factory::create_pe(pe_file);
 		
-		//Выведем темущий file alignment
+		//Р’С‹РІРµРґРµРј С‚РµРјСѓС‰РёР№ file alignment
 		std::cout << "File alignment: " << image->get_file_alignment() << std::endl;
 		
-		//Предложим выбрать новое выравнивание
+		//РџСЂРµРґР»РѕР¶РёРј РІС‹Р±СЂР°С‚СЊ РЅРѕРІРѕРµ РІС‹СЂР°РІРЅРёРІР°РЅРёРµ
 		DWORD new_alignment_index = static_cast<DWORD>(-1);
 
 		while(new_alignment_index > 3)
 		{
 			if(std::cin.fail())
 			{
-				//На случай, если пользователь ввел что-то некорректное
+				//РќР° СЃР»СѓС‡Р°Р№, РµСЃР»Рё РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ РІРІРµР» С‡С‚Рѕ-С‚Рѕ РЅРµРєРѕСЂСЂРµРєС‚РЅРѕРµ
 				std::cin.clear();
 				std::cin.ignore(static_cast<std::streamsize>(-1), '\n');
 			}
@@ -47,10 +47,10 @@ int main(int argc, char* argv[])
 
 		DWORD available_aligns[] = {512, 1024, 2048, 4096};
 
-		//Изменим выравнивание на то, которое указал пользователь
+		//РР·РјРµРЅРёРј РІС‹СЂР°РІРЅРёРІР°РЅРёРµ РЅР° С‚Рѕ, РєРѕС‚РѕСЂРѕРµ СѓРєР°Р·Р°Р» РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ
 		image->realign_file(available_aligns[new_alignment_index]);
 
-		//Создаем новый PE-файл
+		//РЎРѕР·РґР°РµРј РЅРѕРІС‹Р№ PE-С„Р°Р№Р»
 		std::string base_file_name(argv[1]);
 		std::string::size_type slash_pos;
 		if((slash_pos = base_file_name.find_last_of("/\\")) != std::string::npos)
@@ -64,14 +64,14 @@ int main(int argc, char* argv[])
 			return -1;
 		}
 
-		//Пересобираем PE-файл
+		//РџРµСЂРµСЃРѕР±РёСЂР°РµРј PE-С„Р°Р№Р»
 		image->rebuild_pe(new_pe_file);
 
 		std::cout << "PE was rebuilt and saved to " << base_file_name << std::endl;
 	}
 	catch(const pe_exception& e)
 	{
-		//Если возникла ошибка
+		//Р•СЃР»Рё РІРѕР·РЅРёРєР»Р° РѕС€РёР±РєР°
 		std::cout << "Error: " << e.what() << std::endl;
 		return -1;
 	}

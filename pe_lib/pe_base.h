@@ -12,10 +12,11 @@
 
 //Please don't remove this information from header
 //PE Library (c) DX 2011 - 2012, http://kaimi.ru
+//Version: 0.1.1
 //Free to use, modify and distribute
 
 // == more important ==
-//TODO: relocations that take more than one element
+//TODO: relocations that take more than one element (seems to be not possible in Windows PE, but anyway)
 //TODO: create sample-based tests
 //== less important ==
 //TODO: delay import directory

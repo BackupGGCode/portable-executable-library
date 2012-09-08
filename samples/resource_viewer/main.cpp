@@ -1,10 +1,10 @@
-#include <iostream>
+п»ї#include <iostream>
 #include <fstream>
 #include <pe_factory.h>
 #include <pe_resource_manager.h>
 #include "lib.h"
 
-//Пример, показывающий, как читать ресурсы PE-файла
+//РџСЂРёРјРµСЂ, РїРѕРєР°Р·С‹РІР°СЋС‰РёР№, РєР°Рє С‡РёС‚Р°С‚СЊ СЂРµСЃСѓСЂСЃС‹ PE-С„Р°Р№Р»Р°
 int main(int argc, char* argv[])
 {
 	if(argc != 2)
@@ -13,7 +13,7 @@ int main(int argc, char* argv[])
 		return 0;
 	}
 
-	//Открываем файл
+	//РћС‚РєСЂС‹РІР°РµРј С„Р°Р№Р»
 	std::ifstream pe_file(argv[1], std::ios::in | std::ios::binary);
 	if(!pe_file)
 	{
@@ -23,55 +23,55 @@ int main(int argc, char* argv[])
 
 	try
 	{
-		//Создаем экземпляр PE или PE+ класса с помощью фабрики
+		//РЎРѕР·РґР°РµРј СЌРєР·РµРјРїР»СЏСЂ PE РёР»Рё PE+ РєР»Р°СЃСЃР° СЃ РїРѕРјРѕС‰СЊСЋ С„Р°Р±СЂРёРєРё
 		std::auto_ptr<pe_base> image = pe_factory::create_pe(pe_file);
 
-		//Проверим, есть ли ресурсы у файла
+		//РџСЂРѕРІРµСЂРёРј, РµСЃС‚СЊ Р»Рё СЂРµСЃСѓСЂСЃС‹ Сѓ С„Р°Р№Р»Р°
 		if(!image->has_resources())
 		{
 			std::cout << "Image has no resources" << std::endl;
 			return 0;
 		}
 
-		//Получаем корневую директорию ресурсов
+		//РџРѕР»СѓС‡Р°РµРј РєРѕСЂРЅРµРІСѓСЋ РґРёСЂРµРєС‚РѕСЂРёСЋ СЂРµСЃСѓСЂСЃРѕРІ
 		std::cout << "Reading PE resources..." << std::hex << std::showbase << std::endl << std::endl;
 		const pe_base::resource_directory root = image->get_resources();
 
-		//Для облегчения работы с директориями и записями ресурсов созданы вспомогательные классы
-		//Этот класс позволяет извлекать из PE-файлов любые ресурсы
-		//и предоставляет высокоуровневые функции для извечения иконок, курсоров, картинкок, строковых таблиц
-		//и таблиц сообщений, а также информации о версии
+		//Р”Р»СЏ РѕР±Р»РµРіС‡РµРЅРёСЏ СЂР°Р±РѕС‚С‹ СЃ РґРёСЂРµРєС‚РѕСЂРёСЏРјРё Рё Р·Р°РїРёСЃСЏРјРё СЂРµСЃСѓСЂСЃРѕРІ СЃРѕР·РґР°РЅС‹ РІСЃРїРѕРјРѕРіР°С‚РµР»СЊРЅС‹Рµ РєР»Р°СЃСЃС‹
+		//Р­С‚РѕС‚ РєР»Р°СЃСЃ РїРѕР·РІРѕР»СЏРµС‚ РёР·РІР»РµРєР°С‚СЊ РёР· PE-С„Р°Р№Р»РѕРІ Р»СЋР±С‹Рµ СЂРµСЃСѓСЂСЃС‹
+		//Рё РїСЂРµРґРѕСЃС‚Р°РІР»СЏРµС‚ РІС‹СЃРѕРєРѕСѓСЂРѕРІРЅРµРІС‹Рµ С„СѓРЅРєС†РёРё РґР»СЏ РёР·РІРµС‡РµРЅРёСЏ РёРєРѕРЅРѕРє, РєСѓСЂСЃРѕСЂРѕРІ, РєР°СЂС‚РёРЅРєРѕРє, СЃС‚СЂРѕРєРѕРІС‹С… С‚Р°Р±Р»РёС†
+		//Рё С‚Р°Р±Р»РёС† СЃРѕРѕР±С‰РµРЅРёР№, Р° С‚Р°РєР¶Рµ РёРЅС„РѕСЂРјР°С†РёРё Рѕ РІРµСЂСЃРёРё
 		pe_resource_viewer res(root);
 
-		//Выведем типы ресурсов, которые присутствуют в PE-файле
+		//Р’С‹РІРµРґРµРј С‚РёРїС‹ СЂРµСЃСѓСЂСЃРѕРІ, РєРѕС‚РѕСЂС‹Рµ РїСЂРёСЃСѓС‚СЃС‚РІСѓСЋС‚ РІ PE-С„Р°Р№Р»Рµ
 		pe_resource_viewer::resource_type_list res_types(res.list_resource_types());
 		for(pe_resource_viewer::resource_type_list::const_iterator it = res_types.begin(); it != res_types.end(); ++it)
 			std::cout << "Present resource type: " << (*it) << std::endl;
 
 		std::cout << std::endl;
 
-		//Выведем иофнрмацию о версии, если она существует
+		//Р’С‹РІРµРґРµРј РёРѕС„РЅСЂРјР°С†РёСЋ Рѕ РІРµСЂСЃРёРё, РµСЃР»Рё РѕРЅР° СЃСѓС‰РµСЃС‚РІСѓРµС‚
 		if(res.resource_exists(pe_resource_viewer::resource_version))
 		{
 			pe_resource_viewer::lang_string_values_map strings;
 			pe_resource_viewer::translation_values_map translations;
-			//Получаем список строк, переводов и базовую информацию о файле
+			//РџРѕР»СѓС‡Р°РµРј СЃРїРёСЃРѕРє СЃС‚СЂРѕРє, РїРµСЂРµРІРѕРґРѕРІ Рё Р±Р°Р·РѕРІСѓСЋ РёРЅС„РѕСЂРјР°С†РёСЋ Рѕ С„Р°Р№Р»Рµ
 			pe_resource_viewer::file_version_info file_info(res.get_version_info(strings, translations));
 
-			//Выводить информацию будем в юникодный поток
+			//Р’С‹РІРѕРґРёС‚СЊ РёРЅС„РѕСЂРјР°С†РёСЋ Р±СѓРґРµРј РІ СЋРЅРёРєРѕРґРЅС‹Р№ РїРѕС‚РѕРє
 			std::wstringstream version_info;
-			//Выведем некоторую базовую информацию
+			//Р’С‹РІРµРґРµРј РЅРµРєРѕС‚РѕСЂСѓСЋ Р±Р°Р·РѕРІСѓСЋ РёРЅС„РѕСЂРјР°С†РёСЋ
 			version_info << L"Version info: " << std::endl;
-			version_info << L"File version: " << file_info.get_file_version_string<wchar_t>() << std::endl; //Строка версии файла
-			version_info << L"Debug build: " << (file_info.is_debug() ? L"YES" : L"NO") << std::endl; //Отладочный ли билд
+			version_info << L"File version: " << file_info.get_file_version_string<wchar_t>() << std::endl; //РЎС‚СЂРѕРєР° РІРµСЂСЃРёРё С„Р°Р№Р»Р°
+			version_info << L"Debug build: " << (file_info.is_debug() ? L"YES" : L"NO") << std::endl; //РћС‚Р»Р°РґРѕС‡РЅС‹Р№ Р»Рё Р±РёР»Рґ
 			version_info << std::endl;
 
-			//Выведем строки для разных трансляций:
+			//Р’С‹РІРµРґРµРј СЃС‚СЂРѕРєРё РґР»СЏ СЂР°Р·РЅС‹С… С‚СЂР°РЅСЃР»СЏС†РёР№:
 			for(pe_resource_viewer::lang_string_values_map::const_iterator it = strings.begin(); it != strings.end(); ++it)
 			{
 				version_info << L"Translation ID: " << (*it).first << std::endl;
 
-				//Перечислим записи в таблице строк для текущей трансляции (перевода)
+				//РџРµСЂРµС‡РёСЃР»РёРј Р·Р°РїРёСЃРё РІ С‚Р°Р±Р»РёС†Рµ СЃС‚СЂРѕРє РґР»СЏ С‚РµРєСѓС‰РµР№ С‚СЂР°РЅСЃР»СЏС†РёРё (РїРµСЂРµРІРѕРґР°)
 				const pe_resource_viewer::string_values_map& string_table = (*it).second;
 				for(pe_resource_viewer::string_values_map::const_iterator str_it = string_table.begin(); str_it != string_table.end(); ++str_it)
 					version_info << (*str_it).first << L": " << (*str_it).second << std::endl;
@@ -79,12 +79,12 @@ int main(int argc, char* argv[])
 				version_info << std::endl;
 			}
 			
-			//Выведем доступные переводы (трансляции):
+			//Р’С‹РІРµРґРµРј РґРѕСЃС‚СѓРїРЅС‹Рµ РїРµСЂРµРІРѕРґС‹ (С‚СЂР°РЅСЃР»СЏС†РёРё):
 			for(pe_resource_viewer::translation_values_map::const_iterator it = translations.begin(); it != translations.end(); ++it)
 				version_info << L"Translation: language: " << (*it).first << ", codepage: " << (*it).second << std::endl;
 
 			{
-				//Создаем файл, в который запишем информацию о версии
+				//РЎРѕР·РґР°РµРј С„Р°Р№Р», РІ РєРѕС‚РѕСЂС‹Р№ Р·Р°РїРёС€РµРј РёРЅС„РѕСЂРјР°С†РёСЋ Рѕ РІРµСЂСЃРёРё
 				std::ofstream version_info_file("version_info.txt", std::ios::out | std::ios::trunc | std::ios::binary);
 				if(!version_info_file)
 				{
@@ -93,63 +93,63 @@ int main(int argc, char* argv[])
 				}
 
 				std::wstring version_info_string(version_info.str());
-				//Запишем буфер, чтобы не париться с локалями и записью юникода в файл
+				//Р—Р°РїРёС€РµРј Р±СѓС„РµСЂ, С‡С‚РѕР±С‹ РЅРµ РїР°СЂРёС‚СЊСЃСЏ СЃ Р»РѕРєР°Р»СЏРјРё Рё Р·Р°РїРёСЃСЊСЋ СЋРЅРёРєРѕРґР° РІ С„Р°Р№Р»
 				version_info_file.write(reinterpret_cast<const char*>(version_info_string.data()), version_info_string.length() * sizeof(wchar_t));
 
 				std::cout << "version_info.txt created" << std::endl << std::endl;
 			}
 
-			//Для облегчения чтения информации о версии есть специальный класс
+			//Р”Р»СЏ РѕР±Р»РµРіС‡РµРЅРёСЏ С‡С‚РµРЅРёСЏ РёРЅС„РѕСЂРјР°С†РёРё Рѕ РІРµСЂСЃРёРё РµСЃС‚СЊ СЃРїРµС†РёР°Р»СЊРЅС‹Р№ РєР»Р°СЃСЃ
 			version_info_viewer version_viewer(strings, translations);
 			std::wcout << "Original filename: " << version_viewer.get_original_filename() << std::endl << std::endl;
 		}
 
 		{
-			//Найдем, есть ли у приложения иконка
-			//Для этого сначала узнаем все имена и идентификаторы групп иконок
-			//Все ресурсы в целом организованы в таком виде (дерево):
-			//тип ресурса
-			//--> имя ресурса
-			//----> язык рерурса
-			//------> ресурс
-			//----> язык ресурса
-			//------> ресурс
+			//РќР°Р№РґРµРј, РµСЃС‚СЊ Р»Рё Сѓ РїСЂРёР»РѕР¶РµРЅРёСЏ РёРєРѕРЅРєР°
+			//Р”Р»СЏ СЌС‚РѕРіРѕ СЃРЅР°С‡Р°Р»Р° СѓР·РЅР°РµРј РІСЃРµ РёРјРµРЅР° Рё РёРґРµРЅС‚РёС„РёРєР°С‚РѕСЂС‹ РіСЂСѓРїРї РёРєРѕРЅРѕРє
+			//Р’СЃРµ СЂРµСЃСѓСЂСЃС‹ РІ С†РµР»РѕРј РѕСЂРіР°РЅРёР·РѕРІР°РЅС‹ РІ С‚Р°РєРѕРј РІРёРґРµ (РґРµСЂРµРІРѕ):
+			//С‚РёРї СЂРµСЃСѓСЂСЃР°
+			//--> РёРјСЏ СЂРµСЃСѓСЂСЃР°
+			//----> СЏР·С‹Рє СЂРµСЂСѓСЂСЃР°
+			//------> СЂРµСЃСѓСЂСЃ
+			//----> СЏР·С‹Рє СЂРµСЃСѓСЂСЃР°
+			//------> СЂРµСЃСѓСЂСЃ
 			//----> ...
-			//--> имя ресурса
+			//--> РёРјСЏ СЂРµСЃСѓСЂСЃР°
 			//--> ...
-			//--> id ресурса
-			//----> язык рерурса
-			//------> ресурс
-			//----> язык ресурса
-			//------> ресурс
+			//--> id СЂРµСЃСѓСЂСЃР°
+			//----> СЏР·С‹Рє СЂРµСЂСѓСЂСЃР°
+			//------> СЂРµСЃСѓСЂСЃ
+			//----> СЏР·С‹Рє СЂРµСЃСѓСЂСЃР°
+			//------> СЂРµСЃСѓСЂСЃ
 			//----> ...
-			//--> id ресурса
+			//--> id СЂРµСЃСѓСЂСЃР°
 			//--> ...
-			//тип ресурса
+			//С‚РёРї СЂРµСЃСѓСЂСЃР°
 			//...
 			pe_resource_viewer::resource_id_list icon_id_list(res.list_resource_ids(pe_resource_viewer::resource_icon_group));
 			pe_resource_viewer::resource_name_list icon_name_list(res.list_resource_names(pe_resource_viewer::resource_icon_group));
-			std::string main_icon; //Данные иконки приложения
-			//Сначала всегда располагаются именованные ресурсы, поэтому проверим, есть ли они
+			std::string main_icon; //Р”Р°РЅРЅС‹Рµ РёРєРѕРЅРєРё РїСЂРёР»РѕР¶РµРЅРёСЏ
+			//РЎРЅР°С‡Р°Р»Р° РІСЃРµРіРґР° СЂР°СЃРїРѕР»Р°РіР°СЋС‚СЃСЏ РёРјРµРЅРѕРІР°РЅРЅС‹Рµ СЂРµСЃСѓСЂСЃС‹, РїРѕСЌС‚РѕРјСѓ РїСЂРѕРІРµСЂРёРј, РµСЃС‚СЊ Р»Рё РѕРЅРё
 			if(!icon_name_list.empty())
 			{
-				//Получим самую первую иконку для самого первого языка (по индексу 0)
-				//Если надо было бы перечислить языки для заданной иконки, можно было вызвать list_resource_languages
-				//Если надо было бы получить иконку для конкретного языка, можно было вызвать get_icon_by_name (перегрузка с указанием языка)
+				//РџРѕР»СѓС‡РёРј СЃР°РјСѓСЋ РїРµСЂРІСѓСЋ РёРєРѕРЅРєСѓ РґР»СЏ СЃР°РјРѕРіРѕ РїРµСЂРІРѕРіРѕ СЏР·С‹РєР° (РїРѕ РёРЅРґРµРєСЃСѓ 0)
+				//Р•СЃР»Рё РЅР°РґРѕ Р±С‹Р»Рѕ Р±С‹ РїРµСЂРµС‡РёСЃР»РёС‚СЊ СЏР·С‹РєРё РґР»СЏ Р·Р°РґР°РЅРЅРѕР№ РёРєРѕРЅРєРё, РјРѕР¶РЅРѕ Р±С‹Р»Рѕ РІС‹Р·РІР°С‚СЊ list_resource_languages
+				//Р•СЃР»Рё РЅР°РґРѕ Р±С‹Р»Рѕ Р±С‹ РїРѕР»СѓС‡РёС‚СЊ РёРєРѕРЅРєСѓ РґР»СЏ РєРѕРЅРєСЂРµС‚РЅРѕРіРѕ СЏР·С‹РєР°, РјРѕР¶РЅРѕ Р±С‹Р»Рѕ РІС‹Р·РІР°С‚СЊ get_icon_by_name (РїРµСЂРµРіСЂСѓР·РєР° СЃ СѓРєР°Р·Р°РЅРёРµРј СЏР·С‹РєР°)
 				main_icon = res.get_icon_by_name(icon_name_list[0]);
 			}
-			else if(!icon_id_list.empty()) //Если нет именованных групп иконок, но есть группы с ID
+			else if(!icon_id_list.empty()) //Р•СЃР»Рё РЅРµС‚ РёРјРµРЅРѕРІР°РЅРЅС‹С… РіСЂСѓРїРї РёРєРѕРЅРѕРє, РЅРѕ РµСЃС‚СЊ РіСЂСѓРїРїС‹ СЃ ID
 			{
-				//Получим самую первую иконку для самого первого языка (по индексу 0)
-				//Если надо было бы перечислить языки для заданной иконки, можно было вызвать list_resource_languages
-				//Если надо было бы получить иконку для конкретного языка, можно было вызвать get_icon_by_id_lang
+				//РџРѕР»СѓС‡РёРј СЃР°РјСѓСЋ РїРµСЂРІСѓСЋ РёРєРѕРЅРєСѓ РґР»СЏ СЃР°РјРѕРіРѕ РїРµСЂРІРѕРіРѕ СЏР·С‹РєР° (РїРѕ РёРЅРґРµРєСЃСѓ 0)
+				//Р•СЃР»Рё РЅР°РґРѕ Р±С‹Р»Рѕ Р±С‹ РїРµСЂРµС‡РёСЃР»РёС‚СЊ СЏР·С‹РєРё РґР»СЏ Р·Р°РґР°РЅРЅРѕР№ РёРєРѕРЅРєРё, РјРѕР¶РЅРѕ Р±С‹Р»Рѕ РІС‹Р·РІР°С‚СЊ list_resource_languages
+				//Р•СЃР»Рё РЅР°РґРѕ Р±С‹Р»Рѕ Р±С‹ РїРѕР»СѓС‡РёС‚СЊ РёРєРѕРЅРєСѓ РґР»СЏ РєРѕРЅРєСЂРµС‚РЅРѕРіРѕ СЏР·С‹РєР°, РјРѕР¶РЅРѕ Р±С‹Р»Рѕ РІС‹Р·РІР°С‚СЊ get_icon_by_id_lang
 				main_icon = res.get_icon_by_id(icon_id_list[0]);
 			}
 
-			//Если есть иконка...
+			//Р•СЃР»Рё РµСЃС‚СЊ РёРєРѕРЅРєР°...
 			if(!main_icon.empty())
 			{
-				//Сохраним полученную иконку в файл
+				//РЎРѕС…СЂР°РЅРёРј РїРѕР»СѓС‡РµРЅРЅСѓСЋ РёРєРѕРЅРєСѓ РІ С„Р°Р№Р»
 				std::ofstream app_icon("main_icon.ico", std::ios::out | std::ios::trunc | std::ios::binary);
 				if(!app_icon)
 				{
@@ -164,38 +164,38 @@ int main(int argc, char* argv[])
 		}
 
 		{
-			//Сдампим строковые таблицы
-			//Перечислим идентификаторы существующих строковых таблиц
+			//РЎРґР°РјРїРёРј СЃС‚СЂРѕРєРѕРІС‹Рµ С‚Р°Р±Р»РёС†С‹
+			//РџРµСЂРµС‡РёСЃР»РёРј РёРґРµРЅС‚РёС„РёРєР°С‚РѕСЂС‹ СЃСѓС‰РµСЃС‚РІСѓСЋС‰РёС… СЃС‚СЂРѕРєРѕРІС‹С… С‚Р°Р±Р»РёС†
 			pe_resource_viewer::resource_id_list strings_id_list(res.list_resource_ids(pe_resource_viewer::resource_string));
 
-			//Дампить будем в юникодный поток
+			//Р”Р°РјРїРёС‚СЊ Р±СѓРґРµРј РІ СЋРЅРёРєРѕРґРЅС‹Р№ РїРѕС‚РѕРє
 			std::wstringstream string_data;
 
-			if(!strings_id_list.empty()) //Если у нас есть именованные строковые таблицы, сдампим их
+			if(!strings_id_list.empty()) //Р•СЃР»Рё Сѓ РЅР°СЃ РµСЃС‚СЊ РёРјРµРЅРѕРІР°РЅРЅС‹Рµ СЃС‚СЂРѕРєРѕРІС‹Рµ С‚Р°Р±Р»РёС†С‹, СЃРґР°РјРїРёРј РёС…
 			{
-				//Все имена строковых таблиц
+				//Р’СЃРµ РёРјРµРЅР° СЃС‚СЂРѕРєРѕРІС‹С… С‚Р°Р±Р»РёС†
 				for(pe_resource_viewer::resource_id_list::const_iterator it = strings_id_list.begin(); it != strings_id_list.end(); ++it)
 				{
 					string_data << L"String table [" << (*it) << L"]" << std::endl;
 
-					//Перечислим языки таблицы
+					//РџРµСЂРµС‡РёСЃР»РёРј СЏР·С‹РєРё С‚Р°Р±Р»РёС†С‹
 					pe_resource_viewer::resource_language_list langs(res.list_resource_languages(pe_resource_viewer::resource_string, *it));
-					//Для каждого языка получим таблицу строк
+					//Р”Р»СЏ РєР°Р¶РґРѕРіРѕ СЏР·С‹РєР° РїРѕР»СѓС‡РёРј С‚Р°Р±Р»РёС†Сѓ СЃС‚СЂРѕРє
 					for(pe_resource_viewer::resource_language_list::const_iterator lang_it = langs.begin(); lang_it != langs.end(); ++lang_it)
 					{
-						string_data << L" -> Language = " << *lang_it << std::endl; //Запишем язык
-						//Таблица строк
+						string_data << L" -> Language = " << *lang_it << std::endl; //Р—Р°РїРёС€РµРј СЏР·С‹Рє
+						//РўР°Р±Р»РёС†Р° СЃС‚СЂРѕРє
 						pe_resource_viewer::string_list strings(res.get_string_table_by_id_lang(*lang_it, *it));
 
-						//Наконец, запишем все строки в поток
+						//РќР°РєРѕРЅРµС†, Р·Р°РїРёС€РµРј РІСЃРµ СЃС‚СЂРѕРєРё РІ РїРѕС‚РѕРє
 						for(pe_resource_viewer::string_list::const_iterator str_it = strings.begin(); str_it != strings.end(); ++str_it)
-							string_data << L" --> #" << (*str_it).first << L": " << (*str_it).second << std::endl; //ID строки: ее значение
+							string_data << L" --> #" << (*str_it).first << L": " << (*str_it).second << std::endl; //ID СЃС‚СЂРѕРєРё: РµРµ Р·РЅР°С‡РµРЅРёРµ
 					}
 
 					string_data << std::endl;
 				}
 				
-				//Запишем полученные строки в файл
+				//Р—Р°РїРёС€РµРј РїРѕР»СѓС‡РµРЅРЅС‹Рµ СЃС‚СЂРѕРєРё РІ С„Р°Р№Р»
 				std::ofstream strings_file("strings.txt", std::ios::out | std::ios::trunc | std::ios::binary);
 				if(!strings_file)
 				{
@@ -204,7 +204,7 @@ int main(int argc, char* argv[])
 				}
 
 				std::wstring strings_str(string_data.str());
-				//Запишем буфер, чтобы не париться с локалями и записью юникода в файл
+				//Р—Р°РїРёС€РµРј Р±СѓС„РµСЂ, С‡С‚РѕР±С‹ РЅРµ РїР°СЂРёС‚СЊСЃСЏ СЃ Р»РѕРєР°Р»СЏРјРё Рё Р·Р°РїРёСЃСЊСЋ СЋРЅРёРєРѕРґР° РІ С„Р°Р№Р»
 				strings_file.write(reinterpret_cast<const char*>(strings_str.data()), strings_str.length() * sizeof(wchar_t));
 
 				std::cout << "strings.txt created" << std::endl;
@@ -213,7 +213,7 @@ int main(int argc, char* argv[])
 	}
 	catch(const pe_exception& e)
 	{
-		//Если возникла ошибка
+		//Р•СЃР»Рё РІРѕР·РЅРёРєР»Р° РѕС€РёР±РєР°
 		std::cout << "Error: " << e.what() << std::endl;
 		return -1;
 	}

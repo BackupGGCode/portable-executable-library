@@ -1,9 +1,9 @@
-#include <iostream>
+п»ї#include <iostream>
 #include <fstream>
 #include <pe_factory.h>
 #include "lib.h"
 
-//Пример, показывающий, как считать и получить информацию о секциях PE или PE+ файла
+//РџСЂРёРјРµСЂ, РїРѕРєР°Р·С‹РІР°СЋС‰РёР№, РєР°Рє СЃС‡РёС‚Р°С‚СЊ Рё РїРѕР»СѓС‡РёС‚СЊ РёРЅС„РѕСЂРјР°С†РёСЋ Рѕ СЃРµРєС†РёСЏС… PE РёР»Рё PE+ С„Р°Р№Р»Р°
 int main(int argc, char* argv[])
 {
 	if(argc != 2)
@@ -12,7 +12,7 @@ int main(int argc, char* argv[])
 		return 0;
 	}
 
-	//Открываем файл
+	//РћС‚РєСЂС‹РІР°РµРј С„Р°Р№Р»
 	std::ifstream pe_file(argv[1], std::ios::in | std::ios::binary);
 	if(!pe_file)
 	{
@@ -22,28 +22,28 @@ int main(int argc, char* argv[])
 
 	try
 	{
-		//Создаем экземпляр PE или PE+ класса с помощью фабрики
+		//РЎРѕР·РґР°РµРј СЌРєР·РµРјРїР»СЏСЂ PE РёР»Рё PE+ РєР»Р°СЃСЃР° СЃ РїРѕРјРѕС‰СЊСЋ С„Р°Р±СЂРёРєРё
 		std::auto_ptr<pe_base> image = pe_factory::create_pe(pe_file);
 
-		//Получаем список секций
+		//РџРѕР»СѓС‡Р°РµРј СЃРїРёСЃРѕРє СЃРµРєС†РёР№
 		std::cout << "Reading PE sections..." << std::hex << std::showbase << std::endl << std::endl;
 		const pe_base::section_list sections = image->get_image_sections();
 
-		//Перечисляем секции и выводим информацию о них
+		//РџРµСЂРµС‡РёСЃР»СЏРµРј СЃРµРєС†РёРё Рё РІС‹РІРѕРґРёРј РёРЅС„РѕСЂРјР°С†РёСЋ Рѕ РЅРёС…
 		for(pe_base::section_list::const_iterator it = sections.begin(); it != sections.end(); ++it)
 		{
-			const pe_base::section& s = *it; //Секция
-			std::cout << "Section [" << s.get_name() << "]" << std::endl //Имя секции
-				<< "Characteristics: " << s.get_characteristics() << std::endl //Характеристики
-				<< "Size of raw data: " << s.get_size_of_raw_data() << std::endl //Размер данных в файле
-				<< "Virtual address: " << s.get_virtual_address() << std::endl //Виртуальный адрес
-				<< "Virtual size: " << s.get_virtual_size() << std::endl //Виртуальный размер
+			const pe_base::section& s = *it; //РЎРµРєС†РёСЏ
+			std::cout << "Section [" << s.get_name() << "]" << std::endl //РРјСЏ СЃРµРєС†РёРё
+				<< "Characteristics: " << s.get_characteristics() << std::endl //РҐР°СЂР°РєС‚РµСЂРёСЃС‚РёРєРё
+				<< "Size of raw data: " << s.get_size_of_raw_data() << std::endl //Р Р°Р·РјРµСЂ РґР°РЅРЅС‹С… РІ С„Р°Р№Р»Рµ
+				<< "Virtual address: " << s.get_virtual_address() << std::endl //Р’РёСЂС‚СѓР°Р»СЊРЅС‹Р№ Р°РґСЂРµСЃ
+				<< "Virtual size: " << s.get_virtual_size() << std::endl //Р’РёСЂС‚СѓР°Р»СЊРЅС‹Р№ СЂР°Р·РјРµСЂ
 				<< std::endl;
 		}
 	}
 	catch(const pe_exception& e)
 	{
-		//Если возникла ошибка
+		//Р•СЃР»Рё РІРѕР·РЅРёРєР»Р° РѕС€РёР±РєР°
 		std::cout << "Error: " << e.what() << std::endl;
 		return -1;
 	}

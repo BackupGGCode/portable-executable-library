@@ -1,9 +1,9 @@
-#include <iostream>
+п»ї#include <iostream>
 #include <fstream>
 #include <pe_factory.h>
 #include "lib.h"
 
-//Пример, показывающий, как посчитать энтропию файла и секций PE
+//РџСЂРёРјРµСЂ, РїРѕРєР°Р·С‹РІР°СЋС‰РёР№, РєР°Рє РїРѕСЃС‡РёС‚Р°С‚СЊ СЌРЅС‚СЂРѕРїРёСЋ С„Р°Р№Р»Р° Рё СЃРµРєС†РёР№ PE
 int main(int argc, char* argv[])
 {
 	if(argc != 2)
@@ -12,7 +12,7 @@ int main(int argc, char* argv[])
 		return 0;
 	}
 
-	//Открываем файл
+	//РћС‚РєСЂС‹РІР°РµРј С„Р°Р№Р»
 	std::ifstream pe_file(argv[1], std::ios::in | std::ios::binary);
 	if(!pe_file)
 	{
@@ -23,25 +23,25 @@ int main(int argc, char* argv[])
 
 	try
 	{
-		//Считаем энтропию файла
+		//РЎС‡РёС‚Р°РµРј СЌРЅС‚СЂРѕРїРёСЋ С„Р°Р№Р»Р°
 		std::cout << "File entropy: " << pe_base::calculate_entropy(pe_file) << std::endl;
 
-		//Создаем экземпляр PE или PE+ класса с помощью фабрики
+		//РЎРѕР·РґР°РµРј СЌРєР·РµРјРїР»СЏСЂ PE РёР»Рё PE+ РєР»Р°СЃСЃР° СЃ РїРѕРјРѕС‰СЊСЋ С„Р°Р±СЂРёРєРё
 		std::auto_ptr<pe_base> image = pe_factory::create_pe(pe_file);
 
-		std::cout << "Sections entropy: " << image->calculate_entropy() << std::endl; //Считаем энтропию всех секций
+		std::cout << "Sections entropy: " << image->calculate_entropy() << std::endl; //РЎС‡РёС‚Р°РµРј СЌРЅС‚СЂРѕРїРёСЋ РІСЃРµС… СЃРµРєС†РёР№
 
-		//Перечисляем секции и считаем их энтропию по отдельности
+		//РџРµСЂРµС‡РёСЃР»СЏРµРј СЃРµРєС†РёРё Рё СЃС‡РёС‚Р°РµРј РёС… СЌРЅС‚СЂРѕРїРёСЋ РїРѕ РѕС‚РґРµР»СЊРЅРѕСЃС‚Рё
 		const pe_base::section_list sections = image->get_image_sections();
 		for(pe_base::section_list::const_iterator it = sections.begin(); it != sections.end(); ++it)
 		{
-			if(!(*it).empty()) //Если секция не пуста - посчитаем ее энтропию
+			if(!(*it).empty()) //Р•СЃР»Рё СЃРµРєС†РёСЏ РЅРµ РїСѓСЃС‚Р° - РїРѕСЃС‡РёС‚Р°РµРј РµРµ СЌРЅС‚СЂРѕРїРёСЋ
 				std::cout << "Section [" << (*it).get_name() << "] entropy: " << pe_base::calculate_entropy(*it) << std::endl;
 		}
 	}
 	catch(const pe_exception& e)
 	{
-		//Если возникла ошибка
+		//Р•СЃР»Рё РІРѕР·РЅРёРєР»Р° РѕС€РёР±РєР°
 		std::cout << "Error: " << e.what() << std::endl;
 		return -1;
 	}

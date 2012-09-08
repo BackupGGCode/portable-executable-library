@@ -1,9 +1,9 @@
-#include <iostream>
+п»ї#include <iostream>
 #include <fstream>
 #include <pe_factory.h>
 #include "lib.h"
 
-//Пример, показывающий, как считать и получить информацию о релокациях PE или PE+ файла
+//РџСЂРёРјРµСЂ, РїРѕРєР°Р·С‹РІР°СЋС‰РёР№, РєР°Рє СЃС‡РёС‚Р°С‚СЊ Рё РїРѕР»СѓС‡РёС‚СЊ РёРЅС„РѕСЂРјР°С†РёСЋ Рѕ СЂРµР»РѕРєР°С†РёСЏС… PE РёР»Рё PE+ С„Р°Р№Р»Р°
 int main(int argc, char* argv[])
 {
 	if(argc != 2)
@@ -12,7 +12,7 @@ int main(int argc, char* argv[])
 		return 0;
 	}
 
-	//Открываем файл
+	//РћС‚РєСЂС‹РІР°РµРј С„Р°Р№Р»
 	std::ifstream pe_file(argv[1], std::ios::in | std::ios::binary);
 	if(!pe_file)
 	{
@@ -22,10 +22,10 @@ int main(int argc, char* argv[])
 
 	try
 	{
-		//Создаем экземпляр PE или PE+ класса с помощью фабрики
+		//РЎРѕР·РґР°РµРј СЌРєР·РµРјРїР»СЏСЂ PE РёР»Рё PE+ РєР»Р°СЃСЃР° СЃ РїРѕРјРѕС‰СЊСЋ С„Р°Р±СЂРёРєРё
 		std::auto_ptr<pe_base> image = pe_factory::create_pe(pe_file);
 		
-		//Проверим, есть ли релокации у файла
+		//РџСЂРѕРІРµСЂРёРј, РµСЃС‚СЊ Р»Рё СЂРµР»РѕРєР°С†РёРё Сѓ С„Р°Р№Р»Р°
 		if(!image->has_reloc())
 		{
 			std::cout << "Image has no relocations" << std::endl;
@@ -34,18 +34,18 @@ int main(int argc, char* argv[])
 
 		std::cout << "Reading PE relocations..." << std::hex << std::showbase << std::endl << std::endl;
 
-		//Получаем список таблиц релокаций
+		//РџРѕР»СѓС‡Р°РµРј СЃРїРёСЃРѕРє С‚Р°Р±Р»РёС† СЂРµР»РѕРєР°С†РёР№
 		const pe_base::relocation_table_list tables = image->get_relocations();
 
-		//Перечисляем таблицы релокаций и выводим информацию о них
+		//РџРµСЂРµС‡РёСЃР»СЏРµРј С‚Р°Р±Р»РёС†С‹ СЂРµР»РѕРєР°С†РёР№ Рё РІС‹РІРѕРґРёРј РёРЅС„РѕСЂРјР°С†РёСЋ Рѕ РЅРёС…
 		for(pe_base::relocation_table_list::const_iterator it = tables.begin(); it != tables.end(); ++it)
 		{
-			const pe_base::relocation_table& table = *it; //Таблица релокаций
-			std::cout << "RVA [" << table.get_rva() << "]" << std::endl //Относительный адрес
+			const pe_base::relocation_table& table = *it; //РўР°Р±Р»РёС†Р° СЂРµР»РѕРєР°С†РёР№
+			std::cout << "RVA [" << table.get_rva() << "]" << std::endl //РћС‚РЅРѕСЃРёС‚РµР»СЊРЅС‹Р№ Р°РґСЂРµСЃ
 				<< "=========="
 				<< std::endl;
 
-			//Перечислим все релокации
+			//РџРµСЂРµС‡РёСЃР»РёРј РІСЃРµ СЂРµР»РѕРєР°С†РёРё
 			const pe_base::relocation_table::relocation_list& relocs = table.get_relocations();
 			for(pe_base::relocation_table::relocation_list::const_iterator reloc_it = relocs.begin(); reloc_it != relocs.end(); ++reloc_it)
 			{
@@ -57,7 +57,7 @@ int main(int argc, char* argv[])
 	}
 	catch(const pe_exception& e)
 	{
-		//Если возникла ошибка
+		//Р•СЃР»Рё РІРѕР·РЅРёРєР»Р° РѕС€РёР±РєР°
 		std::cout << "Error: " << e.what() << std::endl;
 		return -1;
 	}

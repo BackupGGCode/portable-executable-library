@@ -3,10 +3,6 @@
 #include <Windows.h>
 #endif
 
-//Macros to align TLS data (not used yet)
-#define TLS_ALIGNMENT (2 * sizeof(void *))
-#define TLS_ALIGN(size) (((size) + TLS_ALIGNMENT - 1) & ~(TLS_ALIGNMENT - 1))
-
 #pragma pack(push, 1)
 
 #ifndef _WINNT_

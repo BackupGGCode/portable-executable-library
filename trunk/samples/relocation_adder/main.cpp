@@ -25,10 +25,11 @@ int main(int argc, char* argv[])
 		//Создаем экземпляр PE или PE+ класса с помощью фабрики
 		std::auto_ptr<pe_base> image = pe_factory::create_pe(pe_file);
 
-		//Перечислим и получим все полностью записи из таблиц релокаций в PE-файле
-		//Можно было бы абсолютные записи (ABSOLUTE) и не перечислять, передав в вызов false
-		//Эти записи все равно не нужны
-		pe_base::relocation_table_list tables = image->get_relocations(true);
+		//Перечислим и получим все записи из таблиц релокаций в PE-файле, кроме абсолютных
+		//Можно было бы включить в список и абсолютные записи (ABSOLUTE), передав в вызов true
+		//Эти записи не нужны при пересборке релокаций, они используются для выравнивания
+		//и будут добавлены автоматически пересборщиком
+		pe_base::relocation_table_list tables = image->get_relocations();
 		
 		//Создаем новую таблицу релокаций
 		pe_base::relocation_table new_table;

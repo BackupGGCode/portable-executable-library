@@ -2107,7 +2107,7 @@ const pe_base::image_directory pe_base::rebuild_exports(const export_info& info,
 
 	std::string& raw_data = exports_section.get_raw_data();
 
-	//This will be done only is exports_section is latest section of image or for section with unaligned raw length of data
+	//This will be done only is exports_section is the last section of image or for section with unaligned raw length of data
 	if(raw_data.length() < needed_size + offset_from_section_start)
 		raw_data.resize(needed_size + offset_from_section_start); //Expand section raw data
 
@@ -2615,9 +2615,17 @@ const pe_base::image_directory pe_base::rebuild_relocations(const relocation_tab
 	//sizeof(IMAGE_BASE_RELOCATION) = ending empty relocation table header
 	//sizeof(DWORD) = for DWORD alignment
 	
+	DWORD current_reloc_data_pos = align_up(offset_from_section_start, sizeof(DWORD));
+	DWORD start_reloc_pos = current_reloc_data_pos;
+
 	//Enumerate relocation tables
 	for(relocation_table_list::const_iterator it = relocs.begin(); it != relocs.end(); ++it)
+	{
 		needed_size += static_cast<DWORD>((*it).get_relocations().size() * sizeof(WORD) /* relocations */ + sizeof(IMAGE_BASE_RELOCATION) /* table header */);
+		//End of each table will be DWORD-aligned
+		if((start_reloc_pos + needed_size) % sizeof(DWORD))
+			needed_size += sizeof(WORD); //Align it with IMAGE_REL_BASED_ABSOLUTE relocation
+	}
 
 	//Check if reloc_section is last one. If it's not, check if there's enough place for relocations data
 	if(&reloc_section != &*(sections_.end() - 1) && 
@@ -2626,11 +2634,9 @@ const pe_base::image_directory pe_base::rebuild_relocations(const relocation_tab
 
 	std::string& raw_data = reloc_section.get_raw_data();
 
-	//This will be done only is reloc_section is latest section of image or for section with unaligned raw length of data
+	//This will be done only is reloc_section is the last section of image or for section with unaligned raw length of data
 	if(raw_data.length() < needed_size + offset_from_section_start)
 		raw_data.resize(needed_size + offset_from_section_start); //Expand section raw data
-
-	DWORD current_reloc_data_pos = align_up(offset_from_section_start, sizeof(DWORD));
 
 	//Enumerate relocation tables
 	for(relocation_table_list::const_iterator it = relocs.begin(); it != relocs.end(); ++it)
@@ -2640,6 +2646,8 @@ const pe_base::image_directory pe_base::rebuild_relocations(const relocation_tab
 		reloc.VirtualAddress = (*it).get_rva();
 		const relocation_table::relocation_list& reloc_list = (*it).get_relocations();
 		reloc.SizeOfBlock = static_cast<DWORD>(sizeof(IMAGE_BASE_RELOCATION) + sizeof(WORD) * reloc_list.size());
+		if((reloc_list.size() * sizeof(WORD)) % sizeof(DWORD)) //If we must align end of relocation table
+			reloc.SizeOfBlock += sizeof(WORD);
 
 		memcpy(&raw_data[current_reloc_data_pos], &reloc, sizeof(reloc));
 		current_reloc_data_pos += sizeof(reloc);
@@ -2652,6 +2660,12 @@ const pe_base::image_directory pe_base::rebuild_relocations(const relocation_tab
 			memcpy(&raw_data[current_reloc_data_pos], &reloc_value, sizeof(reloc_value));
 			current_reloc_data_pos += sizeof(reloc_value);
 		}
+
+		if(current_reloc_data_pos % sizeof(DWORD)) //If end of table is not DWORD-aligned
+		{
+			memset(&raw_data[current_reloc_data_pos], 0, sizeof(WORD)); //Align it with IMAGE_REL_BASED_ABSOLUTE relocation
+			current_reloc_data_pos += sizeof(WORD);
+		}
 	}
 	
 	{
@@ -2660,7 +2674,7 @@ const pe_base::image_directory pe_base::rebuild_relocations(const relocation_tab
 		memcpy(&raw_data[current_reloc_data_pos], &reloc, sizeof(reloc));
 	}
 	
-	image_directory ret(rva_from_section_offset(reloc_section, offset_from_section_start), needed_size);
+	image_directory ret(rva_from_section_offset(reloc_section, start_reloc_pos), needed_size);
 	
 	//Adjust section raw and virtual sizes
 	recalculate_section_sizes(reloc_section);
@@ -3673,7 +3687,7 @@ const pe_base::image_directory pe_base::rebuild_resources(resource_directory& in
 
 	std::string& raw_data = resources_section.get_raw_data();
 
-	//This will be done only is resources_section is latest section of image or for section with unaligned raw length of data
+	//This will be done only is resources_section is the last section of image or for section with unaligned raw length of data
 	if(raw_data.length() < needed_size + offset_from_section_start)
 		raw_data.resize(needed_size + offset_from_section_start); //Expand section raw data
 

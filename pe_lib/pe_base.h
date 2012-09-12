@@ -12,7 +12,7 @@
 
 //Please don't remove this information from header
 //PE Library (c) DX 2011 - 2012, http://kaimi.ru
-//Version: 0.1.2
+//Version: 0.1.3
 //Free to use, modify and distribute
 
 // == more important ==
@@ -838,9 +838,15 @@ public: //IMPORTS
 		DWORD get_offset_from_section_start() const;
 		//Returns true if Original import address table (IAT) will be rebuilt
 		bool build_original_iat() const;
+
 		//Returns true if Original import address and import address tables will not be rebuilt,
 		//works only if import descriptor IAT (and orig.IAT, if present) RVAs are not zero
 		bool save_iat_and_original_iat_rvas() const;
+		//Returns true if Original import address and import address tables contents will be rewritten
+		//works only if import descriptor IAT (and orig.IAT, if present) RVAs are not zero
+		//and save_iat_and_original_iat_rvas is true
+		bool rewrite_iat_and_original_iat_contents() const;
+
 		//Returns true if original missing IATs will be rebuilt
 		//(only if IATs are saved)
 		bool fill_missing_original_iats() const;
@@ -849,6 +855,7 @@ public: //IMPORTS
 		//Returns true if IMAGE_DIRECTORY_ENTRY_IAT must be zeroed, works only if auto_set_to_pe_headers = true
 		bool zero_directory_entry_iat() const;
 
+
 	public: //Setters
 		//Sets offset from section start where import directory data will be placed
 		void set_offset_from_section_start(DWORD offset);
@@ -856,7 +863,10 @@ public: //IMPORTS
 		void build_original_iat(bool enable);
 		//Sets if Original import address and import address tables will not be rebuilt,
 		//works only if import descriptor IAT (and orig.IAT, if present) RVAs are not zero
-		void save_iat_and_original_iat_rvas(bool enable);
+		//enable_rewrite_iat_and_original_iat_contents sets if Original import address and import address tables contents will be rewritten
+		//works only if import descriptor IAT (and orig.IAT, if present) RVAs are not zero
+		//and save_iat_and_original_iat_rvas is true
+		void save_iat_and_original_iat_rvas(bool enable, bool enable_rewrite_iat_and_original_iat_contents = false);
 		//Sets if original missing IATs will be rebuilt
 		//(only if IATs are saved)
 		void fill_missing_original_iats(bool enable);
@@ -872,6 +882,7 @@ public: //IMPORTS
 		bool fill_missing_original_iats_;
 		bool set_to_pe_headers_;
 		bool zero_directory_entry_iat_;
+		bool rewrite_iat_and_original_iat_contents_;
 	};
 
 	//You can get all image imports with get_imported_functions() function

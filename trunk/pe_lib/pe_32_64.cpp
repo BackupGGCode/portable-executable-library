@@ -740,7 +740,7 @@ const pe_base::image_directory pe<PEClassType>::rebuild_imports(const imported_f
 				{
 					if(write_original_iat)
 					{
-						//We're creating original IATs - so we can wtire to IAT saved VA (because IMAGE_IMPORT_BY_NAME will be read
+						//We're creating original IATs - so we can write to IAT saved VA (because IMAGE_IMPORT_BY_NAME will be read
 						//by PE loader from original IAT)
 						typename PEClassType::BaseSize iat_value = static_cast<typename PEClassType::BaseSize>((*f).get_iat_va());
 						memcpy(&raw_data[current_pos_for_iat], &iat_value, sizeof(iat_value));
@@ -822,8 +822,8 @@ const pe_base::image_directory pe<PEClassType>::rebuild_imports(const imported_f
 	}
 
 	//Strip data a little, if we saved some place
-	//We're allocating more space than needed, if present original IAT and IAT  are saved
-	raw_data.resize(import_settings.get_offset_from_section_start() + current_pos_for_original_iat);
+	//We're allocating more space than needed, if present original IAT and IAT are saved
+	raw_data.resize(current_pos_for_original_iat);
 
 	//Adjust section raw and virtual sizes
 	recalculate_section_sizes(import_section);

@@ -445,7 +445,7 @@ void pe_base::prepare_section(section& s)
 	else
 	{
 		//Else calculate its virtual size
-		s.virtual_size_aligned_ = std::min<DWORD>(align_up(s.header_.SizeOfRawData, get_file_alignment()),  align_up(s.header_.Misc.VirtualSize, get_section_alignment()));
+		s.virtual_size_aligned_ = std::max<DWORD>(align_up(s.header_.SizeOfRawData, get_file_alignment()),  align_up(s.header_.Misc.VirtualSize, get_section_alignment()));
 	}
 }
 
@@ -457,14 +457,26 @@ pe_base::section& pe_base::add_section(section s)
 
 	//Calculate section virtual address
 	if(!sections_.empty())
+	{
 		s.header_.VirtualAddress = align_up(sections_.back().header_.VirtualAddress + sections_.back().virtual_size_aligned_, get_section_alignment());
+
+		//We should align last section raw size, if it wasn't aligned
+		section& last = sections_.back();
+		last.header_.SizeOfRawData = static_cast<DWORD>(align_up(last.get_raw_data().length(), get_file_alignment()));
+		s.raw_size_aligned_ = s.header_.SizeOfRawData;
+	}
 	else
-		s.header_.VirtualAddress = align_up(get_size_of_headers(), get_section_alignment());
+	{
+		s.header_.VirtualAddress = 
+			s.header_.VirtualAddress == 0
+			? align_up(get_size_of_headers(), get_section_alignment())
+			: align_up(s.header_.VirtualAddress, get_section_alignment());
+	}
 
 	//Add section to the end of section list
 	sections_.push_back(s);
-	//Increase number of sections in PE header
-	set_number_of_sections(get_number_of_sections() + 1);
+	//Set number of sections in PE header
+	set_number_of_sections(sections_.size());
 	//Recalculate virtual size of image
 	set_size_of_image(get_size_of_image() + s.virtual_size_aligned_);
 	//Return last section
@@ -812,7 +824,7 @@ const pe_base::rich_data_list pe_base::get_rich_data() const
 
 //Rebuilds PE image headers
 //If strip_dos_header is true, DOS headers partially will be used for PE headers
-void pe_base::rebuild_pe(bool strip_dos_header)
+void pe_base::rebuild_pe(bool strip_dos_header, bool change_size_of_headers)
 {
 	//Set start of PE headers
 	dos_header_.e_lfanew = sizeof(IMAGE_DOS_HEADER) + static_cast<DWORD>(rich_overlay_.size());
@@ -832,7 +844,7 @@ void pe_base::rebuild_pe(bool strip_dos_header)
 		+ sections_.size() * sizeof(IMAGE_SECTION_HEADER), get_file_alignment());
 
 	//Set size of headers and size of optional header
-	if(!sections_.empty())
+	if(!sections_.empty() && change_size_of_headers)
 		set_size_of_headers(std::min<DWORD>(static_cast<DWORD>(ptr_to_section_data_), (*sections_.begin()).header_.VirtualAddress));
 
 	set_size_of_optional_header(static_cast<WORD>(get_sizeof_opt_headers() - sizeof(IMAGE_DATA_DIRECTORY) * (IMAGE_NUMBEROF_DIRECTORY_ENTRIES - get_number_of_rvas_and_sizes())));
@@ -848,7 +860,7 @@ void pe_base::rebuild_pe(bool strip_dos_header)
 
 //Rebuild PE image and write it to "out" ostream
 //If strip_dos_header is true, DOS headers partially will be used for PE headers
-void pe_base::rebuild_pe(std::ostream& out, bool strip_dos_header)
+void pe_base::rebuild_pe(std::ostream& out, bool strip_dos_header, bool change_size_of_headers)
 {
 	if(out.bad())
 		throw pe_exception("Stream is bad", pe_exception::stream_is_bad);
@@ -858,7 +870,7 @@ void pe_base::rebuild_pe(std::ostream& out, bool strip_dos_header)
 	out.clear();
 
 	//Rebuild PE image headers
-	rebuild_pe(strip_dos_header);
+	rebuild_pe(strip_dos_header, change_size_of_headers);
 
 	//Write DOS header
 	out.write(reinterpret_cast<const char*>(&dos_header_), strip_dos_header ? 8 * sizeof(WORD) : sizeof(IMAGE_DOS_HEADER));

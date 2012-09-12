@@ -12,7 +12,7 @@
 
 //Please don't remove this information from header
 //PE Library (c) DX 2011 - 2012, http://kaimi.ru
-//Version: 0.1.1
+//Version: 0.1.2
 //Free to use, modify and distribute
 
 // == more important ==
@@ -563,9 +563,11 @@ public: //IMAGE
 	static DWORD calculate_checksum(std::istream& file);
 
 	//Rebuilds PE image. If strip_dos_header == true, DOS header will be stripped a little
-	void rebuild_pe(bool strip_dos_header = false);
+	//If change_size_of_headers == true, SizeOfHeaders will be recalculated automatically
+	void rebuild_pe(bool strip_dos_header = false, bool change_size_of_headers = true);
 	//Rebuilds PE image, writes resulting image to ostream "out". If strip_dos_header == true, DOS header will be stripped a little
-	void rebuild_pe(std::ostream& out, bool strip_dos_header = false);
+	//If change_size_of_headers == true, SizeOfHeaders will be recalculated automatically
+	void rebuild_pe(std::ostream& out, bool strip_dos_header = false, bool change_size_of_headers = true);
 
 	//Realigns file (changes file alignment)
 	void realign_file(unsigned long new_file_alignment);

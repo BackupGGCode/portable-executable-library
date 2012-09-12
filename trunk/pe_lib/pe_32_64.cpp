@@ -671,7 +671,7 @@ const pe_base::image_directory pe<PEClassType>::rebuild_imports(const imported_f
 	//Check if import_section is last one. If it's not, check if there's enough place for import data
 	if(&import_section != &*(sections_.end() - 1) && 
 		(import_section.empty() || align_up(import_section.get_size_of_raw_data(), get_file_alignment()) < needed_size + import_settings.get_offset_from_section_start()))
-		throw pe_exception("Insufficient space for import directory", pe_exception::insuffisient_space);
+		throw pe_exception("Insufficient space for import directory", pe_exception::insufficient_space);
 
 	std::string& raw_data = import_section.get_raw_data();
 
@@ -695,9 +695,20 @@ const pe_base::image_directory pe<PEClassType>::rebuild_imports(const imported_f
 		IMAGE_IMPORT_DESCRIPTOR descr = {0};
 		descr.TimeDateStamp = (*it).get_timestamp(); //Restore timestamp
 		descr.Name = rva_from_section_offset(import_section, current_string_pointer); //Library name RVA
-		
-		//If we should save IATs for current import descriptor
+
+		//If we should save IAT for current import descriptor
 		bool save_iats_for_this_descriptor = import_settings.save_iat_and_original_iat_rvas() && (*it).get_rva_to_iat() != 0;
+		//If we should write original IAT
+		bool write_original_iat = (!save_iats_for_this_descriptor && import_settings.build_original_iat()) || import_settings.fill_missing_original_iats();
+
+		//If we should rewrite saved original IAT for current import descriptor (without changing its position)
+		bool rewrite_saved_original_iat = save_iats_for_this_descriptor && import_settings.rewrite_iat_and_original_iat_contents() && import_settings.build_original_iat();
+		//If we should rewrite saved IAT for current import descriptor (without changing its position)
+		bool rewrite_saved_iat = save_iats_for_this_descriptor && import_settings.rewrite_iat_and_original_iat_contents() && (*it).get_rva_to_iat() != 0;
+
+		//Helper values if we're rewriting existing IAT or orig.IAT
+		DWORD original_first_thunk = 0;
+		DWORD first_thunk = 0;
 
 		if(save_iats_for_this_descriptor)
 		{
@@ -708,6 +719,20 @@ const pe_base::image_directory pe<PEClassType>::rebuild_imports(const imported_f
 				descr.OriginalFirstThunk = import_settings.build_original_iat() ? (*it).get_rva_to_original_iat() : 0;
 			
 			descr.FirstThunk = (*it).get_rva_to_iat();
+
+			original_first_thunk = descr.OriginalFirstThunk;
+			first_thunk = descr.FirstThunk;
+
+			if(rewrite_saved_original_iat)
+			{
+				if((*it).get_rva_to_original_iat())
+					write_original_iat = true;
+				else
+					rewrite_saved_original_iat = false;
+			}
+
+			if(rewrite_saved_iat)
+				save_iats_for_this_descriptor = false;
 		}
 		else
 		{
@@ -728,9 +753,6 @@ const pe_base::image_directory pe<PEClassType>::rebuild_imports(const imported_f
 		const import_library::imported_list& funcs = (*it).get_imported_functions();
 		for(import_library::imported_list::const_iterator f = funcs.begin(); f != funcs.end(); ++f)
 		{
-			//If we must write original IAT
-			bool write_original_iat = (!save_iats_for_this_descriptor && import_settings.build_original_iat()) || import_settings.fill_missing_original_iats();
-
 			if((*f).has_name()) //If function is imported by name
 			{
 				//Get RVA of IMAGE_IMPORT_BY_NAME
@@ -743,22 +765,59 @@ const pe_base::image_directory pe<PEClassType>::rebuild_imports(const imported_f
 						//We're creating original IATs - so we can write to IAT saved VA (because IMAGE_IMPORT_BY_NAME will be read
 						//by PE loader from original IAT)
 						typename PEClassType::BaseSize iat_value = static_cast<typename PEClassType::BaseSize>((*f).get_iat_va());
-						memcpy(&raw_data[current_pos_for_iat], &iat_value, sizeof(iat_value));
+
+						if(rewrite_saved_iat)
+						{
+							if(section_data_length_from_rva(first_thunk, first_thunk, section_data_raw, true) <= sizeof(iat_value))
+								throw pe_exception("Insufficient space inside initial IAT", pe_exception::insufficient_space);
+
+							memcpy(section_data_from_rva(first_thunk, true), &iat_value, sizeof(iat_value));
+
+							first_thunk += sizeof(iat_value);
+						}
+						else
+						{
+							memcpy(&raw_data[current_pos_for_iat], &iat_value, sizeof(iat_value));
+							current_pos_for_iat += sizeof(rva_of_named_import);
+						}
 					}
 					else
 					{
 						//Else - write to IAT RVA of IMAGE_IMPORT_BY_NAME
-						memcpy(&raw_data[current_pos_for_iat], &rva_of_named_import, sizeof(rva_of_named_import));
-					}
+						if(rewrite_saved_iat)
+						{
+							if(section_data_length_from_rva(first_thunk, first_thunk, section_data_raw, true) <= sizeof(rva_of_named_import))
+								throw pe_exception("Insufficient space inside initial IAT", pe_exception::insufficient_space);
 
-					current_pos_for_iat += sizeof(rva_of_named_import);
+							memcpy(section_data_from_rva(first_thunk, true), &rva_of_named_import, sizeof(rva_of_named_import));
+
+							first_thunk += sizeof(rva_of_named_import);
+						}
+						else
+						{
+							memcpy(&raw_data[current_pos_for_iat], &rva_of_named_import, sizeof(rva_of_named_import));
+							current_pos_for_iat += sizeof(rva_of_named_import);
+						}
+					}
 				}
 
 				if(write_original_iat)
 				{
-					//We're creating original IATs
-					memcpy(&raw_data[current_pos_for_original_iat], &rva_of_named_import, sizeof(rva_of_named_import));
-					current_pos_for_original_iat += sizeof(rva_of_named_import);
+					if(rewrite_saved_original_iat)
+					{
+						if(section_data_length_from_rva(original_first_thunk, original_first_thunk, section_data_raw, true) <= sizeof(rva_of_named_import))
+							throw pe_exception("Insufficient space inside initial original IAT", pe_exception::insufficient_space);
+
+						memcpy(section_data_from_rva(original_first_thunk, true), &rva_of_named_import, sizeof(rva_of_named_import));
+
+						original_first_thunk += sizeof(rva_of_named_import);
+					}
+					else
+					{
+						//We're creating original IATs
+						memcpy(&raw_data[current_pos_for_original_iat], &rva_of_named_import, sizeof(rva_of_named_import));
+						current_pos_for_original_iat += sizeof(rva_of_named_import);
+					}
 				}
 
 				//Write IMAGE_IMPORT_BY_NAME (WORD hint + string function name)
@@ -780,34 +839,97 @@ const pe_base::image_directory pe<PEClassType>::rebuild_imports(const imported_f
 						//We're creating original IATs - so we can wtire to IAT saved VA (because ordinal will be read
 						//by PE loader from original IAT)
 						typename PEClassType::BaseSize iat_value = static_cast<typename PEClassType::BaseSize>((*f).get_iat_va());
-						memcpy(&raw_data[current_pos_for_iat], &iat_value, sizeof(iat_value));
+						if(rewrite_saved_iat)
+						{
+							if(section_data_length_from_rva(first_thunk, first_thunk, section_data_raw, true) <= sizeof(iat_value))
+								throw pe_exception("Insufficient space inside initial IAT", pe_exception::insufficient_space);
+
+							memcpy(section_data_from_rva(first_thunk, true), &iat_value, sizeof(iat_value));
+
+							first_thunk += sizeof(iat_value);
+						}
+						else
+						{
+							memcpy(&raw_data[current_pos_for_iat], &iat_value, sizeof(iat_value));
+							current_pos_for_iat += sizeof(thunk_value);
+						}
 					}
 					else
 					{
 						//Else - write ordinal to IAT
-						memcpy(&raw_data[current_pos_for_iat], &thunk_value, sizeof(thunk_value));
-					}
+						if(rewrite_saved_iat)
+						{
+							if(section_data_length_from_rva(first_thunk, first_thunk, section_data_raw, true) <= sizeof(thunk_value))
+								throw pe_exception("Insufficient space inside initial IAT", pe_exception::insufficient_space);
 
-					current_pos_for_iat += sizeof(thunk_value);
+							memcpy(section_data_from_rva(first_thunk, true), &thunk_value, sizeof(thunk_value));
+
+							first_thunk += sizeof(thunk_value);
+						}
+						else
+						{
+							memcpy(&raw_data[current_pos_for_iat], &thunk_value, sizeof(thunk_value));
+						}
+					}
 				}
 
 				//We're writing ordinal to original IAT slot
 				if(write_original_iat)
 				{
-					memcpy(&raw_data[current_pos_for_original_iat], &thunk_value, sizeof(thunk_value));
-					current_pos_for_original_iat += sizeof(thunk_value);
+					if(rewrite_saved_original_iat)
+					{
+						if(section_data_length_from_rva(original_first_thunk, original_first_thunk, section_data_raw, true) <= sizeof(thunk_value))
+							throw pe_exception("Insufficient space inside initial original IAT", pe_exception::insufficient_space);
+
+						memcpy(section_data_from_rva(original_first_thunk, true), &thunk_value, sizeof(thunk_value));
+
+						original_first_thunk += sizeof(thunk_value);
+					}
+					else
+					{
+						memcpy(&raw_data[current_pos_for_original_iat], &thunk_value, sizeof(thunk_value));
+						current_pos_for_original_iat += sizeof(thunk_value);
+					}
 				}
 			}
 		}
 
-		if((!save_iats_for_this_descriptor && import_settings.build_original_iat()) || import_settings.fill_missing_original_iats())
+		if(!save_iats_for_this_descriptor)
 		{
 			//Ending null thunks
 			typename PEClassType::BaseSize thunk_value = 0;
-			memcpy(&raw_data[current_pos_for_iat], &thunk_value, sizeof(thunk_value));
-			current_pos_for_iat += sizeof(thunk_value);
 
-			if(import_settings.build_original_iat())
+			if(rewrite_saved_iat)
+			{
+				if(section_data_length_from_rva(first_thunk, first_thunk, section_data_raw, true) <= sizeof(thunk_value))
+					throw pe_exception("Insufficient space inside initial IAT", pe_exception::insufficient_space);
+
+				memcpy(section_data_from_rva(first_thunk, true), &thunk_value, sizeof(thunk_value));
+
+				first_thunk += sizeof(thunk_value);
+			}
+			else
+			{
+				memcpy(&raw_data[current_pos_for_iat], &thunk_value, sizeof(thunk_value));
+				current_pos_for_iat += sizeof(thunk_value);
+			}
+		}
+
+		if(write_original_iat)
+		{
+			//Ending null thunks
+			typename PEClassType::BaseSize thunk_value = 0;
+
+			if(rewrite_saved_original_iat)
+			{
+				if(section_data_length_from_rva(original_first_thunk, original_first_thunk, section_data_raw, true) <= sizeof(thunk_value))
+					throw pe_exception("Insufficient space inside initial original IAT", pe_exception::insufficient_space);
+
+				memcpy(section_data_from_rva(original_first_thunk, true), &thunk_value, sizeof(thunk_value));
+
+				original_first_thunk += sizeof(thunk_value);
+			}
+			else
 			{
 				memcpy(&raw_data[current_pos_for_original_iat], &thunk_value, sizeof(thunk_value));
 				current_pos_for_original_iat += sizeof(thunk_value);
@@ -936,7 +1058,7 @@ const pe_base::image_directory pe<PEClassType>::rebuild_tls(const tls_info& info
 	//Check if tls_section is last one. If it's not, check if there's enough place for TLS data
 	if(&tls_section != &*(sections_.end() - 1) && 
 		(tls_section.empty() || align_up(tls_section.get_size_of_raw_data(), get_file_alignment()) < needed_size + offset_from_section_start))
-		throw pe_exception("Insufficient space for TLS directory", pe_exception::insuffisient_space);
+		throw pe_exception("Insufficient space for TLS directory", pe_exception::insufficient_space);
 
 	//Check raw data positions
 	if(info.get_raw_data_end_rva() < info.get_raw_data_start_rva() || info.get_index_rva() == 0)
@@ -996,7 +1118,7 @@ const pe_base::image_directory pe<PEClassType>::rebuild_tls(const tls_info& info
 			//Check if there's enough virtual space for it...
 			if(section_data_length_from_rva(info.get_raw_data_start_rva(), info.get_raw_data_start_rva(), section_data_virtual, true)
 				< info.get_raw_data_end_rva() - info.get_raw_data_start_rva())
-				throw pe_exception("Insufficient space for TLS raw data", pe_exception::insuffisient_space);
+				throw pe_exception("Insufficient space for TLS raw data", pe_exception::insufficient_space);
 			else
 				write_raw_data_size = available_raw_length; //We'll write just a part of full raw data
 		}
@@ -1025,11 +1147,11 @@ const pe_base::image_directory pe<PEClassType>::rebuild_tls(const tls_info& info
 		//Check if there's enough space to write callbacks TLS data...
 		if(section_data_length_from_rva(info.get_callbacks_rva(), info.get_callbacks_rva(), section_data_raw, true)
 			< needed_callback_size - sizeof(typename PEClassType::BaseSize) /* last zero element can be virtual only */)
-			throw pe_exception("Insufficient space for TLS callbacks data", pe_exception::insuffisient_space);
+			throw pe_exception("Insufficient space for TLS callbacks data", pe_exception::insufficient_space);
 		
 		if(section_data_length_from_rva(info.get_callbacks_rva(), info.get_callbacks_rva(), section_data_virtual, true)
 			< needed_callback_size /* check here full virtual data length available */)
-			throw pe_exception("Insufficient space for TLS callbacks data", pe_exception::insuffisient_space);
+			throw pe_exception("Insufficient space for TLS callbacks data", pe_exception::insufficient_space);
 
 		std::vector<typename PEClassType::BaseSize> callbacks_virtual_addresses;
 		callbacks_virtual_addresses.reserve(info.get_tls_callbacks().size() + 1 /* last null element */);

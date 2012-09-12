@@ -67,7 +67,7 @@ public:
 		stream_is_bad,
 
 		section_is_not_attached,
-		insuffisient_space,
+		insufficient_space,
 
 		cannot_rebase_relocations,
 

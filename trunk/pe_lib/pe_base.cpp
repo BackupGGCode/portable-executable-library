@@ -1044,7 +1044,7 @@ void pe_base::read_pe(std::istream& file, bool read_bound_import_raw_data, bool 
 
 			//If section raw data size is greater than virtual, fix it
 			last_raw_size = s.header_.SizeOfRawData;
-			if(s.header_.SizeOfRawData > s.header_.Misc.VirtualSize)
+			if(align_up(s.header_.SizeOfRawData, get_file_alignment()) > align_up(s.header_.Misc.VirtualSize, get_section_alignment()))
 				s.header_.SizeOfRawData = s.header_.Misc.VirtualSize;
 
 			//Check virtual and raw section sizes and addresses
@@ -2115,7 +2115,7 @@ const pe_base::image_directory pe_base::rebuild_exports(const export_info& info,
 	//Check if exports_section is last one. If it's not, check if there's enough place for exports data
 	if(&exports_section != &*(sections_.end() - 1) && 
 		(exports_section.empty() || align_up(exports_section.get_size_of_raw_data(), get_file_alignment()) < needed_size + offset_from_section_start))
-		throw pe_exception("Insufficient space for export directory", pe_exception::insuffisient_space);
+		throw pe_exception("Insufficient space for export directory", pe_exception::insufficient_space);
 
 	std::string& raw_data = exports_section.get_raw_data();
 
@@ -2254,7 +2254,8 @@ pe_base::import_rebuilder_settings::import_rebuilder_settings(bool set_to_pe_hea
 	save_iat_and_original_iat_rvas_(true),
 	fill_missing_original_iats_(false),
 	set_to_pe_headers_(set_to_pe_headers),
-	zero_directory_entry_iat_(auto_zero_directory_entry_iat)
+	zero_directory_entry_iat_(auto_zero_directory_entry_iat),
+	rewrite_iat_and_original_iat_contents_(false)
 {}
 
 //Returns offset from section start where import directory data will be placed
@@ -2274,6 +2275,14 @@ bool pe_base::import_rebuilder_settings::build_original_iat() const
 bool pe_base::import_rebuilder_settings::save_iat_and_original_iat_rvas() const
 {
 	return save_iat_and_original_iat_rvas_;
+}
+
+//Returns true if Original import address and import address tables contents will be rewritten
+//works only if import descriptor IAT (and orig.IAT, if present) RVAs are not zero
+//and save_iat_and_original_iat_rvas is true
+bool pe_base::import_rebuilder_settings::rewrite_iat_and_original_iat_contents() const
+{
+	return rewrite_iat_and_original_iat_contents_;
 }
 
 //Returns true if original missing IATs will be rebuilt
@@ -2309,9 +2318,13 @@ void pe_base::import_rebuilder_settings::build_original_iat(bool enable)
 
 //Sets if Original import address and import address tables will not be rebuilt,
 //works only if import descriptor IAT (and orig.IAT, if present) RVAs are not zero
-void pe_base::import_rebuilder_settings::save_iat_and_original_iat_rvas(bool enable)
+void pe_base::import_rebuilder_settings::save_iat_and_original_iat_rvas(bool enable, bool enable_rewrite_iat_and_original_iat_contents)
 {
 	save_iat_and_original_iat_rvas_ = enable;
+	if(save_iat_and_original_iat_rvas_)
+		rewrite_iat_and_original_iat_contents_ = enable_rewrite_iat_and_original_iat_contents;
+	else
+		rewrite_iat_and_original_iat_contents_ = false;
 }
 
 //Sets if original missing IATs will be rebuilt
@@ -2642,7 +2655,7 @@ const pe_base::image_directory pe_base::rebuild_relocations(const relocation_tab
 	//Check if reloc_section is last one. If it's not, check if there's enough place for relocations data
 	if(&reloc_section != &*(sections_.end() - 1) && 
 		(reloc_section.empty() || align_up(reloc_section.get_size_of_raw_data(), get_file_alignment()) < needed_size + offset_from_section_start))
-		throw pe_exception("Insufficient space for relocations directory", pe_exception::insuffisient_space);
+		throw pe_exception("Insufficient space for relocations directory", pe_exception::insufficient_space);
 
 	std::string& raw_data = reloc_section.get_raw_data();
 
@@ -3695,7 +3708,7 @@ const pe_base::image_directory pe_base::rebuild_resources(resource_directory& in
 	//Check if exports_section is last one. If it's not, check if there's enough place for resource data
 	if(&resources_section != &*(sections_.end() - 1) && 
 		(resources_section.empty() || align_up(resources_section.get_size_of_raw_data(), get_file_alignment()) < needed_size + offset_from_section_start))
-		throw pe_exception("Insufficient space for resource directory", pe_exception::insuffisient_space);
+		throw pe_exception("Insufficient space for resource directory", pe_exception::insufficient_space);
 
 	std::string& raw_data = resources_section.get_raw_data();
 
@@ -5106,7 +5119,7 @@ void pe_base::recalculate_section_sizes(section& s)
 	}
 
 	//Can occur only for last section
-	if(align_up(s.get_virtual_size(), get_section_alignment()) < s.get_size_of_raw_data())
+	if(align_up(s.get_virtual_size(), get_section_alignment()) < align_up(s.get_size_of_raw_data(), get_file_alignment()))
 		set_section_virtual_size(s, align_up(s.get_size_of_raw_data(), get_section_alignment())); //Recalculate section virtual size
 }
 

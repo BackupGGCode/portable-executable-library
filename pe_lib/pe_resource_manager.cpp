@@ -449,7 +449,7 @@ const std::string pe_resource_viewer::get_icon_by_name(const std::wstring& name,
 	std::string ret;
 
 	//Get resource by name and index
-	const std::string& data = get_resource_data_by_name(resource_icon_group, name, index).get_data();
+	const std::string data = get_resource_data_by_name(resource_icon_group, name, index).get_data();
 
 	//Create icon headers
 	WORD icon_count = format_icon_headers(ret, data);
@@ -470,7 +470,7 @@ const std::string pe_resource_viewer::get_icon_by_name(DWORD language, const std
 	std::string ret;
 
 	//Get resource by name and language
-	const std::string& data = get_resource_data_by_name(language, resource_icon_group, name).get_data();
+	const std::string data = get_resource_data_by_name(language, resource_icon_group, name).get_data();
 
 	//Create icon headers
 	WORD icon_count = format_icon_headers(ret, data);
@@ -491,7 +491,7 @@ const std::string pe_resource_viewer::get_icon_by_id_lang(DWORD language, DWORD 
 	std::string ret;
 
 	//Get resource by language and id
-	const std::string& data = get_resource_data_by_id(language, resource_icon_group, id).get_data();
+	const std::string data = get_resource_data_by_id(language, resource_icon_group, id).get_data();
 
 	//Create icon headers
 	WORD icon_count = format_icon_headers(ret, data);
@@ -512,7 +512,7 @@ const std::string pe_resource_viewer::get_icon_by_id(DWORD id, DWORD index) cons
 	std::string ret;
 
 	//Get resource by id and index
-	const std::string& data = get_resource_data_by_id(resource_icon_group, id, index).get_data();
+	const std::string data = get_resource_data_by_id(resource_icon_group, id, index).get_data();
 
 	//Create icon headers
 	WORD icon_count = format_icon_headers(ret, data);
@@ -560,7 +560,7 @@ WORD pe_resource_viewer::format_cursor_headers(std::string& cur_data, const std:
 		direntry.Reserved = 0;
 
 		//Now read hotspot data from cursor data directory
-		const std::string& cursor = index == 0xFFFFFFFF
+		const std::string cursor = index == 0xFFFFFFFF
 			? get_resource_data_by_id(language, resource_cursor, group->Number).get_data()
 			: get_resource_data_by_id(resource_cursor, group->Number, index).get_data();
 		if(cursor.length() < 2 * sizeof(WORD))
@@ -590,7 +590,7 @@ const std::string pe_resource_viewer::get_cursor_by_name(DWORD language, const s
 	std::string ret;
 
 	//Get resource by name and language
-	const std::string& resource_data = get_resource_data_by_name(language, resource_cursor_group, name).get_data();
+	const std::string resource_data = get_resource_data_by_name(language, resource_cursor_group, name).get_data();
 
 	//Create cursor headers
 	WORD cursor_count = format_cursor_headers(ret, resource_data, language);
@@ -611,7 +611,7 @@ const std::string pe_resource_viewer::get_cursor_by_name(const std::wstring& nam
 	std::string ret;
 
 	//Get resource by name and index
-	const std::string& resource_data = get_resource_data_by_name(resource_cursor_group, name, index).get_data();
+	const std::string resource_data = get_resource_data_by_name(resource_cursor_group, name, index).get_data();
 
 	//Create cursor headers
 	WORD cursor_count = format_cursor_headers(ret, resource_data, 0, index);
@@ -632,7 +632,7 @@ const std::string pe_resource_viewer::get_cursor_by_id_lang(DWORD language, DWOR
 	std::string ret;
 
 	//Get resource by ID and language
-	const std::string& resource_data = get_resource_data_by_id(language, resource_cursor_group, id).get_data();
+	const std::string resource_data = get_resource_data_by_id(language, resource_cursor_group, id).get_data();
 
 	//Create cursor headers
 	WORD cursor_count = format_cursor_headers(ret, resource_data, language);
@@ -653,7 +653,7 @@ const std::string pe_resource_viewer::get_cursor_by_id(DWORD id, DWORD index) co
 	std::string ret;
 
 	//Get resource by ID and index
-	const std::string& resource_data = get_resource_data_by_id(resource_cursor_group, id, index).get_data();
+	const std::string resource_data = get_resource_data_by_id(resource_cursor_group, id, index).get_data();
 
 	//Create cursor headers
 	WORD cursor_count = format_cursor_headers(ret, resource_data, 0, index);
@@ -2218,7 +2218,7 @@ void pe_resource_manager::remove_cursors_from_cursor_group(const std::string& cu
 void pe_resource_manager::remove_cursor_group(const std::wstring& cursor_group_name, DWORD language)
 {
 	//Get resource by name and language
-	const std::string& data = get_resource_data_by_name(language, resource_cursor_group, cursor_group_name).get_data();
+	const std::string data = get_resource_data_by_name(language, resource_cursor_group, cursor_group_name).get_data();
 	remove_cursors_from_cursor_group(data, language);
 	remove_resource(resource_cursor_group, cursor_group_name, language);
 }
@@ -2227,7 +2227,7 @@ void pe_resource_manager::remove_cursor_group(const std::wstring& cursor_group_n
 void pe_resource_manager::remove_cursor_group(DWORD cursor_group_id, DWORD language)
 {
 	//Get resource by name and language
-	const std::string& data = get_resource_data_by_id(language, resource_cursor_group, cursor_group_id).get_data();
+	const std::string data = get_resource_data_by_id(language, resource_cursor_group, cursor_group_id).get_data();
 	remove_cursors_from_cursor_group(data, language);
 	remove_resource(resource_cursor_group, cursor_group_id, language);
 }
@@ -2236,7 +2236,7 @@ void pe_resource_manager::remove_cursor_group(DWORD cursor_group_id, DWORD langu
 void pe_resource_manager::remove_icon_group(const std::wstring& icon_group_name, DWORD language)
 {
 	//Get resource by name and language
-	const std::string& data = get_resource_data_by_name(language, resource_icon_group, icon_group_name).get_data();
+	const std::string data = get_resource_data_by_name(language, resource_icon_group, icon_group_name).get_data();
 	remove_icons_from_icon_group(data, language);
 	remove_resource(resource_icon_group, icon_group_name, language);
 }
@@ -2245,7 +2245,7 @@ void pe_resource_manager::remove_icon_group(const std::wstring& icon_group_name,
 void pe_resource_manager::remove_icon_group(DWORD icon_group_id, DWORD language)
 {
 	//Get resource by name and language
-	const std::string& data = get_resource_data_by_id(language, resource_icon_group, icon_group_id).get_data();
+	const std::string data = get_resource_data_by_id(language, resource_icon_group, icon_group_id).get_data();
 	remove_icons_from_icon_group(data, language);
 	remove_resource(resource_icon_group, icon_group_id, language);
 }

@@ -192,7 +192,8 @@ public: //TLS
 	//If write_tls_data = true, TLS data will be written to its place
 	//If you have chosen to rewrite raw data, only (EndAddressOfRawData - StartAddressOfRawData) bytes will be written, not the full length of string
 	//representing raw data content
-	virtual const image_directory rebuild_tls(const tls_info& info, section& tls_section, DWORD offset_from_section_start = 0, bool write_tls_callbacks = true, bool write_tls_data = true, tls_data_expand_type expand = tls_data_expand_raw, bool save_to_pe_header = true);
+	//auto_strip_last_section - if true and TLS are placed in the last section, it will be automatically stripped
+	virtual const image_directory rebuild_tls(const tls_info& info, section& tls_section, DWORD offset_from_section_start = 0, bool write_tls_callbacks = true, bool write_tls_data = true, tls_data_expand_type expand = tls_data_expand_raw, bool save_to_pe_header = true, bool auto_strip_last_section = true);
 
 public: //IMAGE CONFIG
 	//Returns image config info

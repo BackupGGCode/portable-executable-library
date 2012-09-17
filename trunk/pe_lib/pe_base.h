@@ -12,7 +12,7 @@
 
 //Please don't remove this information from header
 //PE Library (c) DX 2011 - 2012, http://kaimi.ru
-//Version: 0.1.3
+//Version: 0.1.4
 //Free to use, modify and distribute
 
 // == more important ==
@@ -720,12 +720,13 @@ public: //EXPORTS
 	//exports_section - section where export directory will be placed (must be attached to PE image)
 	//offset_from_section_start - offset from exports_section raw data start
 	//save_to_pe_headers - if true, new export directory information will be saved to PE image headers
+	//auto_strip_last_section - if true and exports are placed in the last section, it will be automatically stripped
 	//number_of_functions and number_of_names parameters don't matter in "info" when rebuilding, they're calculated independently
 	//characteristics, major_version, minor_version, timestamp and name are the only used members of "info" structure
 	//Returns new export directory information
 	//exported_functions_list is copied intentionally to be sorted by ordinal values later
 	//Name ordinals in exported function doesn't matter, they will be recalculated
-	const image_directory rebuild_exports(const export_info& info, exported_functions_list exports, section& exports_section, DWORD offset_from_section_start = 0, bool save_to_pe_header = true);
+	const image_directory rebuild_exports(const export_info& info, exported_functions_list exports, section& exports_section, DWORD offset_from_section_start = 0, bool save_to_pe_header = true, bool auto_strip_last_section = true);
 
 
 public: //IMPORTS
@@ -855,6 +856,9 @@ public: //IMPORTS
 		//Returns true if IMAGE_DIRECTORY_ENTRY_IAT must be zeroed, works only if auto_set_to_pe_headers = true
 		bool zero_directory_entry_iat() const;
 
+		//Returns true if the last section should be stripped automatically, if imports are inside it
+		bool auto_strip_last_section_enabled() const;
+
 
 	public: //Setters
 		//Sets offset from section start where import directory data will be placed
@@ -875,6 +879,9 @@ public: //IMPORTS
 		//Sets if IMAGE_DIRECTORY_ENTRY_IAT must be zeroed, works only if auto_set_to_pe_headers = true
 		void zero_directory_entry_iat(bool enable);
 
+		//Sets if the last section should be stripped automatically, if imports are inside it, default true
+		void enable_auto_strip_last_section(bool enable);
+
 	private:
 		DWORD offset_from_section_start_;
 		bool build_original_iat_;
@@ -883,6 +890,7 @@ public: //IMPORTS
 		bool set_to_pe_headers_;
 		bool zero_directory_entry_iat_;
 		bool rewrite_iat_and_original_iat_contents_;
+		bool auto_strip_last_section_;
 	};
 
 	//You can get all image imports with get_imported_functions() function
@@ -974,9 +982,10 @@ public: //RELOCATIONS
 	//Simple relocations rebuilder
 	//To keep PE file working, don't remove any of existing relocations in
 	//relocation_table_list returned by a call to get_relocations() function
+	//auto_strip_last_section - if true and relocations are placed in the last section, it will be automatically stripped
 	//offset_from_section_start - offset from the beginning of reloc_section, where relocations data will be situated
-	//If save_to_pe_header, PE header will be modified automatically
-	const image_directory rebuild_relocations(const relocation_table_list& relocs, section& reloc_section, DWORD offset_from_section_start = 0, bool save_to_pe_header = true);
+	//If save_to_pe_header is true, PE header will be modified automatically
+	const image_directory rebuild_relocations(const relocation_table_list& relocs, section& reloc_section, DWORD offset_from_section_start = 0, bool save_to_pe_header = true, bool auto_strip_last_section = true);
 
 	//Recalculates image base with the help of relocation tables
 	//Recalculates VAs of DWORDS/QWORDS in image according to relocations
@@ -1071,7 +1080,8 @@ public: //TLS
 	//If write_tls_data = true, TLS data will be written to its place
 	//If you have chosen to rewrite raw data, only (EndAddressOfRawData - StartAddressOfRawData) bytes will be written, not the full length of string
 	//representing raw data content
-	virtual const image_directory rebuild_tls(const tls_info& info, section& tls_section, DWORD offset_from_section_start = 0, bool write_tls_callbacks = true, bool write_tls_data = true, tls_data_expand_type expand = tls_data_expand_raw, bool save_to_pe_header = true) = 0;
+	//auto_strip_last_section - if true and TLS are placed in the last section, it will be automatically stripped
+	virtual const image_directory rebuild_tls(const tls_info& info, section& tls_section, DWORD offset_from_section_start = 0, bool write_tls_callbacks = true, bool write_tls_data = true, tls_data_expand_type expand = tls_data_expand_raw, bool save_to_pe_header = true, bool auto_strip_last_section = true) = 0;
 
 
 public: //IMAGE CONFIG
@@ -1434,8 +1444,9 @@ public: //RESOURCES
 	//resource_directory is non-constant, because it will be sorted
 	//offset_from_section_start - offset from resources_section raw data start
 	//save_to_pe_headers - if true, new resource directory information will be saved to PE image headers
+	//auto_strip_last_section - if true and resources are placed in the last section, it will be automatically stripped
 	//number_of_id_entries and number_of_named_entries for resource directories are recalculated and not used
-	const image_directory rebuild_resources(resource_directory& info, section& resources_section, DWORD offset_from_section_start = 0, bool save_to_pe_header = true);
+	const image_directory rebuild_resources(resource_directory& info, section& resources_section, DWORD offset_from_section_start = 0, bool save_to_pe_header = true, bool auto_strip_last_section = true);
 
 
 public: //EXCEPTION DIRECTORY (exists on PE+ only)
@@ -2000,7 +2011,8 @@ protected:
 	static const DWORD minimum_file_alignment = 512;
 	
 	//Helper function to recalculate RAW and virtual section sizes and strip it, if necessary
-	void recalculate_section_sizes(section& s);
+	//auto_strip = strip section, if necessary
+	void recalculate_section_sizes(section& s, bool auto_strip);
 
 private:
 	//Returns array of exported functions and information about export (if info != 0)
@@ -2053,7 +2065,7 @@ private:
 	void calculate_resource_data_space(const resource_directory& root, DWORD& needed_size_for_structures, DWORD& needed_size_for_strings, DWORD& needed_size_for_data);
 
 	//Helper function to rebuild resource directory
-	void rebuild_resource_directory(section& resource_section, resource_directory& root, unsigned long& current_structures_pos, unsigned long& current_data_pos, unsigned long& current_strings_pos);
+	void rebuild_resource_directory(section& resource_section, resource_directory& root, unsigned long& current_structures_pos, unsigned long& current_data_pos, unsigned long& current_strings_pos, unsigned long offset_from_section_start);
 
 	//Calculates entropy from bytes count
 	static double calculate_entropy(const DWORD byte_count[256], std::streamoff total_length);

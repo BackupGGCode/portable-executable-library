@@ -948,7 +948,7 @@ const pe_base::image_directory pe<PEClassType>::rebuild_imports(const imported_f
 	raw_data.resize(current_pos_for_original_iat);
 
 	//Adjust section raw and virtual sizes
-	recalculate_section_sizes(import_section);
+	recalculate_section_sizes(import_section, import_settings.auto_strip_last_section_enabled());
 
 	//Return information about rebuilt import directory
 	image_directory ret(rva_from_section_offset(import_section, import_settings.get_offset_from_section_start() + needed_size_for_strings), needed_size - needed_size_for_strings);
@@ -1045,8 +1045,9 @@ const pe_base::tls_info pe<PEClassType>::get_tls_info() const
 //If write_tls_data = true, TLS data will be written to its place
 //If you have chosen to rewrite raw data, only (EndAddressOfRawData - StartAddressOfRawData) bytes will be written, not the full length of string
 //representing raw data content
+//auto_strip_last_section - if true and TLS are placed in the last section, it will be automatically stripped
 template<typename PEClassType>
-const pe_base::image_directory pe<PEClassType>::rebuild_tls(const tls_info& info, section& tls_section, DWORD offset_from_section_start, bool write_tls_callbacks, bool write_tls_data, tls_data_expand_type expand, bool save_to_pe_header)
+const pe_base::image_directory pe<PEClassType>::rebuild_tls(const tls_info& info, section& tls_section, DWORD offset_from_section_start, bool write_tls_callbacks, bool write_tls_data, tls_data_expand_type expand, bool save_to_pe_header, bool auto_strip_last_section)
 {
 	//Check that tls_section is attached to this PE image
 	if(!section_attached(tls_section))
@@ -1172,7 +1173,7 @@ const pe_base::image_directory pe<PEClassType>::rebuild_tls(const tls_info& info
 	}
 	
 	//Adjust section raw and virtual sizes
-	recalculate_section_sizes(tls_section);
+	recalculate_section_sizes(tls_section, auto_strip_last_section);
 
 	image_directory ret(rva_from_section_offset(tls_section, tls_data_pos), needed_size);
 

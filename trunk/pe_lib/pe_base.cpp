@@ -2033,12 +2033,13 @@ bool pe_base::ordinal_sorter::operator()(const exported_function& func1, const e
 //exports_section - section where export directory will be placed (must be attached to PE image)
 //offset_from_section_start - offset from exports_section raw data start
 //save_to_pe_headers - if true, new export directory information will be saved to PE image headers
+//auto_strip_last_section - if true and exports are placed in the last section, it will be automatically stripped
 //number_of_functions and number_of_names parameters don't matter in "info" when rebuilding, they're calculated independently
 //characteristics, major_version, minor_version, timestamp and name are the only used members of "info" structure
 //Returns new export directory information
 //exported_functions_list is copied intentionally to be sorted by ordinal values later
 //Name ordinals in exported function doesn't matter, they will be recalculated
-const pe_base::image_directory pe_base::rebuild_exports(const export_info& info, exported_functions_list exports, section& exports_section, DWORD offset_from_section_start, bool save_to_pe_header)
+const pe_base::image_directory pe_base::rebuild_exports(const export_info& info, exported_functions_list exports, section& exports_section, DWORD offset_from_section_start, bool save_to_pe_header, bool auto_strip_last_section)
 {
 	//Check that exports_section is attached to this PE image
 	if(!section_attached(exports_section))
@@ -2226,7 +2227,7 @@ const pe_base::image_directory pe_base::rebuild_exports(const export_info& info,
 	}
 	
 	//Adjust section raw and virtual sizes
-	recalculate_section_sizes(exports_section);
+	recalculate_section_sizes(exports_section, auto_strip_last_section);
 	
 	image_directory ret(rva_from_section_offset(exports_section, offset_from_section_start), needed_size);
 
@@ -2255,7 +2256,8 @@ pe_base::import_rebuilder_settings::import_rebuilder_settings(bool set_to_pe_hea
 	fill_missing_original_iats_(false),
 	set_to_pe_headers_(set_to_pe_headers),
 	zero_directory_entry_iat_(auto_zero_directory_entry_iat),
-	rewrite_iat_and_original_iat_contents_(false)
+	rewrite_iat_and_original_iat_contents_(false),
+	auto_strip_last_section_(true)
 {}
 
 //Returns offset from section start where import directory data will be placed
@@ -2304,6 +2306,12 @@ bool pe_base::import_rebuilder_settings::zero_directory_entry_iat() const
 	return zero_directory_entry_iat_;	
 }
 
+//Returns true if the last section should be stripped automatically, if imports are inside it
+bool pe_base::import_rebuilder_settings::auto_strip_last_section_enabled() const
+{
+	return auto_strip_last_section_;
+}
+
 //Sets offset from section start where import directory data will be placed
 void pe_base::import_rebuilder_settings::set_offset_from_section_start(DWORD offset)
 {
@@ -2344,6 +2352,12 @@ void pe_base::import_rebuilder_settings::auto_set_to_pe_headers(bool enable)
 void pe_base::import_rebuilder_settings::zero_directory_entry_iat(bool enable)
 {
 	zero_directory_entry_iat_ = enable;
+}
+
+//Sets if the last section should be stripped automatically, if imports are inside it, default true
+void pe_base::import_rebuilder_settings::enable_auto_strip_last_section(bool enable)
+{
+	auto_strip_last_section_ = enable;
 }
 
 //Default constructor
@@ -2630,7 +2644,10 @@ const pe_base::relocation_table_list pe_base::get_relocations(bool list_absolute
 //Simple relocations rebuilder
 //To keep PE file working, don't remove any of existing relocations in
 //relocation_table_list returned by a call to get_relocations() function
-const pe_base::image_directory pe_base::rebuild_relocations(const relocation_table_list& relocs, section& reloc_section, DWORD offset_from_section_start, bool save_to_pe_header)
+//auto_strip_last_section - if true and relocations are placed in the last section, it will be automatically stripped
+//offset_from_section_start - offset from the beginning of reloc_section, where relocations data will be situated
+//If save_to_pe_header is true, PE header will be modified automatically
+const pe_base::image_directory pe_base::rebuild_relocations(const relocation_table_list& relocs, section& reloc_section, DWORD offset_from_section_start, bool save_to_pe_header, bool auto_strip_last_section)
 {
 	//Check that reloc_section is attached to this PE image
 	if(!section_attached(reloc_section))
@@ -2702,7 +2719,7 @@ const pe_base::image_directory pe_base::rebuild_relocations(const relocation_tab
 	image_directory ret(rva_from_section_offset(reloc_section, start_reloc_pos), needed_size);
 	
 	//Adjust section raw and virtual sizes
-	recalculate_section_sizes(reloc_section);
+	recalculate_section_sizes(reloc_section, auto_strip_last_section);
 
 	//If auto-rewrite of PE headers is required
 	if(save_to_pe_header)
@@ -3586,7 +3603,7 @@ void pe_base::calculate_resource_data_space(const resource_directory& root, DWOR
 }
 
 //Helper function to rebuild resource directory
-void pe_base::rebuild_resource_directory(section& resource_section, resource_directory& root, unsigned long& current_structures_pos, unsigned long& current_data_pos, unsigned long& current_strings_pos)
+void pe_base::rebuild_resource_directory(section& resource_section, resource_directory& root, unsigned long& current_structures_pos, unsigned long& current_data_pos, unsigned long& current_strings_pos, unsigned long offset_from_section_start)
 {
 	//Create resource directory
 	IMAGE_RESOURCE_DIRECTORY dir = {0};
@@ -3646,7 +3663,7 @@ void pe_base::rebuild_resource_directory(section& resource_section, resource_dir
 			data_entry.Size = static_cast<DWORD>((*it).get_data_entry().get_data().length());
 			data_entry.OffsetToData = rva_from_section_offset(resource_section, current_data_pos + sizeof(data_entry));
 			
-			entry.OffsetToData = current_data_pos;
+			entry.OffsetToData = current_data_pos - offset_from_section_start;
 
 			memcpy(&raw_data[current_data_pos], &data_entry, sizeof(data_entry));
 			current_data_pos += sizeof(data_entry);
@@ -3659,12 +3676,12 @@ void pe_base::rebuild_resource_directory(section& resource_section, resource_dir
 		}
 		else
 		{
-			entry.OffsetToData = 0x80000000 | current_structures_pos;
+			entry.OffsetToData = 0x80000000 | (current_structures_pos - offset_from_section_start);
 
 			memcpy(&raw_data[this_current_structures_pos], &entry, sizeof(entry));
 			this_current_structures_pos += sizeof(entry);
 
-			rebuild_resource_directory(resource_section, (*it).get_resource_directory(), current_structures_pos, current_data_pos, current_strings_pos);
+			rebuild_resource_directory(resource_section, (*it).get_resource_directory(), current_structures_pos, current_data_pos, current_strings_pos, offset_from_section_start);
 		}
 	}
 }
@@ -3686,8 +3703,9 @@ bool pe_base::entry_sorter::operator()(const resource_directory_entry& entry1, c
 //offset_from_section_start - offset from resources_section raw data start
 //resource_directory is non-constant, because it will be sorted
 //save_to_pe_headers - if true, new resource directory information will be saved to PE image headers
+//auto_strip_last_section - if true and resources are placed in the last section, it will be automatically stripped
 //number_of_id_entries and number_of_named_entries for resource directories are recalculated and not used
-const pe_base::image_directory pe_base::rebuild_resources(resource_directory& info, section& resources_section, DWORD offset_from_section_start, bool save_to_pe_header)
+const pe_base::image_directory pe_base::rebuild_resources(resource_directory& info, section& resources_section, DWORD offset_from_section_start, bool save_to_pe_header, bool auto_strip_last_section)
 {
 	//Check that resources_section is attached to this PE image
 	if(!section_attached(resources_section))
@@ -3704,27 +3722,29 @@ const pe_base::image_directory pe_base::rebuild_resources(resource_directory& in
 	calculate_resource_data_space(info, needed_size_for_structures, needed_size_for_strings, needed_size_for_data);
 
 	DWORD needed_size = needed_size_for_structures + needed_size_for_strings + needed_size_for_data;
+	DWORD aligned_offset_from_section_start = align_up(offset_from_section_start, sizeof(DWORD));
 
 	//Check if exports_section is last one. If it's not, check if there's enough place for resource data
 	if(&resources_section != &*(sections_.end() - 1) && 
-		(resources_section.empty() || align_up(resources_section.get_size_of_raw_data(), get_file_alignment()) < needed_size + offset_from_section_start))
+		(resources_section.empty() || align_up(resources_section.get_size_of_raw_data(), get_file_alignment())
+		< needed_size + aligned_offset_from_section_start))
 		throw pe_exception("Insufficient space for resource directory", pe_exception::insufficient_space);
 
 	std::string& raw_data = resources_section.get_raw_data();
 
 	//This will be done only is resources_section is the last section of image or for section with unaligned raw length of data
-	if(raw_data.length() < needed_size + offset_from_section_start)
-		raw_data.resize(needed_size + offset_from_section_start); //Expand section raw data
+	if(raw_data.length() < needed_size + needed_size + aligned_offset_from_section_start)
+		raw_data.resize(needed_size + aligned_offset_from_section_start); //Expand section raw data
 
-	unsigned long current_structures_pos = align_up(offset_from_section_start, sizeof(DWORD));
+	unsigned long current_structures_pos = aligned_offset_from_section_start;
 	unsigned long current_strings_pos = current_structures_pos + needed_size_for_structures;
 	unsigned long current_data_pos = current_strings_pos + needed_size_for_strings;
-	rebuild_resource_directory(resources_section, info, current_structures_pos, current_data_pos, current_strings_pos);
+	rebuild_resource_directory(resources_section, info, current_structures_pos, current_data_pos, current_strings_pos, aligned_offset_from_section_start);
 	
 	//Adjust section raw and virtual sizes
-	recalculate_section_sizes(resources_section);
+	recalculate_section_sizes(resources_section, auto_strip_last_section);
 
-	image_directory ret(rva_from_section_offset(resources_section, offset_from_section_start), needed_size);
+	image_directory ret(rva_from_section_offset(resources_section, aligned_offset_from_section_start), needed_size);
 
 	//If auto-rewrite of PE headers is required
 	if(save_to_pe_header)
@@ -5093,13 +5113,13 @@ void pe_base::realign_file(unsigned long new_file_alignment)
 }
 
 //Helper function to recalculate RAW and virtual section sizes and strip it, if necessary
-void pe_base::recalculate_section_sizes(section& s)
+void pe_base::recalculate_section_sizes(section& s, bool auto_strip)
 {
 	prepare_section(s); //Recalculate section raw addresses
 
 	//Strip RAW size of section, if it is the last one
 	//For all others it must be file-aligned and calculated by prepare_section() call
-	if(!sections_.empty() || &s == &*(sections_.end() - 1))
+	if(auto_strip && !(sections_.empty() || &s == &*(sections_.end() - 1)))
 	{
 		//Strip ending raw data nullbytes to optimize size
 		std::string& raw_data = s.get_raw_data();

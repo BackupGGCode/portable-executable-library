@@ -12,7 +12,7 @@
 
 //Please don't remove this information from header
 //PE Library (c) DX 2011 - 2012, http://kaimi.ru
-//Version: 0.1.4
+//Version: 0.1.5
 //Free to use, modify and distribute
 
 // == more important ==

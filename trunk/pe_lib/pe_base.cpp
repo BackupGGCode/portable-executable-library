@@ -3642,7 +3642,7 @@ void pe_base::rebuild_resource_directory(section& resource_section, resource_dir
 		IMAGE_RESOURCE_DIRECTORY_ENTRY entry;
 		if((*it).is_named())
 		{
-			entry.Name = 0x80000000 | current_strings_pos;
+			entry.Name = 0x80000000 | (current_strings_pos - offset_from_section_start);
 			WORD unicode_length = static_cast<WORD>((*it).get_name().length());
 			memcpy(&raw_data[current_strings_pos], &unicode_length, sizeof(unicode_length));
 			current_strings_pos += sizeof(unicode_length);

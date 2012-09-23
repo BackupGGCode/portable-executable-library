@@ -1046,6 +1046,7 @@ const pe_base::tls_info pe<PEClassType>::get_tls_info() const
 //If you have chosen to rewrite raw data, only (EndAddressOfRawData - StartAddressOfRawData) bytes will be written, not the full length of string
 //representing raw data content
 //auto_strip_last_section - if true and TLS are placed in the last section, it will be automatically stripped
+//Note/TODO: TLS Callbacks array is not DWORD-aligned (seems to work on WinXP - Win7)
 template<typename PEClassType>
 const pe_base::image_directory pe<PEClassType>::rebuild_tls(const tls_info& info, section& tls_section, DWORD offset_from_section_start, bool write_tls_callbacks, bool write_tls_data, tls_data_expand_type expand, bool save_to_pe_header, bool auto_strip_last_section)
 {

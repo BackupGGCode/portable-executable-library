@@ -2603,9 +2603,12 @@ const pe_base::relocation_table_list pe_base::get_relocations(bool list_absolute
 
 	if(reloc_table.SizeOfBlock % 2)
 		throw pe_exception("Incorrect relocation directory", pe_exception::incorrect_relocation_directory);
-	
+
+	unsigned long reloc_size = get_directory_size(IMAGE_DIRECTORY_ENTRY_BASERELOC);
+	unsigned long read_size = 0;
+
 	//reloc_table.VirtualAddress is not checked (not so important)
-	while(reloc_table.SizeOfBlock)
+	while(reloc_table.SizeOfBlock && read_size < reloc_size)
 	{
 		//Create relocation table
 		relocation_table table;
@@ -2625,16 +2628,13 @@ const pe_base::relocation_table_list pe_base::get_relocations(bool list_absolute
 
 		//Save table
 		ret.push_back(table);
-
-		//If table is empty
-		if(reloc_table.SizeOfBlock <= sizeof(IMAGE_BASE_RELOCATION))
-			break;
-
+		
 		//Go to next relocation block
 		if(!is_sum_safe(current_pos, reloc_table.SizeOfBlock))
 			throw pe_exception("Incorrect relocation directory", pe_exception::incorrect_relocation_directory);
 
 		current_pos += reloc_table.SizeOfBlock;
+		read_size += reloc_table.SizeOfBlock;
 		reloc_table = section_data_from_rva<IMAGE_BASE_RELOCATION>(current_pos, section_data_virtual, true);
 	}
 
@@ -2652,12 +2652,12 @@ const pe_base::image_directory pe_base::rebuild_relocations(const relocation_tab
 	//Check that reloc_section is attached to this PE image
 	if(!section_attached(reloc_section))
 		throw pe_exception("Relocations section must be attached to PE file", pe_exception::section_is_not_attached);
-
-	DWORD needed_size = sizeof(IMAGE_BASE_RELOCATION) + sizeof(DWORD); //Calculate needed size for relocation tables
-	//sizeof(IMAGE_BASE_RELOCATION) = ending empty relocation table header
-	//sizeof(DWORD) = for DWORD alignment
 	
 	DWORD current_reloc_data_pos = align_up(offset_from_section_start, sizeof(DWORD));
+
+	DWORD needed_size = current_reloc_data_pos - offset_from_section_start; //Calculate needed size for relocation tables
+	DWORD size_delta = needed_size;
+
 	DWORD start_reloc_pos = current_reloc_data_pos;
 
 	//Enumerate relocation tables
@@ -2665,7 +2665,7 @@ const pe_base::image_directory pe_base::rebuild_relocations(const relocation_tab
 	{
 		needed_size += static_cast<DWORD>((*it).get_relocations().size() * sizeof(WORD) /* relocations */ + sizeof(IMAGE_BASE_RELOCATION) /* table header */);
 		//End of each table will be DWORD-aligned
-		if((start_reloc_pos + needed_size) % sizeof(DWORD))
+		if((start_reloc_pos + needed_size - size_delta) % sizeof(DWORD))
 			needed_size += sizeof(WORD); //Align it with IMAGE_REL_BASED_ABSOLUTE relocation
 	}
 
@@ -2709,14 +2709,8 @@ const pe_base::image_directory pe_base::rebuild_relocations(const relocation_tab
 			current_reloc_data_pos += sizeof(WORD);
 		}
 	}
-	
-	{
-		//Ending empty table header
-		IMAGE_BASE_RELOCATION reloc = {0};
-		memcpy(&raw_data[current_reloc_data_pos], &reloc, sizeof(reloc));
-	}
-	
-	image_directory ret(rva_from_section_offset(reloc_section, start_reloc_pos), needed_size);
+
+	image_directory ret(rva_from_section_offset(reloc_section, start_reloc_pos), needed_size - size_delta);
 	
 	//Adjust section raw and virtual sizes
 	recalculate_section_sizes(reloc_section, auto_strip_last_section);

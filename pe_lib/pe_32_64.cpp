@@ -999,7 +999,7 @@ const pe_base::tls_info pe<PEClassType>::get_tls_info() const
 	}
 
 	if(tls_directory_data.StartAddressOfRawData &&
-		section_data_length_from_va(tls_directory_data.StartAddressOfRawData, section_data_virtual, true)
+		section_data_length_from_va(tls_directory_data.StartAddressOfRawData, tls_directory_data.StartAddressOfRawData, section_data_virtual, true)
 		< (tls_directory_data.EndAddressOfRawData - tls_directory_data.StartAddressOfRawData))
 		throw pe_exception("Incorrect TLS directory", pe_exception::incorrect_tls_directory);
 
@@ -1020,21 +1020,25 @@ const pe_base::tls_info pe<PEClassType>::get_tls_info() const
 			static_cast<DWORD>(tls_directory_data.EndAddressOfRawData - tls_directory_data.StartAddressOfRawData)));
 	}
 
-	//Read callbacks VAs
-	DWORD current_tls_callback = 0;
-
-	while(true)
+	//If file has TLS callbacks
+	if(ret.get_callbacks_rva())
 	{
-		//Read TLS callback VA
-		typename PEClassType::BaseSize va = section_data_from_va<typename PEClassType::BaseSize>(tls_directory_data.AddressOfCallBacks + current_tls_callback, section_data_virtual, true);
-		if(va == 0)
-			break;
+		//Read callbacks VAs
+		DWORD current_tls_callback = 0;
 
-		//Save it
-		ret.add_tls_callback(va_to_rva(va, false));
-	
-		//Move to next callback VA
-		current_tls_callback += sizeof(va);
+		while(true)
+		{
+			//Read TLS callback VA
+			typename PEClassType::BaseSize va = section_data_from_va<typename PEClassType::BaseSize>(tls_directory_data.AddressOfCallBacks + current_tls_callback, section_data_virtual, true);
+			if(va == 0)
+				break;
+
+			//Save it
+			ret.add_tls_callback(va_to_rva(va, false));
+
+			//Move to next callback VA
+			current_tls_callback += sizeof(va);
+		}
 	}
 
 	return ret;

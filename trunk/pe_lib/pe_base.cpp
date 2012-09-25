@@ -1151,7 +1151,7 @@ void pe_base::read_pe(std::istream& file, bool read_bound_import_raw_data, bool 
 		try
 		{
 			//Check the length in bytes of the section containing debug directory
-			if(section_data_length_from_rva(get_directory_rva(IMAGE_DIRECTORY_ENTRY_DEBUG), section_data_virtual, true) < sizeof(IMAGE_DEBUG_DIRECTORY))
+			if(section_data_length_from_rva(get_directory_rva(IMAGE_DIRECTORY_ENTRY_DEBUG), get_directory_rva(IMAGE_DIRECTORY_ENTRY_DEBUG), section_data_virtual, true) < sizeof(IMAGE_DEBUG_DIRECTORY))
 				break;
 
 			unsigned long current_pos = get_directory_rva(IMAGE_DIRECTORY_ENTRY_DEBUG);
@@ -1835,7 +1835,7 @@ const std::vector<pe_base::exported_function> pe_base::get_exported_functions(ex
 	if(has_exports())
 	{
 		//Check the length in bytes of the section containing export directory
-		if(section_data_length_from_rva(get_directory_rva(IMAGE_DIRECTORY_ENTRY_EXPORT), section_data_virtual, true) < sizeof(IMAGE_EXPORT_DIRECTORY))
+		if(section_data_length_from_rva(get_directory_rva(IMAGE_DIRECTORY_ENTRY_EXPORT), get_directory_rva(IMAGE_DIRECTORY_ENTRY_EXPORT), section_data_virtual, true) < sizeof(IMAGE_EXPORT_DIRECTORY))
 			throw pe_exception("Incorrect export directory", pe_exception::incorrect_export_directory);
 
 		IMAGE_EXPORT_DIRECTORY exports = section_data_from_rva<IMAGE_EXPORT_DIRECTORY>(get_directory_rva(IMAGE_DIRECTORY_ENTRY_EXPORT), section_data_virtual, true);
@@ -1888,16 +1888,16 @@ const std::vector<pe_base::exported_function> pe_base::get_exported_functions(ex
 			throw pe_exception("Incorrect export directory", pe_exception::incorrect_export_directory);
 
 		//Check if it is enough bytes to hold AddressOfFunctions table
-		if(section_data_length_from_rva(exports.AddressOfFunctions, section_data_virtual, true) < exports.NumberOfFunctions * sizeof(DWORD))
+		if(section_data_length_from_rva(exports.AddressOfFunctions, exports.AddressOfFunctions, section_data_virtual, true) < exports.NumberOfFunctions * sizeof(DWORD))
 			throw pe_exception("Incorrect export directory", pe_exception::incorrect_export_directory);
 
 		if(exports.AddressOfNames)
 		{
 			//Check if it is enough bytes to hold name and ordinal tables
-			if(section_data_length_from_rva(exports.AddressOfNameOrdinals, section_data_virtual, true) < exports.NumberOfNames * sizeof(WORD))
+			if(section_data_length_from_rva(exports.AddressOfNameOrdinals, exports.AddressOfNameOrdinals, section_data_virtual, true) < exports.NumberOfNames * sizeof(WORD))
 				throw pe_exception("Incorrect export directory", pe_exception::incorrect_export_directory);
 
-			if(section_data_length_from_rva(exports.AddressOfNames, section_data_virtual, true) < exports.NumberOfNames * sizeof(DWORD))
+			if(section_data_length_from_rva(exports.AddressOfNames, exports.AddressOfNames, section_data_virtual, true) < exports.NumberOfNames * sizeof(DWORD))
 				throw pe_exception("Incorrect export directory", pe_exception::incorrect_export_directory);
 		}
 		
@@ -1950,7 +1950,7 @@ const std::vector<pe_base::exported_function> pe_base::get_exported_functions(ex
 					if(rva >= get_directory_rva(IMAGE_DIRECTORY_ENTRY_EXPORT) + sizeof(IMAGE_DIRECTORY_ENTRY_EXPORT) &&
 						rva < get_directory_rva(IMAGE_DIRECTORY_ENTRY_EXPORT) + get_directory_size(IMAGE_DIRECTORY_ENTRY_EXPORT))
 					{
-						if((max_name_length = section_data_length_from_rva(rva, section_data_virtual, true)) < 2)
+						if((max_name_length = section_data_length_from_rva(rva, rva, section_data_virtual, true)) < 2)
 							throw pe_exception("Incorrect export directory", pe_exception::incorrect_export_directory);
 
 						//Get forwarded function name pointer
@@ -2594,7 +2594,7 @@ const pe_base::relocation_table_list pe_base::get_relocations(bool list_absolute
 		return ret;
 
 	//Check the length in bytes of the section containing relocation directory
-	if(section_data_length_from_rva(get_directory_rva(IMAGE_DIRECTORY_ENTRY_BASERELOC), section_data_virtual, true) < sizeof(IMAGE_BASE_RELOCATION))
+	if(section_data_length_from_rva(get_directory_rva(IMAGE_DIRECTORY_ENTRY_BASERELOC), get_directory_rva(IMAGE_DIRECTORY_ENTRY_BASERELOC), section_data_virtual, true) < sizeof(IMAGE_BASE_RELOCATION))
 		throw pe_exception("Incorrect relocation directory", pe_exception::incorrect_relocation_directory);
 
 	unsigned long current_pos = get_directory_rva(IMAGE_DIRECTORY_ENTRY_BASERELOC);
@@ -3535,7 +3535,7 @@ const pe_base::resource_directory pe_base::process_resource_directory(DWORD res_
 			WORD directory_name_length = section_data_from_rva<WORD>(res_rva + dir_entry.NameOffset, section_data_virtual, true);
 
 			//Check name length
-			if(section_data_length_from_rva(res_rva + dir_entry.NameOffset + sizeof(WORD), section_data_virtual, true) < directory_name_length)
+			if(section_data_length_from_rva(res_rva + dir_entry.NameOffset + sizeof(WORD), res_rva + dir_entry.NameOffset + sizeof(WORD), section_data_virtual, true) < directory_name_length)
 				throw pe_exception("Incorrect resource directory", pe_exception::incorrect_resource_directory);
 
 			//Set entry UNICODE name
@@ -3561,7 +3561,7 @@ const pe_base::resource_directory pe_base::process_resource_directory(DWORD res_
 				res_rva + dir_entry.OffsetToData, section_data_virtual, true);
 
 			//Check byte count that stated by data entry
-			if(section_data_length_from_rva(data_entry.OffsetToData, section_data_virtual, true) < data_entry.Size)
+			if(section_data_length_from_rva(data_entry.OffsetToData, data_entry.OffsetToData, section_data_virtual, true) < data_entry.Size)
 				throw pe_exception("Incorrect resource directory", pe_exception::incorrect_resource_directory);
 
 			//Add data entry to directory entry
@@ -3944,7 +3944,7 @@ const pe_base::exception_entry_list pe_base::get_exception_directory_data() cons
 		return ret;
 
 	//Check the length in bytes of the section containing exception directory
-	if(section_data_length_from_rva(get_directory_rva(IMAGE_DIRECTORY_ENTRY_EXCEPTION), section_data_virtual, true) < sizeof(IMAGE_RUNTIME_FUNCTION_ENTRY))
+	if(section_data_length_from_rva(get_directory_rva(IMAGE_DIRECTORY_ENTRY_EXCEPTION), get_directory_rva(IMAGE_DIRECTORY_ENTRY_EXCEPTION), section_data_virtual, true) < sizeof(IMAGE_RUNTIME_FUNCTION_ENTRY))
 		throw pe_exception("Incorrect exception directory", pe_exception::incorrect_exception_directory);
 
 	unsigned long current_pos = get_directory_rva(IMAGE_DIRECTORY_ENTRY_EXCEPTION);
@@ -4572,7 +4572,7 @@ const pe_base::debug_info_list pe_base::get_debug_information() const
 		return ret;
 
 	//Check the length in bytes of the section containing debug directory
-	if(section_data_length_from_rva(get_directory_rva(IMAGE_DIRECTORY_ENTRY_DEBUG), section_data_virtual, true) < sizeof(IMAGE_DEBUG_DIRECTORY))
+	if(section_data_length_from_rva(get_directory_rva(IMAGE_DIRECTORY_ENTRY_DEBUG), get_directory_rva(IMAGE_DIRECTORY_ENTRY_DEBUG), section_data_virtual, true) < sizeof(IMAGE_DEBUG_DIRECTORY))
 		throw pe_exception("Incorrect debug directory", pe_exception::incorrect_debug_directory);
 
 	unsigned long current_pos = get_directory_rva(IMAGE_DIRECTORY_ENTRY_DEBUG);

@@ -199,6 +199,12 @@ public: //IMAGE CONFIG
 	//Returns image config info
 	//If image does not have config info, throws an exception
 	virtual const image_config_info get_image_config() const;
+	
+	//Image config directory rebuilder
+	//auto_strip_last_section - if true and TLS are placed in the last section, it will be automatically stripped
+	//If write_se_handlers = true, SE Handlers list will be written just after image config directory structure
+	//If write_lock_prefixes = true, Lock Prefixes address list will be written just after image config directory structure
+	virtual const image_directory rebuild_image_config(const image_config_info& info, section& image_config_section, DWORD offset_from_section_start = 0, bool write_se_handlers = true, bool write_lock_prefixes = true, bool save_to_pe_header = true, bool auto_strip_last_section = true);
 
 public: //RELOCATIONS
 	//Recalculates image base with the help of relocation tables

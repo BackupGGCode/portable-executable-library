@@ -452,6 +452,9 @@ void pe_base::prepare_section(section& s)
 //Adds section to image
 pe_base::section& pe_base::add_section(section s)
 {
+	if(sections_.size() >= maximum_number_of_sections)
+		throw pe_exception("Maximum number of sections has been reached", pe_exception::no_more_sections_can_be_added);
+
 	//Prepare section before adding it
 	prepare_section(s);
 
@@ -476,7 +479,7 @@ pe_base::section& pe_base::add_section(section s)
 	//Add section to the end of section list
 	sections_.push_back(s);
 	//Set number of sections in PE header
-	set_number_of_sections(sections_.size());
+	set_number_of_sections(static_cast<WORD>(sections_.size()));
 	//Recalculate virtual size of image
 	set_size_of_image(get_size_of_image() + s.virtual_size_aligned_);
 	//Return last section
@@ -1871,8 +1874,11 @@ const std::vector<pe_base::exported_function> pe_base::get_exported_functions(ex
 			info->set_timestamp(exports.TimeDateStamp);
 		}
 
+		if(!exports.NumberOfFunctions)
+			return ret;
+
 		//Check IMAGE_EXPORT_DIRECTORY fields
-		if(!exports.NumberOfFunctions || exports.NumberOfNames > exports.NumberOfFunctions)
+		if(exports.NumberOfNames > exports.NumberOfFunctions)
 			throw pe_exception("Incorrect export directory", pe_exception::incorrect_export_directory);
 
 		//Check some export directory fields
@@ -2044,10 +2050,6 @@ const pe_base::image_directory pe_base::rebuild_exports(const export_info& info,
 	//Check that exports_section is attached to this PE image
 	if(!section_attached(exports_section))
 		throw pe_exception("Exports section must be attached to PE file", pe_exception::section_is_not_attached);
-	
-	//Check if we're exporting something
-	if(exports.empty())
-		throw pe_exception("Exports list is empty", pe_exception::exports_list_is_empty);
 
 	//Needed space for strings
 	DWORD needed_size_for_strings = static_cast<DWORD>(info.get_name().length() + 1);
@@ -2055,6 +2057,9 @@ const pe_base::image_directory pe_base::rebuild_exports(const export_info& info,
 	DWORD max_ordinal = 0; //Maximum ordinal number
 	DWORD ordinal_base = static_cast<DWORD>(-1); //Minimum ordinal value
 	
+	if(exports.empty())
+		ordinal_base = info.get_ordinal_base();
+
 	DWORD needed_size_for_function_names = 0; //Needed space for function name strings
 	DWORD needed_size_for_function_forwards = 0; //Needed space for function forwards names
 	
@@ -3007,6 +3012,12 @@ const pe_base::image_config_info::se_handler_list& pe_base::image_config_info::g
 	return se_handlers_;
 }
 
+//Returns Lock Prefix RVA list
+const pe_base::image_config_info::lock_prefix_rva_list& pe_base::image_config_info::get_lock_prefix_rvas() const
+{
+	return lock_prefixes_;
+}
+
 //Adds SE Handler RVA to list
 void pe_base::image_config_info::add_se_handler_rva(DWORD rva)
 {
@@ -3017,6 +3028,136 @@ void pe_base::image_config_info::add_se_handler_rva(DWORD rva)
 void pe_base::image_config_info::clear_se_handler_list()
 {
 	se_handlers_.clear();
+}
+
+//Adds Lock Prefix RVA to list
+void pe_base::image_config_info::add_lock_prefix_rva(DWORD rva)
+{
+	lock_prefixes_.push_back(rva);
+}
+
+//Clears Lock Prefix list
+void pe_base::image_config_info::clear_lock_prefix_list()
+{
+	lock_prefixes_.clear();
+}
+
+//Sets the date and time stamp value
+void pe_base::image_config_info::set_time_stamp(DWORD time_stamp)
+{
+	time_stamp_ = time_stamp;
+}
+
+//Sets major version number
+void pe_base::image_config_info::set_major_version(WORD major_version)
+{
+	major_version_ = major_version;
+}
+
+//Sets minor version number
+void pe_base::image_config_info::set_minor_version(WORD minor_version)
+{
+	minor_version_ = minor_version;
+}
+
+//Sets clear global flags
+void pe_base::image_config_info::set_global_flags_clear(DWORD global_flags_clear)
+{
+	global_flags_clear_ = global_flags_clear;
+}
+
+//Sets set global flags
+void pe_base::image_config_info::set_global_flags_set(DWORD global_flags_set)
+{
+	global_flags_set_ = global_flags_set;
+}
+
+//Sets critical section default timeout
+void pe_base::image_config_info::set_critical_section_default_timeout(DWORD critical_section_default_timeout)
+{
+	critical_section_default_timeout_ = critical_section_default_timeout;
+}
+
+//Sets the size of the minimum block that
+//must be freed before it is freed (de-committed), in bytes
+void pe_base::image_config_info::set_decommit_free_block_threshold(ULONGLONG decommit_free_block_threshold)
+{
+	decommit_free_block_threshold_ = decommit_free_block_threshold;
+}
+
+//Sets the size of the minimum total memory
+//that must be freed in the process heap before it is freed (de-committed), in bytes
+void pe_base::image_config_info::set_decommit_total_free_threshold(ULONGLONG decommit_total_free_threshold)
+{
+	decommit_total_free_threshold_ = decommit_total_free_threshold;
+}
+
+//Sets VA of a list of addresses where the LOCK prefix is used
+//If you rebuild this list, VA will be re-assigned automatically
+void pe_base::image_config_info::set_lock_prefix_table_va(ULONGLONG lock_prefix_table_va)
+{
+	lock_prefix_table_va_ = lock_prefix_table_va;
+}
+
+//Sets the maximum allocation size, in bytes
+void pe_base::image_config_info::set_max_allocation_size(ULONGLONG max_allocation_size)
+{
+	max_allocation_size_ = max_allocation_size;
+}
+
+//Sets the maximum block size that can be allocated from heap segments, in bytes
+void pe_base::image_config_info::set_virtual_memory_threshold(ULONGLONG virtual_memory_threshold)
+{
+	virtual_memory_threshold_ = virtual_memory_threshold;
+}
+
+//Sets process affinity mask
+void pe_base::image_config_info::set_process_affinity_mask(ULONGLONG process_affinity_mask)
+{
+	process_affinity_mask_ = process_affinity_mask;
+}
+
+//Sets process heap flags
+void pe_base::image_config_info::set_process_heap_flags(DWORD process_heap_flags)
+{
+	process_heap_flags_ = process_heap_flags;
+}
+
+//Sets service pack version (CSDVersion)
+void pe_base::image_config_info::set_service_pack_version(WORD service_pack_version)
+{
+	service_pack_version_ = service_pack_version;
+}
+
+//Sets VA of edit list (reserved by system)
+void pe_base::image_config_info::set_edit_list_va(ULONGLONG edit_list_va)
+{
+	edit_list_va_ = edit_list_va;
+}
+
+//Sets a pointer to a cookie that is used by Visual C++ or GS implementation
+void pe_base::image_config_info::set_security_cookie_va(ULONGLONG security_cookie_va)
+{
+	security_cookie_va_ = security_cookie_va;
+}
+
+//Sets VA of the sorted table of RVAs of each valid, unique handler in the image
+//If you rebuild this list, VA will be re-assigned automatically
+void pe_base::image_config_info::set_se_handler_table_va(ULONGLONG se_handler_table_va)
+{
+	se_handler_table_va_ = se_handler_table_va;
+}
+
+//Returns SE Handler RVA list
+pe_base::image_config_info::se_handler_list& pe_base::image_config_info::get_se_handler_rvas()
+{
+	return se_handlers_;
+}
+
+//Returns Lock Prefix RVA list
+pe_base::image_config_info::lock_prefix_rva_list& pe_base::image_config_info::get_lock_prefix_rvas()
+{
+	return lock_prefixes_;
 }
 
 //BOUND IMPORT

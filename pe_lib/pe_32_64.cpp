@@ -1207,7 +1207,7 @@ const pe_base::image_config_info pe<PEClassType>::get_image_config() const
 
 	//Check size of config directory
 	if(config_info.Size != sizeof(config_info))
-		throw pe_exception("Incorrect load config directory", pe_exception::incorrect_config_directory);
+		throw pe_exception("Incorrect (or old) load config directory", pe_exception::incorrect_config_directory);
 
 	//Fill return structure
 	image_config_info ret(config_info);
@@ -1217,9 +1217,174 @@ const pe_base::image_config_info pe<PEClassType>::get_image_config() const
 		|| config_info.SEHandlerTable >= static_cast<typename PEClassType::BaseSize>(-1) - config_info.SEHandlerCount * sizeof(DWORD))
 		throw pe_exception("Incorrect load config directory", pe_exception::incorrect_config_directory);
 
-	//Read SE handler RVA list (if any)
+	//Read sorted SE handler RVA list (if any)
 	for(typename PEClassType::BaseSize i = 0; i != config_info.SEHandlerCount; ++i)
 		ret.add_se_handler_rva(section_data_from_va<DWORD>(config_info.SEHandlerTable + i * sizeof(DWORD)));
+
+	if(config_info.LockPrefixTable)
+	{
+		//Read Lock Prefix VA list (if any)
+		unsigned long current = 0;
+		while(true)
+		{
+			typename PEClassType::BaseSize lock_prefix_va = section_data_from_va<typename PEClassType::BaseSize>(config_info.LockPrefixTable + current * sizeof(typename PEClassType::BaseSize));
+			if(!lock_prefix_va)
+				break;
+
+			ret.add_lock_prefix_rva(va_to_rva(lock_prefix_va));
+
+			++current;
+		}
+	}
+
+	return ret;
+}
+
+//Image config directory rebuilder
+//auto_strip_last_section - if true and TLS are placed in the last section, it will be automatically stripped
+//If write_se_handlers = true, SE Handlers list will be written just after image config directory structure
+//If write_lock_prefixes = true, Lock Prefixes address list will be written just after image config directory structure
+template<typename PEClassType>
+const pe_base::image_directory pe<PEClassType>::rebuild_image_config(const image_config_info& info, section& image_config_section, DWORD offset_from_section_start, bool write_se_handlers, bool write_lock_prefixes, bool save_to_pe_header, bool auto_strip_last_section)
+{
+	//Check that image_config_section is attached to this PE image
+	if(!section_attached(image_config_section))
+		throw pe_exception("Image Config section must be attached to PE file", pe_exception::section_is_not_attached);
+	
+	DWORD alignment = align_up(offset_from_section_start, sizeof(typename PEClassType::BaseSize)) - offset_from_section_start;
+
+	DWORD needed_size = sizeof(typename PEClassType::ConfigStruct) + alignment; //Calculate needed size for Image Config table
+
+	DWORD current_pos_of_se_handlers = 0;
+	DWORD current_pos_of_lock_prefixes = 0;
+	
+	if(write_se_handlers)
+	{
+		current_pos_of_se_handlers = needed_size + offset_from_section_start;
+		needed_size += static_cast<DWORD>(info.get_se_handler_rvas().size()) * sizeof(DWORD); //RVAs of SE Handlers
+	}
+	
+	if(write_lock_prefixes)
+	{
+		current_pos_of_lock_prefixes = needed_size + offset_from_section_start;
+		needed_size += static_cast<DWORD>((info.get_lock_prefix_rvas().size() + 1) * sizeof(typename PEClassType::BaseSize)); //VAs of Lock Prefixes (and ending null element)
+	}
+
+	//Check if image_config_section is last one. If it's not, check if there's enough place for Image Config data
+	if(&image_config_section != &*(sections_.end() - 1) && 
+		(image_config_section.empty() || align_up(image_config_section.get_size_of_raw_data(), get_file_alignment()) < needed_size + offset_from_section_start))
+		throw pe_exception("Insufficient space for TLS directory", pe_exception::insufficient_space);
+
+	std::string& raw_data = image_config_section.get_raw_data();
+
+	//This will be done only is tls_section is the last section of image or for section with unaligned raw length of data
+	if(raw_data.length() < needed_size + offset_from_section_start)
+		raw_data.resize(needed_size + offset_from_section_start); //Expand section raw data
+
+	DWORD image_config_data_pos = offset_from_section_start + alignment;
+
+	//Create and fill Image Config structure
+	typename PEClassType::ConfigStruct image_config_section_struct = {0};
+	image_config_section_struct.Size = sizeof(image_config_section_struct);
+	image_config_section_struct.TimeDateStamp = info.get_time_stamp();
+	image_config_section_struct.MajorVersion = info.get_major_version();
+	image_config_section_struct.MinorVersion = info.get_minor_version();
+	image_config_section_struct.GlobalFlagsClear = info.get_global_flags_clear();
+	image_config_section_struct.GlobalFlagsSet = info.get_global_flags_set();
+	image_config_section_struct.CriticalSectionDefaultTimeout = info.get_critical_section_default_timeout();
+	image_config_section_struct.DeCommitFreeBlockThreshold = static_cast<typename PEClassType::BaseSize>(info.get_decommit_free_block_threshold());
+	image_config_section_struct.DeCommitTotalFreeThreshold = static_cast<typename PEClassType::BaseSize>(info.get_decommit_total_free_threshold());
+	image_config_section_struct.MaximumAllocationSize = static_cast<typename PEClassType::BaseSize>(info.get_max_allocation_size());
+	image_config_section_struct.VirtualMemoryThreshold = static_cast<typename PEClassType::BaseSize>(info.get_virtual_memory_threshold());
+	image_config_section_struct.ProcessHeapFlags = info.get_process_heap_flags();
+	image_config_section_struct.ProcessAffinityMask = static_cast<typename PEClassType::BaseSize>(info.get_process_affinity_mask());
+	image_config_section_struct.CSDVersion = info.get_service_pack_version();
+	image_config_section_struct.EditList = static_cast<typename PEClassType::BaseSize>(info.get_edit_list_va());
+	image_config_section_struct.SecurityCookie = static_cast<typename PEClassType::BaseSize>(info.get_security_cookie_va());
+	image_config_section_struct.SEHandlerCount = static_cast<typename PEClassType::BaseSize>(info.get_se_handler_rvas().size());
+	
+
+	if(write_se_handlers)
+	{
+		if(info.get_se_handler_rvas().empty())
+		{
+			write_se_handlers = false;
+			image_config_section_struct.SEHandlerTable = 0;
+		}
+		else
+		{
+			rva_to_va(rva_from_section_offset(image_config_section, current_pos_of_se_handlers), image_config_section_struct.SEHandlerTable);
+		}
+	}
+	else
+	{
+		image_config_section_struct.SEHandlerTable = static_cast<typename PEClassType::BaseSize>(info.get_se_handler_table_va());
+	}
+
+	if(write_lock_prefixes)
+	{
+		if(info.get_lock_prefix_rvas().empty())
+		{
+			write_lock_prefixes = false;
+			image_config_section_struct.LockPrefixTable = 0;
+		}
+		else
+		{
+			rva_to_va(rva_from_section_offset(image_config_section, current_pos_of_lock_prefixes), image_config_section_struct.LockPrefixTable);
+		}
+	}
+	else
+	{
+		image_config_section_struct.LockPrefixTable = static_cast<typename PEClassType::BaseSize>(info.get_lock_prefix_table_va());
+	}
+
+	//Write image config section
+	memcpy(&raw_data[image_config_data_pos], &image_config_section_struct, sizeof(image_config_section_struct));
+
+	if(write_se_handlers)
+	{
+		//Sort SE Handlers list
+		image_config_info::se_handler_list sorted_list = info.get_se_handler_rvas();
+		std::sort(sorted_list.begin(), sorted_list.end());
+
+		//Write SE Handlers table
+		for(image_config_info::se_handler_list::const_iterator it = sorted_list.begin(); it != sorted_list.end(); ++it)
+		{
+			DWORD se_handler_rva = *it;
+			memcpy(&raw_data[current_pos_of_se_handlers], &se_handler_rva, sizeof(se_handler_rva));
+			current_pos_of_se_handlers += sizeof(se_handler_rva);
+		}
+	}
+
+	if(write_lock_prefixes)
+	{
+		//Write Lock Prefixes VA list
+		for(image_config_info::lock_prefix_rva_list::const_iterator it = info.get_lock_prefix_rvas().begin(); it != info.get_lock_prefix_rvas().end(); ++it)
+		{
+			typename PEClassType::BaseSize lock_prefix_va;
+			rva_to_va(*it, lock_prefix_va);
+			memcpy(&raw_data[current_pos_of_lock_prefixes], &lock_prefix_va, sizeof(lock_prefix_va));
+			current_pos_of_lock_prefixes += sizeof(lock_prefix_va);
+		}
+
+		{
+			//Ending null VA
+			typename PEClassType::BaseSize lock_prefix_va = 0;
+			memcpy(&raw_data[current_pos_of_lock_prefixes], &lock_prefix_va, sizeof(lock_prefix_va));
+		}
+	}
+
+	//Adjust section raw and virtual sizes
+	recalculate_section_sizes(image_config_section, auto_strip_last_section);
+
+	image_directory ret(rva_from_section_offset(image_config_section, image_config_data_pos), sizeof(PEClassType::ConfigStruct));
+
+	//If auto-rewrite of PE headers is required
+	if(save_to_pe_header)
+	{
+		set_directory_rva(IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG, ret.get_rva());
+		set_directory_size(IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG, ret.get_size());
+	}
 
 	return ret;
 }

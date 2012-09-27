@@ -12,12 +12,13 @@
 
 //Please don't remove this information from header
 //PE Library (c) DX 2011 - 2012, http://kaimi.ru
-//Version: 0.1.7
+//Version: 0.1.8
 //Free to use, modify and distribute
 
 // == more important ==
 //TODO: relocations that take more than one element (seems to be not possible in Windows PE, but anyway)
 //TODO: create sample-based tests
+//TODO: create PE/PE+ image (without PE-file)
 //== less important ==
 //TODO: delay import directory
 //TODO: write message tables
@@ -1090,6 +1091,7 @@ public: //IMAGE CONFIG
 	{
 	public:
 		typedef std::vector<DWORD> se_handler_list;
+		typedef std::vector<DWORD> lock_prefix_rva_list;
 
 	public:
 		//Default constructor
@@ -1139,12 +1141,67 @@ public: //IMAGE CONFIG
 
 		//Returns SE Handler RVA list
 		const se_handler_list& get_se_handler_rvas() const;
+		
+		//Returns Lock Prefix RVA list
+		const lock_prefix_rva_list& get_lock_prefix_rvas() const;
 
 	public: //These functions do not change everything inside image, they are used by PE class
+		//Also you can use these functions to rebuild image config directory
+
 		//Adds SE Handler RVA to list
 		void add_se_handler_rva(DWORD rva);
 		//Clears SE Handler list
 		void clear_se_handler_list();
+		
+		//Adds Lock Prefix RVA to list
+		void add_lock_prefix_rva(DWORD rva);
+		//Clears Lock Prefix list
+		void clear_lock_prefix_list();
+		
+		//Sets the date and time stamp value
+		void set_time_stamp(DWORD time_stamp);
+		//Sets major version number
+		void set_major_version(WORD major_version);
+		//Sets minor version number
+		void set_minor_version(WORD minor_version);
+		//Sets clear global flags
+		void set_global_flags_clear(DWORD global_flags_clear);
+		//Sets set global flags
+		void set_global_flags_set(DWORD global_flags_set);
+		//Sets critical section default timeout
+		void set_critical_section_default_timeout(DWORD critical_section_default_timeout);
+		//Sets the size of the minimum block that
+		//must be freed before it is freed (de-committed), in bytes
+		void set_decommit_free_block_threshold(ULONGLONG decommit_free_block_threshold);
+		//Sets the size of the minimum total memory
+		//that must be freed in the process heap before it is freed (de-committed), in bytes
+		void set_decommit_total_free_threshold(ULONGLONG decommit_total_free_threshold);
+		//Sets VA of a list of addresses where the LOCK prefix is used
+		//If you rebuild this list, VA will be re-assigned automatically
+		void set_lock_prefix_table_va(ULONGLONG lock_prefix_table_va);
+		//Sets the maximum allocation size, in bytes
+		void set_max_allocation_size(ULONGLONG max_allocation_size);
+		//Sets the maximum block size that can be allocated from heap segments, in bytes
+		void set_virtual_memory_threshold(ULONGLONG virtual_memory_threshold);
+		//Sets process affinity mask
+		void set_process_affinity_mask(ULONGLONG process_affinity_mask);
+		//Sets process heap flags
+		void set_process_heap_flags(DWORD process_heap_flags);
+		//Sets service pack version (CSDVersion)
+		void set_service_pack_version(WORD service_pack_version);
+		//Sets VA of edit list (reserved by system)
+		void set_edit_list_va(ULONGLONG edit_list_va);
+		//Sets a pointer to a cookie that is used by Visual C++ or GS implementation
+		void set_security_cookie_va(ULONGLONG security_cookie_va);
+		//Sets VA of the sorted table of RVAs of each valid, unique handler in the image
+		//If you rebuild this list, VA will be re-assigned automatically
+		void set_se_handler_table_va(ULONGLONG se_handler_table_va);
+
+		//Returns SE Handler RVA list
+		se_handler_list& get_se_handler_rvas();
+
+		//Returns Lock Prefix RVA list
+		lock_prefix_rva_list& get_lock_prefix_rvas();
 
 	private:
 		DWORD time_stamp_;
@@ -1164,11 +1221,19 @@ public: //IMAGE CONFIG
 		ULONGLONG se_handler_count_;
 
 		se_handler_list se_handlers_;
+		lock_prefix_rva_list lock_prefixes_;
 	};
 
 	//Returns image config info
 	//If image does not have config info, throws an exception
 	virtual const image_config_info get_image_config() const = 0;
+
+
+	//Image config directory rebuilder
+	//auto_strip_last_section - if true and TLS are placed in the last section, it will be automatically stripped
+	//If write_se_handlers = true, SE Handlers list will be written just after image config directory structure
+	//If write_lock_prefixes = true, Lock Prefixes address list will be written just after image config directory structure
+	virtual const image_directory rebuild_image_config(const image_config_info& info, section& image_config_section, DWORD offset_from_section_start = 0, bool write_se_handlers = true, bool write_lock_prefixes = true, bool save_to_pe_header = true, bool auto_strip_last_section = true) = 0;
 
 
 public: //BOUND IMPORT

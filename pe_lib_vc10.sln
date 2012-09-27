@@ -134,6 +134,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "resource_editor", "samples\
 		{1461F543-D1FA-4E4C-B6D7-0F879F566035} = {1461F543-D1FA-4E4C-B6D7-0F879F566035}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "image_config_editor", "samples\image_config_editor\image_config_editor.vcxproj", "{48B99169-44E6-41E5-A681-78243B885E86}"
+	ProjectSection(ProjectDependencies) = postProject
+		{1461F543-D1FA-4E4C-B6D7-0F879F566035} = {1461F543-D1FA-4E4C-B6D7-0F879F566035}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -350,6 +355,14 @@ Global
 		{B88455A6-C93A-4F17-93A5-FC84B70F9CFE}.Release|Win32.Build.0 = Release|Win32
 		{B88455A6-C93A-4F17-93A5-FC84B70F9CFE}.Release|x64.ActiveCfg = Release|x64
 		{B88455A6-C93A-4F17-93A5-FC84B70F9CFE}.Release|x64.Build.0 = Release|x64
+		{48B99169-44E6-41E5-A681-78243B885E86}.Debug|Win32.ActiveCfg = Debug|Win32
+		{48B99169-44E6-41E5-A681-78243B885E86}.Debug|Win32.Build.0 = Debug|Win32
+		{48B99169-44E6-41E5-A681-78243B885E86}.Debug|x64.ActiveCfg = Debug|x64
+		{48B99169-44E6-41E5-A681-78243B885E86}.Debug|x64.Build.0 = Debug|x64
+		{48B99169-44E6-41E5-A681-78243B885E86}.Release|Win32.ActiveCfg = Release|Win32
+		{48B99169-44E6-41E5-A681-78243B885E86}.Release|Win32.Build.0 = Release|Win32
+		{48B99169-44E6-41E5-A681-78243B885E86}.Release|x64.ActiveCfg = Release|x64
+		{48B99169-44E6-41E5-A681-78243B885E86}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -381,5 +394,6 @@ Global
 		{7375047B-90D7-4564-BA84-7E5C638C7CCE} = {53A03406-AEFB-4ABA-8DD1-5AE9B8DFB036}
 		{ABA9C7BF-D145-4066-8E0D-41C190BB5C0A} = {53A03406-AEFB-4ABA-8DD1-5AE9B8DFB036}
 		{B88455A6-C93A-4F17-93A5-FC84B70F9CFE} = {53A03406-AEFB-4ABA-8DD1-5AE9B8DFB036}
+		{48B99169-44E6-41E5-A681-78243B885E86} = {53A03406-AEFB-4ABA-8DD1-5AE9B8DFB036}
 	EndGlobalSection
 EndGlobal

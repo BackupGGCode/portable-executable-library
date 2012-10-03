@@ -2725,6 +2725,9 @@ const pe_base::image_directory pe_base::rebuild_relocations(const relocation_tab
 	{
 		set_directory_rva(IMAGE_DIRECTORY_ENTRY_BASERELOC, ret.get_rva());
 		set_directory_size(IMAGE_DIRECTORY_ENTRY_BASERELOC, ret.get_size());
+
+		clear_characteristics_flags(IMAGE_FILE_RELOCS_STRIPPED);
+		set_dll_characteristics(get_dll_characteristics() | IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE);
 	}
 
 	return ret;

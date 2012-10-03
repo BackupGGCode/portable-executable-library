@@ -8,7 +8,6 @@
 #include "pe_base.h"
 
 //Helper class to reduce code size and ease its editing
-//Specializes
 template<
 	typename NtHeadersType,
 	typename OptHeadersType,
@@ -40,7 +39,10 @@ public:
 	//If read_bound_import_raw_data, raw bound import data will be read (used to get bound import info)
 	//If read_debug_raw_data, raw debug data will be read (used to get image debug info)
 	explicit pe(std::istream& file, bool read_bound_import_raw_data = true, bool read_debug_raw_data = true);
-
+	
+	//Constructor of empty PE file
+	explicit pe(DWORD section_alignment = 0x1000, bool dll = false, WORD subsystem = IMAGE_SUBSYSTEM_WINDOWS_GUI);
+	
 	//Destructor
 	virtual ~pe();
 
@@ -58,7 +60,7 @@ public: //DIRECTORIES
 	virtual DWORD get_directory_size(unsigned long id) const;
 
 	//Sets directory RVA (just a value of PE header, no moving occurs)
-	virtual void set_directory_rva(unsigned long id, DWORD va);
+	virtual void set_directory_rva(unsigned long id, DWORD rva);
 	//Sets directory size (just a value of PE header, no moving occurs)
 	virtual void set_directory_size(unsigned long id, DWORD size);
 	
@@ -137,6 +139,9 @@ public: //PE HEADER
 	//Returns subsystem
 	virtual WORD get_subsystem() const;
 
+	//Sets subsystem
+	virtual void set_subsystem(WORD subsystem);
+
 	//Returns size of optional header
 	virtual WORD get_size_of_optional_header() const;
 
@@ -149,6 +154,29 @@ public: //PE HEADER
 	//Returns checksum of PE file from header
 	virtual DWORD get_checksum() const;
 
+	//Returns DLL Characteristics
+	virtual WORD get_dll_characteristics() const;
+	
+	//Sets DLL Characteristics
+	virtual void set_dll_characteristics(WORD characteristics);
+	
+	//Sets required operation system version
+	virtual void set_os_version(WORD major, WORD minor);
+
+	//Returns required operation system version (minor word)
+	virtual WORD get_minor_os_version() const;
+
+	//Returns required operation system version (major word)
+	virtual WORD get_major_os_version() const;
+
+	//Sets required subsystem version
+	virtual void set_subsystem_version(WORD major, WORD minor);
+
+	//Returns required subsystem version (minor word)
+	virtual WORD get_minor_subsystem_version() const;
+
+	//Returns required subsystem version (major word)
+	virtual WORD get_major_subsystem_version() const;
 
 public: //ADDRESS CONVERTIONS
 	//Virtual Address (VA) to Relative Virtual Address (RVA) convertions

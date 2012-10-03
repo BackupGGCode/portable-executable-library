@@ -12,13 +12,12 @@
 
 //Please don't remove this information from header
 //PE Library (c) DX 2011 - 2012, http://kaimi.ru
-//Version: 0.1.8
+//Version: 0.1.9
 //Free to use, modify and distribute
 
 // == more important ==
 //TODO: relocations that take more than one element (seems to be not possible in Windows PE, but anyway)
 //TODO: create sample-based tests
-//TODO: create PE/PE+ image (without PE-file)
 //== less important ==
 //TODO: delay import directory
 //TODO: write message tables
@@ -200,7 +199,7 @@ public: //DIRECTORIES
 	virtual DWORD get_directory_size(unsigned long id) const = 0;
 
 	//Sets directory RVA (just a value of PE header, no moving occurs)
-	virtual void set_directory_rva(unsigned long id, DWORD va) = 0;
+	virtual void set_directory_rva(unsigned long id, DWORD rva) = 0;
 	//Sets directory size (just a value of PE header, no moving occurs)
 	virtual void set_directory_size(unsigned long id, DWORD size) = 0;
 
@@ -235,11 +234,26 @@ public: //DIRECTORIES
 
 	//Returns subsystem value
 	virtual WORD get_subsystem() const = 0;
+	//Sets subsystem value
+	virtual void set_subsystem(WORD subsystem) = 0;
 	//Returns true if image has console subsystem
 	bool is_console() const;
 	//Returns true if image has Windows GUI subsystem
 	bool is_gui() const;
 
+	//Sets required operation system version
+	virtual void set_os_version(WORD major, WORD minor) = 0;
+	//Returns required operation system version (minor word)
+	virtual WORD get_minor_os_version() const = 0;
+	//Returns required operation system version (major word)
+	virtual WORD get_major_os_version() const = 0;
+
+	//Sets required subsystem version
+	virtual void set_subsystem_version(WORD major, WORD minor) = 0;
+	//Returns required subsystem version (minor word)
+	virtual WORD get_minor_subsystem_version() const = 0;
+	//Returns required subsystem version (major word)
+	virtual WORD get_major_subsystem_version() const = 0;
 
 public: //PE HEADER
 	//Returns DOS header
@@ -267,7 +281,7 @@ public: //PE HEADER
 	//Sets number of RVA and sizes (number of DATA_DIRECTORY entries)
 	virtual void set_number_of_rvas_and_sizes(DWORD number) = 0;
 
-	//returns PE characteristics
+	//Returns PE characteristics
 	virtual WORD get_characteristics() const = 0;
 	//Sets PE characteristics (a value inside header)
 	virtual void set_characteristics(WORD ch) = 0;
@@ -277,6 +291,11 @@ public: //PE HEADER
 	void set_characteristics_flags(WORD flags);
 	//Returns true if PE characteristics flag set
 	bool check_characteristics_flag(WORD flag) const;
+	
+	//Returns DLL Characteristics
+	virtual WORD get_dll_characteristics() const = 0;
+	//Sets DLL Characteristics
+	virtual void set_dll_characteristics(WORD characteristics) = 0;
 
 	//Returns size of headers
 	virtual DWORD get_size_of_headers() const = 0;
@@ -2029,8 +2048,6 @@ protected:
 	std::size_t ptr_to_section_data_;
 	//True if image has overlay
 	bool has_overlay_;
-	//Calculated PE file checksum
-	unsigned long long checksum;
 	//Raw bound import structures data
 	std::string bound_import_data_;
 	//Raw SizeOfHeaders-sized data from the beginning of image

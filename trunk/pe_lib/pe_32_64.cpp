@@ -1,4 +1,48 @@
+#include <ctime>
 #include "pe_32_64.h"
+
+//Constructor of empty PE file
+template<typename PEClassType>
+pe<PEClassType>::pe(DWORD section_alignment, bool dll, WORD subsystem)
+{
+	has_overlay_ = false;
+	memset(&nt_headers_, 0, sizeof(nt_headers_));
+	memset(&dos_header_, 0, sizeof(dos_header_));
+
+	dos_header_.e_magic = 0x5A4D; //"MZ"
+	//Magic numbers from MSVC++ build
+	dos_header_.e_maxalloc = 0xFFFF;
+	dos_header_.e_cblp = 0x90;
+	dos_header_.e_cp = 3;
+	dos_header_.e_cparhdr = 4;
+	dos_header_.e_sp = 0xB8;
+	dos_header_.e_lfarlc = 64;
+
+	nt_headers_.Signature = 0x4550; //"PE"
+	nt_headers_.FileHeader.Machine = 0x14C; //i386
+	nt_headers_.FileHeader.SizeOfOptionalHeader = sizeof(nt_headers_.OptionalHeader);
+	set_characteristics(IMAGE_FILE_EXECUTABLE_IMAGE | IMAGE_FILE_RELOCS_STRIPPED);
+
+	if(get_pe_type() == pe_type_32)
+		set_characteristics_flags(IMAGE_FILE_32BIT_MACHINE);
+
+	if(dll)
+		set_characteristics_flags(IMAGE_FILE_DLL);
+
+	nt_headers_.OptionalHeader.Magic = PEClassType::Id;
+	nt_headers_.OptionalHeader.ImageBase = 0x400000;
+	nt_headers_.OptionalHeader.SectionAlignment = section_alignment;
+	nt_headers_.OptionalHeader.FileAlignment = 0x200;
+	set_subsystem_version(5, 1); //WinXP
+	set_os_version(5, 1); //WinXP
+	nt_headers_.OptionalHeader.SizeOfHeaders = 1024;
+	nt_headers_.OptionalHeader.Subsystem = subsystem;
+	nt_headers_.OptionalHeader.SizeOfHeapReserve = 0x100000;
+	nt_headers_.OptionalHeader.SizeOfHeapCommit = 0x1000;
+	nt_headers_.OptionalHeader.SizeOfStackReserve = 0x100000;
+	nt_headers_.OptionalHeader.SizeOfStackCommit = 0x1000;
+	nt_headers_.OptionalHeader.NumberOfRvaAndSizes = 0x10;
+}
 
 //Constructor from istream
 template<typename PEClassType>
@@ -54,9 +98,14 @@ void pe<PEClassType>::remove_directory(unsigned long id)
 		nt_headers_.OptionalHeader.DataDirectory[id].Size = 0;
 
 		if(id == IMAGE_DIRECTORY_ENTRY_BASERELOC)
+		{
 			set_characteristics_flags(IMAGE_FILE_RELOCS_STRIPPED);
+			set_dll_characteristics(get_dll_characteristics() & ~IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE);
+		}
 		else if(id == IMAGE_DIRECTORY_ENTRY_EXPORT)
+		{
 			clear_characteristics_flags(IMAGE_FILE_DLL);
+		}
 	}
 }
 
@@ -331,6 +380,20 @@ DWORD pe<PEClassType>::get_checksum() const
 	return nt_headers_.OptionalHeader.CheckSum;
 }
 
+//Returns DLL Characteristics
+template<typename PEClassType>
+WORD pe<PEClassType>::get_dll_characteristics() const
+{
+	return nt_headers_.OptionalHeader.DllCharacteristics;
+}
+
+//Sets DLL Characteristics
+template<typename PEClassType>
+void pe<PEClassType>::set_dll_characteristics(WORD characteristics)
+{
+	nt_headers_.OptionalHeader.DllCharacteristics = characteristics;
+}
+
 //Sets PE characteristics
 template<typename PEClassType>
 void pe<PEClassType>::set_characteristics(WORD ch)
@@ -352,6 +415,13 @@ WORD pe<PEClassType>::get_subsystem() const
 	return nt_headers_.OptionalHeader.Subsystem;
 }
 
+//Sets subsystem
+template<typename PEClassType>
+void pe<PEClassType>::set_subsystem(WORD subsystem)
+{
+	nt_headers_.OptionalHeader.Subsystem = subsystem;
+}
+
 //Returns size of optional header
 template<typename PEClassType>
 WORD pe<PEClassType>::get_size_of_optional_header() const
@@ -371,6 +441,51 @@ template<typename PEClassType>
 DWORD pe<PEClassType>::get_magic() const
 {
 	return nt_headers_.OptionalHeader.Magic;
+}
+
+//Sets required operation system version
+template<typename PEClassType>
+void pe<PEClassType>::set_os_version(WORD major, WORD minor)
+{
+	nt_headers_.OptionalHeader.MinorOperatingSystemVersion = minor;
+	nt_headers_.OptionalHeader.MajorOperatingSystemVersion = major;
+}
+
+//Returns required operation system version (minor word)
+template<typename PEClassType>
+WORD pe<PEClassType>::get_minor_os_version() const
+{
+	return nt_headers_.OptionalHeader.MinorOperatingSystemVersion;
+}
+
+//Returns required operation system version (major word)
+template<typename PEClassType>
+WORD pe<PEClassType>::get_major_os_version() const
+{
+	return nt_headers_.OptionalHeader.MajorOperatingSystemVersion;
+}
+
+
+//Sets required subsystem version
+template<typename PEClassType>
+void pe<PEClassType>::set_subsystem_version(WORD major, WORD minor)
+{
+	nt_headers_.OptionalHeader.MinorSubsystemVersion = minor;
+	nt_headers_.OptionalHeader.MajorSubsystemVersion = major;
+}
+
+//Returns required subsystem version (minor word)
+template<typename PEClassType>
+WORD pe<PEClassType>::get_minor_subsystem_version() const
+{
+	return nt_headers_.OptionalHeader.MinorSubsystemVersion;
+}
+
+//Returns required subsystem version (major word)
+template<typename PEClassType>
+WORD pe<PEClassType>::get_major_subsystem_version() const
+{
+	return nt_headers_.OptionalHeader.MajorSubsystemVersion;
 }
 
 //Virtual Address (VA) to Relative Virtual Address (RVA) convertions for PE32

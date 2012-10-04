@@ -380,6 +380,13 @@ DWORD pe<PEClassType>::get_checksum() const
 	return nt_headers_.OptionalHeader.CheckSum;
 }
 
+//Sets checksum of PE file
+template<typename PEClassType>
+void pe<PEClassType>::set_checksum(DWORD checksum)
+{
+	nt_headers_.OptionalHeader.CheckSum = checksum;
+}
+
 //Returns DLL Characteristics
 template<typename PEClassType>
 WORD pe<PEClassType>::get_dll_characteristics() const

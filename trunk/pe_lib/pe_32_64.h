@@ -153,6 +153,9 @@ public: //PE HEADER
 
 	//Returns checksum of PE file from header
 	virtual DWORD get_checksum() const;
+	
+	//Sets checksum of PE file
+	virtual void set_checksum(DWORD checksum);
 
 	//Returns DLL Characteristics
 	virtual WORD get_dll_characteristics() const;

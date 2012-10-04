@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <pe_factory.h>
 #include <pe_32_64.h>
 #include "lib.h"
@@ -61,6 +62,15 @@ int main(int argc, char* argv[])
 				for(pe_base::section_list::const_iterator it = pe_sections.begin(); it != pe_sections.end(); ++it)
 					new_image->set_section_virtual_size(new_image->add_section(*it), (*it).get_virtual_size());
 			}
+		}
+
+
+		//Просчитаем контрольную сумму нового PE-файла
+		//и сохраним ее (для примера)
+		{
+			std::stringstream temp_pe(std::ios::out | std::ios::in | std::ios::binary);
+			new_image->rebuild_pe(temp_pe);
+			new_image->set_checksum(pe_base::calculate_checksum(temp_pe));
 		}
 
 

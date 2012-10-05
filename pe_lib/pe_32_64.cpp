@@ -394,11 +394,39 @@ WORD pe<PEClassType>::get_dll_characteristics() const
 	return nt_headers_.OptionalHeader.DllCharacteristics;
 }
 
+//Returns timestamp of PE file from header
+template<typename PEClassType>
+DWORD pe<PEClassType>::get_time_date_stamp() const
+{
+	return nt_headers_.FileHeader.TimeDateStamp;
+}
+
+//Sets timestamp of PE file
+template<typename PEClassType>
+void pe<PEClassType>::set_time_date_stamp(DWORD timestamp)
+{
+	nt_headers_.FileHeader.TimeDateStamp = timestamp;
+}
+
 //Sets DLL Characteristics
 template<typename PEClassType>
 void pe<PEClassType>::set_dll_characteristics(WORD characteristics)
 {
 	nt_headers_.OptionalHeader.DllCharacteristics = characteristics;
+}
+
+//Returns Machine field value of PE file from header
+template<typename PEClassType>
+WORD pe<PEClassType>::get_machine() const
+{
+	return nt_headers_.FileHeader.Machine;
+}
+
+//Sets Machine field value of PE file
+template<typename PEClassType>
+void pe<PEClassType>::set_machine(WORD machine)
+{
+	nt_headers_.FileHeader.Machine = machine;
 }
 
 //Sets PE characteristics

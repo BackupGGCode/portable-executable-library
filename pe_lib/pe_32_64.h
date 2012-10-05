@@ -156,6 +156,18 @@ public: //PE HEADER
 	
 	//Sets checksum of PE file
 	virtual void set_checksum(DWORD checksum);
+	
+	//Returns timestamp of PE file from header
+	virtual DWORD get_time_date_stamp() const;
+	
+	//Sets timestamp of PE file
+	virtual void set_time_date_stamp(DWORD timestamp);
+	
+	//Returns Machine field value of PE file from header
+	virtual WORD get_machine() const;
+
+	//Sets Machine field value of PE file
+	virtual void set_machine(WORD machine);
 
 	//Returns DLL Characteristics
 	virtual WORD get_dll_characteristics() const;

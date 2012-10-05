@@ -12,7 +12,7 @@
 
 //Please don't remove this information from header
 //PE Library (c) DX 2011 - 2012, http://kaimi.ru
-//Version: 0.1.10
+//Version: 0.1.11
 //Free to use, modify and distribute
 
 // == more important ==
@@ -358,10 +358,19 @@ public: //PE HEADER
 
 	//Returns checksum of PE file from header
 	virtual DWORD get_checksum() const = 0;
-
 	//Sets checksum of PE file
 	virtual void set_checksum(DWORD checksum) = 0;
 	
+	//Returns timestamp of PE file from header
+	virtual DWORD get_time_date_stamp() const = 0;
+	//Sets timestamp of PE file
+	virtual void set_time_date_stamp(DWORD timestamp) = 0;
+	
+	//Returns Machine field value of PE file from header
+	virtual WORD get_machine() const = 0;
+	//Sets Machine field value of PE file
+	virtual void set_machine(WORD machine) = 0;
+
 	//Returns data from the beginning of image
 	//Size = SizeOfHeaders
 	const std::string& get_full_headers_data() const;

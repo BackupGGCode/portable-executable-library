@@ -1,7 +1,11 @@
 ﻿#include <iostream>
 #include <fstream>
 #include <pe_factory.h>
+#ifdef PELIB_ON_WINDOWS
 #include "lib.h"
+#endif
+
+using namespace pe_bliss;
 
 //Пример, показывающий, как добавить новый импорт в таблицу импорта PE-файла
 int main(int argc, char* argv[])
@@ -35,11 +39,11 @@ int main(int argc, char* argv[])
 		//Добавим к ней пару импортов функций
 		pe_base::imported_function func;
 		func.set_name("Tralala"); //Один импорт - по имени Tralala
-		func.set_iat_va(0x1); //Запишем ненулевой абсолютный адрес import address table
+		func.set_iat_va(0xf1ac); //Запишем ненулевой абсолютный адрес import address table
 
 		pe_base::imported_function func2;
 		func2.set_ordinal(5); //Другой импорт - по ординалу 5
-		func2.set_iat_va(0x2); //Запишем ненулевой абсолютный адрес import address table
+		func2.set_iat_va(0xf1be); //Запишем ненулевой абсолютный адрес import address table
 
 		//Мы указали некорректные адреса (0x1 и 0x2) для ячеек, в которые будут записаны адреса импортируемых функций
 		//Это сделано для примера, в реальности должны быть указаны существующие адреса
@@ -62,7 +66,7 @@ int main(int argc, char* argv[])
 		pe_base::section& attached_section = image->add_section(new_imports); //Добавим секцию и получим ссылку на добавленную секцию с просчитанными размерами
 
 		//Структура, отвечающая за настройки пересборщика импортов
-		pe_base::import_rebuilder_settings settings(true, true); //Сразу модифицируем заголовок PE и очистим поле IMAGE_DIRECTORY_ENTRY_IAT
+		pe_base::import_rebuilder_settings settings(true, false); //Модифицируем заголовок PE и не очищаем поле IMAGE_DIRECTORY_ENTRY_IAT
 		image->rebuild_imports(imports, attached_section, settings); //Пересобираем импорты
 
 		//Создаем новый PE-файл

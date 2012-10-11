@@ -1,7 +1,11 @@
 ﻿#include <iostream>
 #include <fstream>
 #include <pe_factory.h>
+#ifdef PELIB_ON_WINDOWS
 #include "lib.h"
+#endif
+
+using namespace pe_bliss;
 
 //Пример, показывающий, как считать и обработать отладочную информацию PE или PE+ файла
 int main(int argc, char* argv[])
@@ -167,6 +171,9 @@ int main(int argc, char* argv[])
 
 			case pe_base::debug_info::advanced_info_codeview_5_0:
 				std::cout << "Advanced info - CodeView 5.0" << std::endl; //CodeView 5.0
+				break;
+				
+			default:
 				break;
 			}
 

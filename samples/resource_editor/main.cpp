@@ -2,19 +2,36 @@
 #include <fstream>
 #include <pe_factory.h>
 #include <pe_resource_manager.h>
+#ifdef PELIB_ON_WINDOWS
 #include "resource.h"
 #include "lib.h"
+#else
+#define IDR_CUSTOM1 100
+#endif
+
+using namespace pe_bliss;
 
 //Пример, показывающий, как редактировать ресурсы PE-файла
 //Для начала рекомендуется ознакомиться с примером resource_viewer
 //Обратите внимание, что пример корректно отработает и в x86, и в x64 варианте
 int main(int argc, char* argv[])
 {
+	std::string pe_filename;
+
+#ifdef PELIB_ON_WINDOWS
 	//Открываем файл (сами себя)
-	std::ifstream pe_file(argv[0], std::ios::in | std::ios::binary);
+	pe_filename = argv[0];
+#else
+	std::cout << "This sample needs itself to be compiled on Windows"
+		<< std::endl << "Enter its filename: ";
+
+	std::cin >> pe_filename;
+#endif
+	
+	std::ifstream pe_file(pe_filename.c_str(), std::ios::in | std::ios::binary);
 	if(!pe_file)
 	{
-		std::cout << "Cannot open " << argv[0] << std::endl;
+		std::cout << "Cannot open " << pe_filename << std::endl;
 		return -1;
 	}
 
@@ -113,7 +130,7 @@ int main(int argc, char* argv[])
 		//Осталось переименовать старую секцию ресурсов
 		//Она называется .rsrc
 		//Переименование необходимо для того, чтобы Windows Explorer смог считать из новой секции иконку
-		image->section_from_directory(IMAGE_DIRECTORY_ENTRY_RESOURCE).set_name("oldres");
+		image->section_from_directory(image_directory_entry_resource).set_name("oldres");
 
 		//Пересоберем ресурсы
 		//Они будет иметь больший размер, чем до нашего редактирования,
@@ -129,7 +146,7 @@ int main(int argc, char* argv[])
 		image->rebuild_resources(root, attached_section);
 		
 		//Создаем новый PE-файл
-		std::string base_file_name(argv[0]);
+		std::string base_file_name(pe_filename);
 		std::string::size_type slash_pos;
 		if((slash_pos = base_file_name.find_last_of("/\\")) != std::string::npos)
 			base_file_name = base_file_name.substr(slash_pos + 1);

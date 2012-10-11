@@ -1,7 +1,11 @@
 ﻿#include <iostream>
 #include <fstream>
 #include <pe_factory.h>
+#ifdef PELIB_ON_WINDOWS
 #include "lib.h"
+#endif
+
+using namespace pe_bliss;
 
 //Пример, показывающий, как посчитать энтропию файла и секций PE
 int main(int argc, char* argv[])

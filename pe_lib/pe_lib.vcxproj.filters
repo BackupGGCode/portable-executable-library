@@ -50,6 +50,9 @@
     <ClInclude Include="pe_structures.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="stdint_defs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="readme.txt" />

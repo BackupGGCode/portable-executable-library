@@ -1,888 +1,564 @@
 #pragma once
-#ifdef _MSC_VER
-#include <Windows.h>
+#include <string>
+#include <sstream>
+#include "stdint_defs.h"
+#if defined(_MSC_VER)
+#define PELIB_ON_WINDOWS
 #endif
+
+namespace pe_bliss
+{
+const uint32_t image_numberof_directory_entries = 16;
+const uint32_t image_nt_optional_hdr32_magic = 0x10b;
+const uint32_t image_nt_optional_hdr64_magic = 0x20b;
+const uint32_t image_resource_name_is_string = 0x80000000;
+const uint32_t image_resource_data_is_directory = 0x80000000;
+
+const uint32_t image_dllcharacteristics_dynamic_base = 0x0040;     // DLL can move.
+
+const uint32_t image_sizeof_file_header = 20;
+
+const uint32_t image_file_relocs_stripped = 0x0001;  // Relocation info stripped from file.
+const uint32_t image_file_executable_image = 0x0002;  // File is executable  (i.e. no unresolved externel references).
+const uint32_t image_file_line_nums_stripped = 0x0004;  // Line nunbers stripped from file.
+const uint32_t image_file_local_syms_stripped = 0x0008;  // Local symbols stripped from file.
+const uint32_t image_file_aggresive_ws_trim = 0x0010;  // Agressively trim working set
+const uint32_t image_file_large_address_aware = 0x0020;  // App can handle >2gb addresses
+const uint32_t image_file_bytes_reversed_lo = 0x0080;  // Bytes of machine word are reversed.
+const uint32_t image_file_32bit_machine = 0x0100;  // 32 bit word machine.
+const uint32_t image_file_debug_stripped = 0x0200;  // Debugging info stripped from file in .DBG file
+const uint32_t image_file_removable_run_from_swap = 0x0400;  // If Image is on removable media, copy and run from the swap file.
+const uint32_t image_file_net_run_from_swap = 0x0800;  // If Image is on Net, copy and run from the swap file.
+const uint32_t image_file_system = 0x1000;  // System File.
+const uint32_t image_file_dll = 0x2000;  // File is a DLL.
+const uint32_t image_file_up_system_only = 0x4000;  // File should only be run on a UP machine
+const uint32_t image_file_bytes_reversed_hi = 0x8000;  // Bytes of machine word are reversed.
+
+const uint32_t image_scn_lnk_nreloc_ovfl = 0x01000000;  // Section contains extended relocations.
+const uint32_t image_scn_mem_discardable = 0x02000000;  // Section can be discarded.
+const uint32_t image_scn_mem_not_cached = 0x04000000;  // Section is not cachable.
+const uint32_t image_scn_mem_not_paged = 0x08000000;  // Section is not pageable.
+const uint32_t image_scn_mem_shared = 0x10000000;  // Section is shareable.
+const uint32_t image_scn_mem_execute = 0x20000000;  // Section is executable.
+const uint32_t image_scn_mem_read = 0x40000000;  // Section is readable.
+const uint32_t image_scn_mem_write = 0x80000000;  // Section is writeable.
+
+//Directory Entries
+const uint32_t image_directory_entry_export = 0;   // Export Directory
+const uint32_t image_directory_entry_import = 1;   // Import Directory
+const uint32_t image_directory_entry_resource = 2;   // Resource Directory
+const uint32_t image_directory_entry_exception = 3;   // Exception Directory
+const uint32_t image_directory_entry_security = 4;   // Security Directory
+const uint32_t image_directory_entry_basereloc = 5;   // Base Relocation Table
+const uint32_t image_directory_entry_debug = 6;   // Debug Directory
+const uint32_t image_directory_entry_architecture = 7;   // Architecture Specific Data
+const uint32_t image_directory_entry_globalptr = 8;   // RVA of GP
+const uint32_t image_directory_entry_tls = 9;   // TLS Directory
+const uint32_t image_directory_entry_load_config = 10;   // Load Configuration Directory
+const uint32_t image_directory_entry_bound_import = 11;   // Bound Import Directory in headers
+const uint32_t image_directory_entry_iat = 12;   // Import Address Table
+const uint32_t image_directory_entry_delay_import = 13;   // Delay Load Import Descriptors
+const uint32_t image_directory_entry_com_descriptor = 14;   // COM Runtime descriptor
+
+//Subsystem Values
+const uint32_t image_subsystem_unknown = 0;   // Unknown subsystem.
+const uint32_t image_subsystem_native = 1;   // Image doesn't require a subsystem.
+const uint32_t image_subsystem_windows_gui = 2;   // Image runs in the Windows GUI subsystem.
+const uint32_t image_subsystem_windows_cui = 3;   // Image runs in the Windows character subsystem.
+const uint32_t image_subsystem_os2_cui = 5;   // image runs in the OS/2 character subsystem.
+const uint32_t image_subsystem_posix_cui = 7;   // image runs in the Posix character subsystem.
+const uint32_t image_subsystem_native_windows = 8;   // image is a native Win9x driver.
+const uint32_t image_subsystem_windows_ce_gui = 9;   // Image runs in the Windows CE subsystem.
+const uint32_t image_subsystem_efi_application = 10;  //
+const uint32_t image_subsystem_efi_boot_service_driver = 11;   //
+const uint32_t image_subsystem_efi_runtime_driver = 12;  //
+const uint32_t image_subsystem_efi_rom = 13;
+const uint32_t image_subsystem_xbox = 14;
+const uint32_t image_subsystem_windows_boot_application = 16;
+
+//Imports
+const uint64_t image_ordinal_flag64 = 0x8000000000000000ull;
+const uint32_t image_ordinal_flag32 = 0x80000000;
+
+//Based relocation types
+const uint32_t image_rel_based_absolute = 0;
+const uint32_t image_rel_based_high =  1;
+const uint32_t image_rel_based_low = 2;
+const uint32_t image_rel_based_highlow = 3;
+const uint32_t image_rel_based_highadj = 4;
+const uint32_t image_rel_based_mips_jmpaddr = 5;
+const uint32_t image_rel_based_mips_jmpaddr16 = 9;
+const uint32_t image_rel_based_ia64_imm64 = 9;
+const uint32_t image_rel_based_dir64 = 10;
+
+//Exception directory
+//The function has an exception handler that should be called when looking for functions that need to examine exceptions
+const uint32_t unw_flag_ehandler = 0x01;
+//The function has a termination handler that should be called when unwinding an exception
+const uint32_t unw_flag_uhandler = 0x02;
+//This unwind info structure is not the primary one for the procedure.
+//Instead, the chained unwind info entry is the contents of a previous RUNTIME_FUNCTION entry.
+//If this flag is set, then the UNW_FLAG_EHANDLER and UNW_FLAG_UHANDLER flags must be cleared.
+//Also, the frame register and fixed-stack allocation fields must have the same values as in the primary unwind info
+const uint32_t unw_flag_chaininfo = 0x04;
+
+//Debug
+const uint32_t image_debug_misc_exename = 1;
+const uint32_t image_debug_type_unknown = 0;
+const uint32_t image_debug_type_coff = 1;
+const uint32_t image_debug_type_codeview = 2;
+const uint32_t image_debug_type_fpo = 3;
+const uint32_t image_debug_type_misc = 4;
+const uint32_t image_debug_type_exception = 5;
+const uint32_t image_debug_type_fixup = 6;
+const uint32_t image_debug_type_omap_to_src = 7;
+const uint32_t image_debug_type_omap_from_src = 8;
+const uint32_t image_debug_type_borland = 9;
+const uint32_t image_debug_type_reserved10 = 10;
+const uint32_t image_debug_type_clsid = 11;
+
+
+//Storage classes
+const uint32_t image_sym_class_end_of_function = static_cast<uint8_t>(-1);
+const uint32_t image_sym_class_null = 0x0000;
+const uint32_t image_sym_class_automatic = 0x0001;
+const uint32_t image_sym_class_external = 0x0002;
+const uint32_t image_sym_class_static = 0x0003;
+const uint32_t image_sym_class_register = 0x0004;
+const uint32_t image_sym_class_external_def = 0x0005;
+const uint32_t image_sym_class_label = 0x0006;
+const uint32_t image_sym_class_undefined_label = 0x0007;
+const uint32_t image_sym_class_member_of_struct = 0x0008;
+const uint32_t image_sym_class_argument = 0x0009;
+const uint32_t image_sym_class_struct_tag = 0x000a;
+const uint32_t image_sym_class_member_of_union = 0x000b;
+const uint32_t image_sym_class_union_tag = 0x000c;
+const uint32_t image_sym_class_type_definition = 0x000d;
+const uint32_t image_sym_class_undefined_static = 0x000e;
+const uint32_t image_sym_class_enum_tag = 0x000f;
+const uint32_t image_sym_class_member_of_enum = 0x0010;
+const uint32_t image_sym_class_register_param = 0x0011;
+const uint32_t image_sym_class_bit_field = 0x0012;
+
+const uint32_t image_sym_class_far_external = 0x0044;
+
+const uint32_t image_sym_class_block = 0x0064;
+const uint32_t image_sym_class_function = 0x0065;
+const uint32_t image_sym_class_end_of_struct = 0x0066;
+const uint32_t image_sym_class_file = 0x0067;
+
+const uint32_t image_sym_class_section = 0x0068;
+const uint32_t image_sym_class_weak_external = 0x0069;
+
+const uint32_t image_sym_class_clr_token = 0x006b;
+
+//type packing constants
+const uint32_t n_btmask = 0x000f;
+const uint32_t n_tmask = 0x0030;
+const uint32_t n_tmask1 = 0x00c0;
+const uint32_t n_tmask2 = 0x00f0;
+const uint32_t n_btshft = 4;
+const uint32_t n_tshift = 2;
+
+//Type (derived) values.
+const uint32_t image_sym_dtype_null = 0;          // no derived type.
+const uint32_t image_sym_dtype_pointer = 1;       // pointer.
+const uint32_t image_sym_dtype_function = 2;      // function.
+const uint32_t image_sym_dtype_array = 3;         // array.
+
+// Is x a function?
+//TODO
+#ifndef ISFCN
+#define ISFCN(x) (((x) & n_tmask) == (image_sym_dtype_function << n_btshft))
+#endif
+
+//Version info
+const uint32_t vs_ffi_fileflagsmask = 0x0000003FL;
+
+const uint32_t vs_ffi_signature = 0xFEEF04BDL;
+const uint32_t vs_ffi_strucversion = 0x00010000L;
+
+/* ----- VS_VERSION.dwFileFlags ----- */
+const uint32_t vs_ff_debug = 0x00000001L;
+const uint32_t vs_ff_prerelease = 0x00000002L;
+const uint32_t vs_ff_patched = 0x00000004L;
+const uint32_t vs_ff_privatebuild = 0x00000008L;
+const uint32_t vs_ff_infoinferred = 0x00000010L;
+const uint32_t vs_ff_specialbuild = 0x00000020L;
+
+/* ----- VS_VERSION.dwFileOS ----- */
+const uint32_t vos_unknown = 0x00000000L;
+const uint32_t vos_dos = 0x00010000L;
+const uint32_t vos_os216 = 0x00020000L;
+const uint32_t vos_os232 = 0x00030000L;
+const uint32_t vos_nt = 0x00040000L;
+const uint32_t vos_wince = 0x00050000L;
+
+const uint32_t vos__base = 0x00000000L;
+const uint32_t vos__windows16 = 0x00000001L;
+const uint32_t vos__pm16 = 0x00000002L;
+const uint32_t vos__pm32 = 0x00000003L;
+const uint32_t vos__windows32 = 0x00000004L;
+
+const uint32_t vos_dos_windows16 = 0x00010001L;
+const uint32_t vos_dos_windows32 = 0x00010004L;
+const uint32_t vos_os216_pm16 = 0x00020002L;
+const uint32_t vos_os232_pm32 = 0x00030003L;
+const uint32_t vos_nt_windows32 = 0x00040004L;
+
+/* ----- VS_VERSION.dwFileType ----- */
+const uint32_t vft_unknown = 0x00000000L;
+const uint32_t vft_app = 0x00000001L;
+const uint32_t vft_dll = 0x00000002L;
+const uint32_t vft_drv = 0x00000003L;
+const uint32_t vft_font =  0x00000004L;
+const uint32_t vft_vxd = 0x00000005L;
+const uint32_t vft_static_lib = 0x00000007L;
+
+const uint32_t message_resource_unicode = 0x0001;
 
 #pragma pack(push, 1)
 
-#ifndef _WINNT_
-#define DUMMYUNIONNAME
-#define DUMMYSTRUCTNAME
-#define DUMMYUNIONNAME2
-#define DUMMYSTRUCTNAME2
-
-typedef int                 INT;
-typedef unsigned int        UINT;
-typedef unsigned long       DWORD;
-typedef int                 BOOL;
-typedef unsigned char       BYTE;
-typedef unsigned short      WORD;
-
-#ifndef _MAC
-typedef wchar_t WCHAR;    // wc,   16-bit UNICODE character
-#else
-// some Macintosh compilers don't define wchar_t in a convenient location, or define it as a char
-typedef unsigned short WCHAR;    // wc,   16-bit UNICODE character
-#endif
-
-typedef unsigned long ULONG;
-typedef unsigned short USHORT;
-typedef unsigned char UCHAR;
-
-#ifndef GUID_DEFINED
-typedef struct _GUID {
-    unsigned long  Data1;
-    unsigned short Data2;
-    unsigned short Data3;
-    unsigned char  Data4[ 8 ];
-} GUID;
-#endif
-
-#ifndef VOID
-#define VOID void
-typedef char CHAR;
-typedef short SHORT;
-typedef long LONG;
-#if !defined(MIDL_PASS)
-typedef int INT;
-#endif
-#endif
-
-#ifdef _MSC_VER
-typedef unsigned __int64 ULONGLONG;
-#else
-typedef unsigned long long ULONGLONG;
-#endif
-
-typedef BYTE  BOOLEAN;
-
-//
-// Section header format.
-//
-
-#define IMAGE_SIZEOF_SHORT_NAME              8
-
-typedef struct _IMAGE_SECTION_HEADER {
-    BYTE    Name[IMAGE_SIZEOF_SHORT_NAME];
-    union {
-            DWORD   PhysicalAddress;
-            DWORD   VirtualSize;
-    } Misc;
-    DWORD   VirtualAddress;
-    DWORD   SizeOfRawData;
-    DWORD   PointerToRawData;
-    DWORD   PointerToRelocations;
-    DWORD   PointerToLinenumbers;
-    WORD    NumberOfRelocations;
-    WORD    NumberOfLinenumbers;
-    DWORD   Characteristics;
-} IMAGE_SECTION_HEADER, *PIMAGE_SECTION_HEADER;
-
-typedef struct _IMAGE_DOS_HEADER {      // DOS .EXE header
-    WORD   e_magic;                     // Magic number
-    WORD   e_cblp;                      // Bytes on last page of file
-    WORD   e_cp;                        // Pages in file
-    WORD   e_crlc;                      // Relocations
-    WORD   e_cparhdr;                   // Size of header in paragraphs
-    WORD   e_minalloc;                  // Minimum extra paragraphs needed
-    WORD   e_maxalloc;                  // Maximum extra paragraphs needed
-    WORD   e_ss;                        // Initial (relative) SS value
-    WORD   e_sp;                        // Initial SP value
-    WORD   e_csum;                      // Checksum
-    WORD   e_ip;                        // Initial IP value
-    WORD   e_cs;                        // Initial (relative) CS value
-    WORD   e_lfarlc;                    // File address of relocation table
-    WORD   e_ovno;                      // Overlay number
-    WORD   e_res[4];                    // Reserved words
-    WORD   e_oemid;                     // OEM identifier (for e_oeminfo)
-    WORD   e_oeminfo;                   // OEM information; e_oemid specific
-    WORD   e_res2[10];                  // Reserved words
-    LONG   e_lfanew;                    // File address of new exe header
-  } IMAGE_DOS_HEADER, *PIMAGE_DOS_HEADER;
-
-typedef struct _IMAGE_RESOURCE_DIRECTORY {
-    DWORD   Characteristics;
-    DWORD   TimeDateStamp;
-    WORD    MajorVersion;
-    WORD    MinorVersion;
-    WORD    NumberOfNamedEntries;
-    WORD    NumberOfIdEntries;
-//  IMAGE_RESOURCE_DIRECTORY_ENTRY DirectoryEntries[];
-} IMAGE_RESOURCE_DIRECTORY, *PIMAGE_RESOURCE_DIRECTORY;
-
-#define IMAGE_RESOURCE_NAME_IS_STRING        0x80000000
-#define IMAGE_RESOURCE_DATA_IS_DIRECTORY     0x80000000
-
-typedef struct _IMAGE_RUNTIME_FUNCTION_ENTRY {
-    DWORD BeginAddress;
-    DWORD EndAddress;
-    DWORD UnwindInfoAddress;
-} _IMAGE_RUNTIME_FUNCTION_ENTRY, *_PIMAGE_RUNTIME_FUNCTION_ENTRY;
-
-typedef  _IMAGE_RUNTIME_FUNCTION_ENTRY  IMAGE_RUNTIME_FUNCTION_ENTRY;
-typedef _PIMAGE_RUNTIME_FUNCTION_ENTRY PIMAGE_RUNTIME_FUNCTION_ENTRY;
-
-#define IMAGE_DEBUG_MISC_EXENAME    1
-
-typedef struct _IMAGE_DEBUG_MISC {
-    DWORD       DataType;               // type of misc data, see defines
-    DWORD       Length;                 // total length of record, rounded to four
-                                        // byte multiple.
-    BOOLEAN     Unicode;                // TRUE if data is unicode string
-    BYTE        Reserved[ 3 ];
-    BYTE        Data[ 1 ];              // Actual data
-} IMAGE_DEBUG_MISC, *PIMAGE_DEBUG_MISC;
-
-typedef struct _IMAGE_COFF_SYMBOLS_HEADER {
-    DWORD   NumberOfSymbols;
-    DWORD   LvaToFirstSymbol;
-    DWORD   NumberOfLinenumbers;
-    DWORD   LvaToFirstLinenumber;
-    DWORD   RvaToFirstByteOfCode;
-    DWORD   RvaToLastByteOfCode;
-    DWORD   RvaToFirstByteOfData;
-    DWORD   RvaToLastByteOfData;
-} IMAGE_COFF_SYMBOLS_HEADER, *PIMAGE_COFF_SYMBOLS_HEADER;
-
-//
-// Debug Format
-//
-
-typedef struct _IMAGE_DEBUG_DIRECTORY {
-    DWORD   Characteristics;
-    DWORD   TimeDateStamp;
-    WORD    MajorVersion;
-    WORD    MinorVersion;
-    DWORD   Type;
-    DWORD   SizeOfData;
-    DWORD   AddressOfRawData;
-    DWORD   PointerToRawData;
-} IMAGE_DEBUG_DIRECTORY, *PIMAGE_DEBUG_DIRECTORY;
-
-#define IMAGE_DEBUG_TYPE_UNKNOWN          0
-#define IMAGE_DEBUG_TYPE_COFF             1
-#define IMAGE_DEBUG_TYPE_CODEVIEW         2
-#define IMAGE_DEBUG_TYPE_FPO              3
-#define IMAGE_DEBUG_TYPE_MISC             4
-#define IMAGE_DEBUG_TYPE_EXCEPTION        5
-#define IMAGE_DEBUG_TYPE_FIXUP            6
-#define IMAGE_DEBUG_TYPE_OMAP_TO_SRC      7
-#define IMAGE_DEBUG_TYPE_OMAP_FROM_SRC    8
-#define IMAGE_DEBUG_TYPE_BORLAND          9
-#define IMAGE_DEBUG_TYPE_RESERVED10       10
-#define IMAGE_DEBUG_TYPE_CLSID            11
-//
-// Directory format.
-//
-
-typedef struct _IMAGE_DATA_DIRECTORY {
-    DWORD   VirtualAddress;
-    DWORD   Size;
-} IMAGE_DATA_DIRECTORY, *PIMAGE_DATA_DIRECTORY;
-
-#define IMAGE_NUMBEROF_DIRECTORY_ENTRIES    16
-
-//
-// Optional header format.
-//
-
-typedef struct _IMAGE_OPTIONAL_HEADER {
-    //
-    // Standard fields.
-    //
-
-    WORD    Magic;
-    BYTE    MajorLinkerVersion;
-    BYTE    MinorLinkerVersion;
-    DWORD   SizeOfCode;
-    DWORD   SizeOfInitializedData;
-    DWORD   SizeOfUninitializedData;
-    DWORD   AddressOfEntryPoint;
-    DWORD   BaseOfCode;
-    DWORD   BaseOfData;
-
-    //
-    // NT additional fields.
-    //
-
-    DWORD   ImageBase;
-    DWORD   SectionAlignment;
-    DWORD   FileAlignment;
-    WORD    MajorOperatingSystemVersion;
-    WORD    MinorOperatingSystemVersion;
-    WORD    MajorImageVersion;
-    WORD    MinorImageVersion;
-    WORD    MajorSubsystemVersion;
-    WORD    MinorSubsystemVersion;
-    DWORD   Win32VersionValue;
-    DWORD   SizeOfImage;
-    DWORD   SizeOfHeaders;
-    DWORD   CheckSum;
-    WORD    Subsystem;
-    WORD    DllCharacteristics;
-    DWORD   SizeOfStackReserve;
-    DWORD   SizeOfStackCommit;
-    DWORD   SizeOfHeapReserve;
-    DWORD   SizeOfHeapCommit;
-    DWORD   LoaderFlags;
-    DWORD   NumberOfRvaAndSizes;
-    IMAGE_DATA_DIRECTORY DataDirectory[IMAGE_NUMBEROF_DIRECTORY_ENTRIES];
-} IMAGE_OPTIONAL_HEADER32, *PIMAGE_OPTIONAL_HEADER32;
-
-typedef struct _IMAGE_OPTIONAL_HEADER64 {
-    WORD        Magic;
-    BYTE        MajorLinkerVersion;
-    BYTE        MinorLinkerVersion;
-    DWORD       SizeOfCode;
-    DWORD       SizeOfInitializedData;
-    DWORD       SizeOfUninitializedData;
-    DWORD       AddressOfEntryPoint;
-    DWORD       BaseOfCode;
-    ULONGLONG   ImageBase;
-    DWORD       SectionAlignment;
-    DWORD       FileAlignment;
-    WORD        MajorOperatingSystemVersion;
-    WORD        MinorOperatingSystemVersion;
-    WORD        MajorImageVersion;
-    WORD        MinorImageVersion;
-    WORD        MajorSubsystemVersion;
-    WORD        MinorSubsystemVersion;
-    DWORD       Win32VersionValue;
-    DWORD       SizeOfImage;
-    DWORD       SizeOfHeaders;
-    DWORD       CheckSum;
-    WORD        Subsystem;
-    WORD        DllCharacteristics;
-    ULONGLONG   SizeOfStackReserve;
-    ULONGLONG   SizeOfStackCommit;
-    ULONGLONG   SizeOfHeapReserve;
-    ULONGLONG   SizeOfHeapCommit;
-    DWORD       LoaderFlags;
-    DWORD       NumberOfRvaAndSizes;
-    IMAGE_DATA_DIRECTORY DataDirectory[IMAGE_NUMBEROF_DIRECTORY_ENTRIES];
-} IMAGE_OPTIONAL_HEADER64, *PIMAGE_OPTIONAL_HEADER64;
-
-typedef struct _IMAGE_FILE_HEADER {
-    WORD    Machine;
-    WORD    NumberOfSections;
-    DWORD   TimeDateStamp;
-    DWORD   PointerToSymbolTable;
-    DWORD   NumberOfSymbols;
-    WORD    SizeOfOptionalHeader;
-    WORD    Characteristics;
-} IMAGE_FILE_HEADER, *PIMAGE_FILE_HEADER;
-
-#define IMAGE_SIZEOF_FILE_HEADER             20
-
-#define IMAGE_FILE_RELOCS_STRIPPED           0x0001  // Relocation info stripped from file.
-#define IMAGE_FILE_EXECUTABLE_IMAGE          0x0002  // File is executable  (i.e. no unresolved externel references).
-#define IMAGE_FILE_LINE_NUMS_STRIPPED        0x0004  // Line nunbers stripped from file.
-#define IMAGE_FILE_LOCAL_SYMS_STRIPPED       0x0008  // Local symbols stripped from file.
-#define IMAGE_FILE_AGGRESIVE_WS_TRIM         0x0010  // Agressively trim working set
-#define IMAGE_FILE_LARGE_ADDRESS_AWARE       0x0020  // App can handle >2gb addresses
-#define IMAGE_FILE_BYTES_REVERSED_LO         0x0080  // Bytes of machine word are reversed.
-#define IMAGE_FILE_32BIT_MACHINE             0x0100  // 32 bit word machine.
-#define IMAGE_FILE_DEBUG_STRIPPED            0x0200  // Debugging info stripped from file in .DBG file
-#define IMAGE_FILE_REMOVABLE_RUN_FROM_SWAP   0x0400  // If Image is on removable media, copy and run from the swap file.
-#define IMAGE_FILE_NET_RUN_FROM_SWAP         0x0800  // If Image is on Net, copy and run from the swap file.
-#define IMAGE_FILE_SYSTEM                    0x1000  // System File.
-#define IMAGE_FILE_DLL                       0x2000  // File is a DLL.
-#define IMAGE_FILE_UP_SYSTEM_ONLY            0x4000  // File should only be run on a UP machine
-#define IMAGE_FILE_BYTES_REVERSED_HI         0x8000  // Bytes of machine word are reversed.
-
-#define IMAGE_SCN_LNK_NRELOC_OVFL            0x01000000  // Section contains extended relocations.
-#define IMAGE_SCN_MEM_DISCARDABLE            0x02000000  // Section can be discarded.
-#define IMAGE_SCN_MEM_NOT_CACHED             0x04000000  // Section is not cachable.
-#define IMAGE_SCN_MEM_NOT_PAGED              0x08000000  // Section is not pageable.
-#define IMAGE_SCN_MEM_SHARED                 0x10000000  // Section is shareable.
-#define IMAGE_SCN_MEM_EXECUTE                0x20000000  // Section is executable.
-#define IMAGE_SCN_MEM_READ                   0x40000000  // Section is readable.
-#define IMAGE_SCN_MEM_WRITE                  0x80000000  // Section is writeable.
-
-#define IMAGE_NT_OPTIONAL_HDR32_MAGIC      0x10b
-#define IMAGE_NT_OPTIONAL_HDR64_MAGIC      0x20b
-typedef struct _IMAGE_NT_HEADERS64 {
-    DWORD Signature;
-    IMAGE_FILE_HEADER FileHeader;
-    IMAGE_OPTIONAL_HEADER64 OptionalHeader;
-} IMAGE_NT_HEADERS64, *PIMAGE_NT_HEADERS64;
-
-typedef struct _IMAGE_NT_HEADERS {
-    DWORD Signature;
-    IMAGE_FILE_HEADER FileHeader;
-    IMAGE_OPTIONAL_HEADER32 OptionalHeader;
-} IMAGE_NT_HEADERS32, *PIMAGE_NT_HEADERS32;
-
-// CLR 2.0 header structure.
-typedef struct IMAGE_COR20_HEADER
+//Windows GUID structure
+struct guid
 {
-    // Header versioning
-    DWORD                   cb;
-    WORD                    MajorRuntimeVersion;
-    WORD                    MinorRuntimeVersion;
+	uint32_t Data1;
+	uint16_t Data2;
+	uint16_t Data3;
+	uint8_t Data4[8];
+};
 
-    // Symbol table and startup information
-    IMAGE_DATA_DIRECTORY    MetaData;
-    DWORD                   Flags;
-
-    // If COMIMAGE_FLAGS_NATIVE_ENTRYPOINT is not set, EntryPointToken represents a managed entrypoint.
-    // If COMIMAGE_FLAGS_NATIVE_ENTRYPOINT is set, EntryPointRVA represents an RVA to a native entrypoint.
-    union {
-        DWORD               EntryPointToken;
-        DWORD               EntryPointRVA;
-    } DUMMYUNIONNAME;
-
-    // Binding information
-    IMAGE_DATA_DIRECTORY    Resources;
-    IMAGE_DATA_DIRECTORY    StrongNameSignature;
-
-    // Regular fixup and binding information
-    IMAGE_DATA_DIRECTORY    CodeManagerTable;
-    IMAGE_DATA_DIRECTORY    VTableFixups;
-    IMAGE_DATA_DIRECTORY    ExportAddressTableJumps;
-
-    // Precompiled image info (internal use only - set to zero)
-    IMAGE_DATA_DIRECTORY    ManagedNativeHeader;
-
-} IMAGE_COR20_HEADER, *PIMAGE_COR20_HEADER;
-
-#define VS_FFI_SIGNATURE        0xFEEF04BDL
-#define VS_FFI_STRUCVERSION     0x00010000L
-
-/* ----- VS_VERSION.dwFileFlags ----- */
-#define VS_FF_DEBUG             0x00000001L
-#define VS_FF_PRERELEASE        0x00000002L
-#define VS_FF_PATCHED           0x00000004L
-#define VS_FF_PRIVATEBUILD      0x00000008L
-#define VS_FF_INFOINFERRED      0x00000010L
-#define VS_FF_SPECIALBUILD      0x00000020L
-
-/* ----- VS_VERSION.dwFileOS ----- */
-#define VOS_UNKNOWN             0x00000000L
-#define VOS_DOS                 0x00010000L
-#define VOS_OS216               0x00020000L
-#define VOS_OS232               0x00030000L
-#define VOS_NT                  0x00040000L
-#define VOS_WINCE               0x00050000L
-
-#define VOS__BASE               0x00000000L
-#define VOS__WINDOWS16          0x00000001L
-#define VOS__PM16               0x00000002L
-#define VOS__PM32               0x00000003L
-#define VOS__WINDOWS32          0x00000004L
-
-#define VOS_DOS_WINDOWS16       0x00010001L
-#define VOS_DOS_WINDOWS32       0x00010004L
-#define VOS_OS216_PM16          0x00020002L
-#define VOS_OS232_PM32          0x00030003L
-#define VOS_NT_WINDOWS32        0x00040004L
-
-/* ----- VS_VERSION.dwFileType ----- */
-#define VFT_UNKNOWN             0x00000000L
-#define VFT_APP                 0x00000001L
-#define VFT_DLL                 0x00000002L
-#define VFT_DRV                 0x00000003L
-#define VFT_FONT                0x00000004L
-#define VFT_VXD                 0x00000005L
-#define VFT_STATIC_LIB          0x00000007L
-typedef struct tagVS_FIXEDFILEINFO
+//DOS .EXE header
+struct image_dos_header
 {
-    DWORD   dwSignature;            /* e.g. 0xfeef04bd */
-    DWORD   dwStrucVersion;         /* e.g. 0x00000042 = "0.42" */
-    DWORD   dwFileVersionMS;        /* e.g. 0x00030075 = "3.75" */
-    DWORD   dwFileVersionLS;        /* e.g. 0x00000031 = "0.31" */
-    DWORD   dwProductVersionMS;     /* e.g. 0x00030010 = "3.10" */
-    DWORD   dwProductVersionLS;     /* e.g. 0x00000031 = "0.31" */
-    DWORD   dwFileFlagsMask;        /* = 0x3F for version "0.42" */
-    DWORD   dwFileFlags;            /* e.g. VFF_DEBUG | VFF_PRERELEASE */
-    DWORD   dwFileOS;               /* e.g. VOS_DOS_WINDOWS16 */
-    DWORD   dwFileType;             /* e.g. VFT_DRIVER */
-    DWORD   dwFileSubtype;          /* e.g. VFT2_DRV_KEYBOARD */
-    DWORD   dwFileDateMS;           /* e.g. 0 */
-    DWORD   dwFileDateLS;           /* e.g. 0 */
-} VS_FIXEDFILEINFO;
+	uint16_t e_magic;                     // Magic number
+	uint16_t e_cblp;                      // Bytes on last page of file
+	uint16_t e_cp;                        // Pages in file
+	uint16_t e_crlc;                      // Relocations
+	uint16_t e_cparhdr;                   // Size of header in paragraphs
+	uint16_t e_minalloc;                  // Minimum extra paragraphs needed
+	uint16_t e_maxalloc;                  // Maximum extra paragraphs needed
+	uint16_t e_ss;                        // Initial (relative) SS value
+	uint16_t e_sp;                        // Initial SP value
+	uint16_t e_csum;                      // Checksum
+	uint16_t e_ip;                        // Initial IP value
+	uint16_t e_cs;                        // Initial (relative) CS value
+	uint16_t e_lfarlc;                    // File address of relocation table
+	uint16_t e_ovno;                      // Overlay number
+	uint16_t e_res[4];                    // Reserved words
+	uint16_t e_oemid;                     // OEM identifier (for e_oeminfo)
+	uint16_t e_oeminfo;                   // OEM information; e_oemid specific
+	uint16_t e_res2[10];                  // Reserved words
+	int32_t  e_lfanew;                    // File address of new exe header
+};
 
-typedef struct tagBITMAPINFOHEADER{
-        DWORD      biSize;
-        LONG       biWidth;
-        LONG       biHeight;
-        WORD       biPlanes;
-        WORD       biBitCount;
-        DWORD      biCompression;
-        DWORD      biSizeImage;
-        LONG       biXPelsPerMeter;
-        LONG       biYPelsPerMeter;
-        DWORD      biClrUsed;
-        DWORD      biClrImportant;
-} BITMAPINFOHEADER, *LPBITMAPINFOHEADER, *PBITMAPINFOHEADER;
+//Directory format
+struct image_data_directory
+{
+	uint32_t VirtualAddress;
+	uint32_t Size;
+};
 
-typedef struct _MESSAGE_RESOURCE_ENTRY {
-    WORD   Length;
-    WORD   Flags;
-    BYTE  Text[ 1 ];
-} MESSAGE_RESOURCE_ENTRY, *PMESSAGE_RESOURCE_ENTRY;
+//Optional header format
+struct image_optional_header32
+{
+	//Standard fields
+	uint16_t Magic;
+	uint8_t  MajorLinkerVersion;
+	uint8_t  MinorLinkerVersion;
+	uint32_t SizeOfCode;
+	uint32_t SizeOfInitializedData;
+	uint32_t SizeOfUninitializedData;
+	uint32_t AddressOfEntryPoint;
+	uint32_t BaseOfCode;
+	uint32_t BaseOfData;
 
-#define MESSAGE_RESOURCE_UNICODE 0x0001
+	//NT additional fields
+	uint32_t ImageBase;
+	uint32_t SectionAlignment;
+	uint32_t FileAlignment;
+	uint16_t MajorOperatingSystemVersion;
+	uint16_t MinorOperatingSystemVersion;
+	uint16_t MajorImageVersion;
+	uint16_t MinorImageVersion;
+	uint16_t MajorSubsystemVersion;
+	uint16_t MinorSubsystemVersion;
+	uint32_t Win32VersionValue;
+	uint32_t SizeOfImage;
+	uint32_t SizeOfHeaders;
+	uint32_t CheckSum;
+	uint16_t Subsystem;
+	uint16_t DllCharacteristics;
+	uint32_t SizeOfStackReserve;
+	uint32_t SizeOfStackCommit;
+	uint32_t SizeOfHeapReserve;
+	uint32_t SizeOfHeapCommit;
+	uint32_t LoaderFlags;
+	uint32_t NumberOfRvaAndSizes;
+	image_data_directory DataDirectory[image_numberof_directory_entries];
+};
 
-typedef struct _MESSAGE_RESOURCE_BLOCK {
-    DWORD LowId;
-    DWORD HighId;
-    DWORD OffsetToEntries;
-} MESSAGE_RESOURCE_BLOCK, *PMESSAGE_RESOURCE_BLOCK;
+struct image_optional_header64
+{
+	uint16_t Magic;
+	uint8_t  MajorLinkerVersion;
+	uint8_t  MinorLinkerVersion;
+	uint32_t SizeOfCode;
+	uint32_t SizeOfInitializedData;
+	uint32_t SizeOfUninitializedData;
+	uint32_t AddressOfEntryPoint;
+	uint32_t BaseOfCode;
+	uint64_t ImageBase;
+	uint32_t SectionAlignment;
+	uint32_t FileAlignment;
+	uint16_t MajorOperatingSystemVersion;
+	uint16_t MinorOperatingSystemVersion;
+	uint16_t MajorImageVersion;
+	uint16_t MinorImageVersion;
+	uint16_t MajorSubsystemVersion;
+	uint16_t MinorSubsystemVersion;
+	uint32_t Win32VersionValue;
+	uint32_t SizeOfImage;
+	uint32_t SizeOfHeaders;
+	uint32_t CheckSum;
+	uint16_t Subsystem;
+	uint16_t DllCharacteristics;
+	uint64_t SizeOfStackReserve;
+	uint64_t SizeOfStackCommit;
+	uint64_t SizeOfHeapReserve;
+	uint64_t SizeOfHeapCommit;
+	uint32_t LoaderFlags;
+	uint32_t NumberOfRvaAndSizes;
+	image_data_directory DataDirectory[image_numberof_directory_entries];
+};
 
-typedef struct _MESSAGE_RESOURCE_DATA {
-    DWORD NumberOfBlocks;
-    MESSAGE_RESOURCE_BLOCK Blocks[ 1 ];
-} MESSAGE_RESOURCE_DATA, *PMESSAGE_RESOURCE_DATA;
+struct image_file_header
+{
+	uint16_t Machine;
+	uint16_t NumberOfSections;
+	uint32_t TimeDateStamp;
+	uint32_t PointerToSymbolTable;
+	uint32_t NumberOfSymbols;
+	uint16_t SizeOfOptionalHeader;
+	uint16_t Characteristics;
+};
 
-#pragma pack(push, 8)
+struct image_nt_headers64
+{
+	uint32_t Signature;
+	image_file_header FileHeader;
+	image_optional_header64 OptionalHeader;
+};
 
-typedef struct _IMAGE_THUNK_DATA64 {
-    union {
-        ULONGLONG ForwarderString;  // PBYTE 
-        ULONGLONG Function;         // PDWORD
-        ULONGLONG Ordinal;
-        ULONGLONG AddressOfData;    // PIMAGE_IMPORT_BY_NAME
-    } u1;
-} IMAGE_THUNK_DATA64;
-typedef IMAGE_THUNK_DATA64 * PIMAGE_THUNK_DATA64;
+struct image_nt_headers32
+{
+	uint32_t Signature;
+	image_file_header FileHeader;
+	image_optional_header32 OptionalHeader;
+};
 
-#pragma pack(pop)
+//Section header format
+struct image_section_header
+{
+	uint8_t Name[8];
+	union
+	{
+		uint32_t PhysicalAddress;
+		uint32_t VirtualSize;
+	} Misc;
 
-typedef struct _IMAGE_THUNK_DATA32 {
-    union {
-        DWORD ForwarderString;      // PBYTE 
-        DWORD Function;             // PDWORD
-        DWORD Ordinal;
-        DWORD AddressOfData;        // PIMAGE_IMPORT_BY_NAME
-    } u1;
-} IMAGE_THUNK_DATA32;
-typedef IMAGE_THUNK_DATA32 * PIMAGE_THUNK_DATA32;
-
-#define IMAGE_ORDINAL_FLAG64 0x8000000000000000
-#define IMAGE_ORDINAL_FLAG32 0x80000000
-#define IMAGE_ORDINAL64(Ordinal) (Ordinal & 0xffff)
-#define IMAGE_ORDINAL32(Ordinal) (Ordinal & 0xffff)
-#define IMAGE_SNAP_BY_ORDINAL64(Ordinal) ((Ordinal & IMAGE_ORDINAL_FLAG64) != 0)
-#define IMAGE_SNAP_BY_ORDINAL32(Ordinal) ((Ordinal & IMAGE_ORDINAL_FLAG32) != 0)
-
-typedef struct _IMAGE_TLS_DIRECTORY64 {
-    ULONGLONG   StartAddressOfRawData;
-    ULONGLONG   EndAddressOfRawData;
-    ULONGLONG   AddressOfIndex;         // PDWORD
-    ULONGLONG   AddressOfCallBacks;     // PIMAGE_TLS_CALLBACK *;
-    DWORD   SizeOfZeroFill;
-    DWORD   Characteristics;
-} IMAGE_TLS_DIRECTORY64;
-typedef IMAGE_TLS_DIRECTORY64 * PIMAGE_TLS_DIRECTORY64;
-
-typedef struct _IMAGE_TLS_DIRECTORY32 {
-    DWORD   StartAddressOfRawData;
-    DWORD   EndAddressOfRawData;
-    DWORD   AddressOfIndex;             // PDWORD
-    DWORD   AddressOfCallBacks;         // PIMAGE_TLS_CALLBACK *
-    DWORD   SizeOfZeroFill;
-    DWORD   Characteristics;
-} IMAGE_TLS_DIRECTORY32;
-typedef IMAGE_TLS_DIRECTORY32 * PIMAGE_TLS_DIRECTORY32;
-
-//
-// Load Configuration Directory Entry
-//
-
-typedef struct {
-    DWORD   Size;
-    DWORD   TimeDateStamp;
-    WORD    MajorVersion;
-    WORD    MinorVersion;
-    DWORD   GlobalFlagsClear;
-    DWORD   GlobalFlagsSet;
-    DWORD   CriticalSectionDefaultTimeout;
-    DWORD   DeCommitFreeBlockThreshold;
-    DWORD   DeCommitTotalFreeThreshold;
-    DWORD   LockPrefixTable;            // VA
-    DWORD   MaximumAllocationSize;
-    DWORD   VirtualMemoryThreshold;
-    DWORD   ProcessHeapFlags;
-    DWORD   ProcessAffinityMask;
-    WORD    CSDVersion;
-    WORD    Reserved1;
-    DWORD   EditList;                   // VA
-    DWORD   SecurityCookie;             // VA
-    DWORD   SEHandlerTable;             // VA
-    DWORD   SEHandlerCount;
-} IMAGE_LOAD_CONFIG_DIRECTORY32, *PIMAGE_LOAD_CONFIG_DIRECTORY32;
-
-typedef struct {
-    DWORD      Size;
-    DWORD      TimeDateStamp;
-    WORD       MajorVersion;
-    WORD       MinorVersion;
-    DWORD      GlobalFlagsClear;
-    DWORD      GlobalFlagsSet;
-    DWORD      CriticalSectionDefaultTimeout;
-    ULONGLONG  DeCommitFreeBlockThreshold;
-    ULONGLONG  DeCommitTotalFreeThreshold;
-    ULONGLONG  LockPrefixTable;         // VA
-    ULONGLONG  MaximumAllocationSize;
-    ULONGLONG  VirtualMemoryThreshold;
-    ULONGLONG  ProcessAffinityMask;
-    DWORD      ProcessHeapFlags;
-    WORD       CSDVersion;
-    WORD       Reserved1;
-    ULONGLONG  EditList;                // VA
-    ULONGLONG  SecurityCookie;          // VA
-    ULONGLONG  SEHandlerTable;          // VA
-    ULONGLONG  SEHandlerCount;
-} IMAGE_LOAD_CONFIG_DIRECTORY64, *PIMAGE_LOAD_CONFIG_DIRECTORY64;
-
-// Directory Entries
-
-#define IMAGE_DIRECTORY_ENTRY_EXPORT          0   // Export Directory
-#define IMAGE_DIRECTORY_ENTRY_IMPORT          1   // Import Directory
-#define IMAGE_DIRECTORY_ENTRY_RESOURCE        2   // Resource Directory
-#define IMAGE_DIRECTORY_ENTRY_EXCEPTION       3   // Exception Directory
-#define IMAGE_DIRECTORY_ENTRY_SECURITY        4   // Security Directory
-#define IMAGE_DIRECTORY_ENTRY_BASERELOC       5   // Base Relocation Table
-#define IMAGE_DIRECTORY_ENTRY_DEBUG           6   // Debug Directory
-//      IMAGE_DIRECTORY_ENTRY_COPYRIGHT       7   // (X86 usage)
-#define IMAGE_DIRECTORY_ENTRY_ARCHITECTURE    7   // Architecture Specific Data
-#define IMAGE_DIRECTORY_ENTRY_GLOBALPTR       8   // RVA of GP
-#define IMAGE_DIRECTORY_ENTRY_TLS             9   // TLS Directory
-#define IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG    10   // Load Configuration Directory
-#define IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT   11   // Bound Import Directory in headers
-#define IMAGE_DIRECTORY_ENTRY_IAT            12   // Import Address Table
-#define IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT   13   // Delay Load Import Descriptors
-#define IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR 14   // COM Runtime descriptor
+	uint32_t VirtualAddress;
+	uint32_t SizeOfRawData;
+	uint32_t PointerToRawData;
+	uint32_t PointerToRelocations;
+	uint32_t PointerToLinenumbers;
+	uint16_t NumberOfRelocations;
+	uint16_t NumberOfLinenumbers;
+	uint32_t Characteristics;
+};
 
 
+/// RESOURCES ///
+struct image_resource_directory
+{
+	uint32_t Characteristics;
+	uint32_t TimeDateStamp;
+	uint16_t MajorVersion;
+	uint16_t MinorVersion;
+	uint16_t NumberOfNamedEntries;
+	uint16_t NumberOfIdEntries;
+	//  IMAGE_RESOURCE_DIRECTORY_ENTRY DirectoryEntries[];
+};
 
-// Subsystem Values
+struct vs_fixedfileinfo
+{
+	uint32_t dwSignature;            /* e.g. 0xfeef04bd */
+	uint32_t dwStrucVersion;         /* e.g. 0x00000042 = "0.42" */
+	uint32_t dwFileVersionMS;        /* e.g. 0x00030075 = "3.75" */
+	uint32_t dwFileVersionLS;        /* e.g. 0x00000031 = "0.31" */
+	uint32_t dwProductVersionMS;     /* e.g. 0x00030010 = "3.10" */
+	uint32_t dwProductVersionLS;     /* e.g. 0x00000031 = "0.31" */
+	uint32_t dwFileFlagsMask;        /* = 0x3F for version "0.42" */
+	uint32_t dwFileFlags;            /* e.g. VFF_DEBUG | VFF_PRERELEASE */
+	uint32_t dwFileOS;               /* e.g. VOS_DOS_WINDOWS16 */
+	uint32_t dwFileType;             /* e.g. VFT_DRIVER */
+	uint32_t dwFileSubtype;          /* e.g. VFT2_DRV_KEYBOARD */
+	uint32_t dwFileDateMS;           /* e.g. 0 */
+	uint32_t dwFileDateLS;           /* e.g. 0 */
+};
 
-#define IMAGE_SUBSYSTEM_UNKNOWN              0   // Unknown subsystem.
-#define IMAGE_SUBSYSTEM_NATIVE               1   // Image doesn't require a subsystem.
-#define IMAGE_SUBSYSTEM_WINDOWS_GUI          2   // Image runs in the Windows GUI subsystem.
-#define IMAGE_SUBSYSTEM_WINDOWS_CUI          3   // Image runs in the Windows character subsystem.
-#define IMAGE_SUBSYSTEM_OS2_CUI              5   // image runs in the OS/2 character subsystem.
-#define IMAGE_SUBSYSTEM_POSIX_CUI            7   // image runs in the Posix character subsystem.
-#define IMAGE_SUBSYSTEM_NATIVE_WINDOWS       8   // image is a native Win9x driver.
-#define IMAGE_SUBSYSTEM_WINDOWS_CE_GUI       9   // Image runs in the Windows CE subsystem.
-#define IMAGE_SUBSYSTEM_EFI_APPLICATION      10  //
-#define IMAGE_SUBSYSTEM_EFI_BOOT_SERVICE_DRIVER  11   //
-#define IMAGE_SUBSYSTEM_EFI_RUNTIME_DRIVER   12  //
-#define IMAGE_SUBSYSTEM_EFI_ROM              13
-#define IMAGE_SUBSYSTEM_XBOX                 14
-#define IMAGE_SUBSYSTEM_WINDOWS_BOOT_APPLICATION 16
+struct bitmapinfoheader
+{
+	uint32_t biSize;
+	int32_t  biWidth;
+	int32_t  biHeight;
+	uint16_t biPlanes;
+	uint16_t biBitCount;
+	uint32_t biCompression;
+	uint32_t biSizeImage;
+	int32_t  biXPelsPerMeter;
+	int32_t  biYPelsPerMeter;
+	uint32_t biClrUsed;
+	uint32_t biClrImportant;
+};
 
+struct message_resource_entry
+{
+	uint16_t Length;
+	uint16_t Flags;
+	uint8_t  Text[1];
+};
 
-//
-// Export Format
-//
+struct message_resource_block
+{
+	uint32_t LowId;
+	uint32_t HighId;
+	uint32_t OffsetToEntries;
+};
 
-typedef struct _IMAGE_EXPORT_DIRECTORY {
-    DWORD   Characteristics;
-    DWORD   TimeDateStamp;
-    WORD    MajorVersion;
-    WORD    MinorVersion;
-    DWORD   Name;
-    DWORD   Base;
-    DWORD   NumberOfFunctions;
-    DWORD   NumberOfNames;
-    DWORD   AddressOfFunctions;     // RVA from base of image
-    DWORD   AddressOfNames;         // RVA from base of image
-    DWORD   AddressOfNameOrdinals;  // RVA from base of image
-} IMAGE_EXPORT_DIRECTORY, *PIMAGE_EXPORT_DIRECTORY;
+struct message_resource_data
+{
+	uint32_t NumberOfBlocks;
+	message_resource_block Blocks[1];
+};
 
-//
-// Based relocation format.
-//
+struct image_resource_directory_entry
+{
+	union
+	{
+		struct
+		{
+			uint32_t NameOffset:31;
+			uint32_t NameIsString:1;
+		};
+		uint32_t Name;
+		uint16_t Id;
+	};
 
-typedef struct _IMAGE_BASE_RELOCATION {
-    DWORD   VirtualAddress;
-    DWORD   SizeOfBlock;
-//  WORD    TypeOffset[1];
-} IMAGE_BASE_RELOCATION;
-typedef IMAGE_BASE_RELOCATION UNALIGNED * PIMAGE_BASE_RELOCATION;
+	union
+	{
+		uint32_t OffsetToData;
+		struct
+		{
+			uint32_t OffsetToDirectory:31;
+			uint32_t DataIsDirectory:1;
+		};
+	};
+};
 
-//
-// Based relocation types.
-//
-
-#define IMAGE_REL_BASED_ABSOLUTE              0
-#define IMAGE_REL_BASED_HIGH                  1
-#define IMAGE_REL_BASED_LOW                   2
-#define IMAGE_REL_BASED_HIGHLOW               3
-#define IMAGE_REL_BASED_HIGHADJ               4
-#define IMAGE_REL_BASED_MIPS_JMPADDR          5
-#define IMAGE_REL_BASED_MIPS_JMPADDR16        9
-#define IMAGE_REL_BASED_IA64_IMM64            9
-#define IMAGE_REL_BASED_DIR64                 10
-
-//
-// New format import descriptors pointed to by DataDirectory[ IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT ]
-//
-
-typedef struct _IMAGE_BOUND_IMPORT_DESCRIPTOR {
-    DWORD   TimeDateStamp;
-    WORD    OffsetModuleName;
-    WORD    NumberOfModuleForwarderRefs;
-// Array of zero or more IMAGE_BOUND_FORWARDER_REF follows
-} IMAGE_BOUND_IMPORT_DESCRIPTOR,  *PIMAGE_BOUND_IMPORT_DESCRIPTOR;
-
-typedef struct _IMAGE_BOUND_FORWARDER_REF {
-    DWORD   TimeDateStamp;
-    WORD    OffsetModuleName;
-    WORD    Reserved;
-} IMAGE_BOUND_FORWARDER_REF, *PIMAGE_BOUND_FORWARDER_REF;
-
-
-typedef struct _IMAGE_RESOURCE_DIRECTORY_ENTRY {
-    union {
-        struct {
-            DWORD NameOffset:31;
-            DWORD NameIsString:1;
-        } DUMMYSTRUCTNAME;
-        DWORD   Name;
-        WORD    Id;
-    } DUMMYUNIONNAME;
-    union {
-        DWORD   OffsetToData;
-        struct {
-            DWORD   OffsetToDirectory:31;
-            DWORD   DataIsDirectory:1;
-        } DUMMYSTRUCTNAME2;
-    } DUMMYUNIONNAME2;
-} IMAGE_RESOURCE_DIRECTORY_ENTRY, *PIMAGE_RESOURCE_DIRECTORY_ENTRY;
-
-typedef struct _IMAGE_RESOURCE_DATA_ENTRY {
-    DWORD   OffsetToData;
-    DWORD   Size;
-    DWORD   CodePage;
-    DWORD   Reserved;
-} IMAGE_RESOURCE_DATA_ENTRY, *PIMAGE_RESOURCE_DATA_ENTRY;
+struct image_resource_data_entry
+{
+	uint32_t OffsetToData;
+	uint32_t Size;
+	uint32_t CodePage;
+	uint32_t Reserved;
+};
 
 #pragma pack(push, 2)
-
-typedef struct _IMAGE_SYMBOL {
-    union {
-        BYTE    ShortName[8];
-        struct {
-            DWORD   Short;     // if 0, use LongName
-            DWORD   Long;      // offset into string table
-        } Name;
-        DWORD   LongName[2];    // PBYTE [2]
-    } N;
-    DWORD   Value;
-    SHORT   SectionNumber;
-    WORD    Type;
-    BYTE    StorageClass;
-    BYTE    NumberOfAuxSymbols;
-} IMAGE_SYMBOL;
-typedef IMAGE_SYMBOL UNALIGNED *PIMAGE_SYMBOL;
-#pragma pack(pop)
-
-//
-// Storage classes.
-//
-#define IMAGE_SYM_CLASS_END_OF_FUNCTION     (BYTE )-1
-#define IMAGE_SYM_CLASS_NULL                0x0000
-#define IMAGE_SYM_CLASS_AUTOMATIC           0x0001
-#define IMAGE_SYM_CLASS_EXTERNAL            0x0002
-#define IMAGE_SYM_CLASS_STATIC              0x0003
-#define IMAGE_SYM_CLASS_REGISTER            0x0004
-#define IMAGE_SYM_CLASS_EXTERNAL_DEF        0x0005
-#define IMAGE_SYM_CLASS_LABEL               0x0006
-#define IMAGE_SYM_CLASS_UNDEFINED_LABEL     0x0007
-#define IMAGE_SYM_CLASS_MEMBER_OF_STRUCT    0x0008
-#define IMAGE_SYM_CLASS_ARGUMENT            0x0009
-#define IMAGE_SYM_CLASS_STRUCT_TAG          0x000A
-#define IMAGE_SYM_CLASS_MEMBER_OF_UNION     0x000B
-#define IMAGE_SYM_CLASS_UNION_TAG           0x000C
-#define IMAGE_SYM_CLASS_TYPE_DEFINITION     0x000D
-#define IMAGE_SYM_CLASS_UNDEFINED_STATIC    0x000E
-#define IMAGE_SYM_CLASS_ENUM_TAG            0x000F
-#define IMAGE_SYM_CLASS_MEMBER_OF_ENUM      0x0010
-#define IMAGE_SYM_CLASS_REGISTER_PARAM      0x0011
-#define IMAGE_SYM_CLASS_BIT_FIELD           0x0012
-
-#define IMAGE_SYM_CLASS_FAR_EXTERNAL        0x0044  //
-
-#define IMAGE_SYM_CLASS_BLOCK               0x0064
-#define IMAGE_SYM_CLASS_FUNCTION            0x0065
-#define IMAGE_SYM_CLASS_END_OF_STRUCT       0x0066
-#define IMAGE_SYM_CLASS_FILE                0x0067
-// new
-#define IMAGE_SYM_CLASS_SECTION             0x0068
-#define IMAGE_SYM_CLASS_WEAK_EXTERNAL       0x0069
-
-#define IMAGE_SYM_CLASS_CLR_TOKEN           0x006B
-
-// type packing constants
-
-#define N_BTMASK                            0x000F
-#define N_TMASK                             0x0030
-#define N_TMASK1                            0x00C0
-#define N_TMASK2                            0x00F0
-#define N_BTSHFT                            4
-#define N_TSHIFT                            2
-
-//
-// Type (derived) values.
-//
-
-#define IMAGE_SYM_DTYPE_NULL                0       // no derived type.
-#define IMAGE_SYM_DTYPE_POINTER             1       // pointer.
-#define IMAGE_SYM_DTYPE_FUNCTION            2       // function.
-#define IMAGE_SYM_DTYPE_ARRAY               3       // array.
-
-// Is x a function?
-#ifndef ISFCN
-#define ISFCN(x) (((x) & N_TMASK) == (IMAGE_SYM_DTYPE_FUNCTION << N_BTSHFT))
-#endif
-
-typedef enum ReplacesCorHdrNumericDefines
+struct bitmapfileheader
 {
-// COM+ Header entry point flags.
-    COMIMAGE_FLAGS_ILONLY               =0x00000001,
-    COMIMAGE_FLAGS_32BITREQUIRED        =0x00000002,
-    COMIMAGE_FLAGS_IL_LIBRARY           =0x00000004,
-    COMIMAGE_FLAGS_STRONGNAMESIGNED     =0x00000008,
-    COMIMAGE_FLAGS_NATIVE_ENTRYPOINT    =0x00000010,
-    COMIMAGE_FLAGS_TRACKDEBUGDATA       =0x00010000,
-
-// Version flags for image.
-    COR_VERSION_MAJOR_V2                =2,
-    COR_VERSION_MAJOR                   =COR_VERSION_MAJOR_V2,
-    COR_VERSION_MINOR                   =0,
-    COR_DELETED_NAME_LENGTH             =8,
-    COR_VTABLEGAP_NAME_LENGTH           =8,
-
-// Maximum size of a NativeType descriptor.
-    NATIVE_TYPE_MAX_CB                  =1,
-    COR_ILMETHOD_SECT_SMALL_MAX_DATASIZE=0xFF,
-
-// #defines for the MIH FLAGS
-    IMAGE_COR_MIH_METHODRVA             =0x01,
-    IMAGE_COR_MIH_EHRVA                 =0x02,
-    IMAGE_COR_MIH_BASICBLOCK            =0x08,
-
-// V-table constants
-    COR_VTABLE_32BIT                    =0x01,          // V-table slots are 32-bits in size.
-    COR_VTABLE_64BIT                    =0x02,          // V-table slots are 64-bits in size.
-    COR_VTABLE_FROM_UNMANAGED           =0x04,          // If set, transition from unmanaged.
-    COR_VTABLE_FROM_UNMANAGED_RETAIN_APPDOMAIN  =0x08,  // If set, transition from unmanaged with keeping the current appdomain.
-    COR_VTABLE_CALL_MOST_DERIVED        =0x10,          // Call most derived method described by
-
-// EATJ constants
-    IMAGE_COR_EATJ_THUNK_SIZE           =32,            // Size of a jump thunk reserved range.
-
-// Max name lengths
-    //@todo: Change to unlimited name lengths.
-    MAX_CLASS_NAME                      =1024,
-    MAX_PACKAGE_NAME                    =1024,
-} ReplacesCorHdrNumericDefines;
-
-typedef struct _IMAGE_IMPORT_DESCRIPTOR {
-    union {
-        DWORD   Characteristics;            // 0 for terminating null import descriptor
-        DWORD   OriginalFirstThunk;         // RVA to original unbound IAT (PIMAGE_THUNK_DATA)
-    } DUMMYUNIONNAME;
-    DWORD   TimeDateStamp;                  // 0 if not bound,
-                                            // -1 if bound, and real date\time stamp
-                                            //     in IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT (new BIND)
-                                            // O.W. date/time stamp of DLL bound to (Old BIND)
-
-    DWORD   ForwarderChain;                 // -1 if no forwarders
-    DWORD   Name;
-    DWORD   FirstThunk;                     // RVA to IAT (if bound this IAT has actual addresses)
-} IMAGE_IMPORT_DESCRIPTOR;
-typedef IMAGE_IMPORT_DESCRIPTOR UNALIGNED *PIMAGE_IMPORT_DESCRIPTOR;
-
-#pragma pack(push, 2)
-typedef struct tagBITMAPFILEHEADER {
-        WORD    bfType;
-        DWORD   bfSize;
-        WORD    bfReserved1;
-        WORD    bfReserved2;
-        DWORD   bfOffBits;
-} BITMAPFILEHEADER, *LPBITMAPFILEHEADER, *PBITMAPFILEHEADER;
+	uint16_t bfType;
+	uint32_t bfSize;
+	uint16_t bfReserved1;
+	uint16_t bfReserved2;
+	uint32_t bfOffBits;
+};
 #pragma pack(pop)
 
-#endif
 
 
 //Structure representing ICON file header
-struct ICO_HEADER
+struct ico_header
 {
-	WORD Reserved;
-	WORD Type; //1
-	WORD Count; //Count of icons included in icon group
+	uint16_t Reserved;
+	uint16_t Type; //1
+	uint16_t Count; //Count of icons included in icon group
 };
 
 //Structure that is stored in icon group directory in PE resources
-struct ICON_GROUP
+struct icon_group
 {
-	BYTE Width;
-	BYTE Height;
-	BYTE ColorCount;
-	BYTE Reserved;
-	WORD Planes;
-	WORD BitCount;
-	DWORD SizeInBytes;
-	WORD Number; //Represents resource ID in PE icon list
+	uint8_t Width;
+	uint8_t Height;
+	uint8_t ColorCount;
+	uint8_t Reserved;
+	uint16_t Planes;
+	uint16_t BitCount;
+	uint32_t SizeInBytes;
+	uint16_t Number; //Represents resource ID in PE icon list
 };
 
 //Structure representing ICON directory entry inside ICON file
-struct ICONDIRENTRY
+struct icondirentry
 {
-	BYTE Width;
-	BYTE Height;
-	BYTE ColorCount;
-	BYTE Reserved;
-	WORD Planes;
-	WORD BitCount;
-	DWORD SizeInBytes;
-	DWORD ImageOffset; //Offset from start of header to the image
+	uint8_t Width;
+	uint8_t Height;
+	uint8_t ColorCount;
+	uint8_t Reserved;
+	uint16_t Planes;
+	uint16_t BitCount;
+	uint32_t SizeInBytes;
+	uint32_t ImageOffset; //Offset from start of header to the image
 };
 
 //Structure representing CURSOR file header
-struct CURSOR_HEADER
+struct cursor_header
 {
-	WORD Reserved;
-	WORD Type; //2
-	WORD Count; //Count of cursors included in cursor group
+	uint16_t Reserved;
+	uint16_t Type; //2
+	uint16_t Count; //Count of cursors included in cursor group
 };
 
-struct CURSOR_GROUP
+struct cursor_group
 {
-	WORD Width;
-	WORD Height; //Divide by 2 to get the actual height.
-	WORD Planes;
-	WORD BitCount;
-	DWORD SizeInBytes;
-	WORD Number; //Represents resource ID in PE icon list
+	uint16_t Width;
+	uint16_t Height; //Divide by 2 to get the actual height.
+	uint16_t Planes;
+	uint16_t BitCount;
+	uint32_t SizeInBytes;
+	uint16_t Number; //Represents resource ID in PE icon list
 };
 
 //Structure representing CURSOR directory entry inside CURSOR file
-struct CURSORDIRENTRY
+struct cursordirentry
 {
-	BYTE Width; //todo [comment] Set to CURSOR_GROUP::Height/2.
-	BYTE Height;
-	BYTE ColorCount;
-	BYTE Reserved;
-	WORD HotspotX;
-	WORD HotspotY;
-	DWORD SizeInBytes;
-	DWORD ImageOffset; //Offset from start of header to the image
+	uint8_t Width; //todo [comment] Set to CURSOR_GROUP::Height/2.
+	uint8_t Height;
+	uint8_t ColorCount;
+	uint8_t Reserved;
+	uint16_t HotspotX;
+	uint16_t HotspotY;
+	uint32_t SizeInBytes;
+	uint32_t ImageOffset; //Offset from start of header to the image
 };
 
 //Structure representing BLOCK in version info resource
-struct VERSION_INFO_BLOCK //(always aligned on 32-bit (DWORD) boundary)
+struct version_info_block //(always aligned on 32-bit (DWORD) boundary)
 {
-	WORD Length; //Length of this block (doesn't include padding)
-	WORD ValueLength; //Value length (if any)
-	WORD Type; //Value type (0 = binary, 1 = text)
-	WCHAR Key[1]; //Value name (block key) (always NULL terminated)
+	uint16_t Length; //Length of this block (doesn't include padding)
+	uint16_t ValueLength; //Value length (if any)
+	uint16_t Type; //Value type (0 = binary, 1 = text)
+	uint16_t Key[1]; //Value name (block key) (always NULL terminated)
 
 	//////////
 	//WORD padding1[]; //Padding, if any (ALIGNMENT)
@@ -893,53 +569,158 @@ struct VERSION_INFO_BLOCK //(always aligned on 32-bit (DWORD) boundary)
 };
 
 
-//Structures and defines for exception directory (PE+)
-
-//The function has an exception handler that should be called when looking for functions that need to examine exceptions
-#define UNW_FLAG_EHANDLER  0x01
-//The function has a termination handler that should be called when unwinding an exception
-#define UNW_FLAG_UHANDLER  0x02
-//This unwind info structure is not the primary one for the procedure.
-//Instead, the chained unwind info entry is the contents of a previous RUNTIME_FUNCTION entry.
-//If this flag is set, then the UNW_FLAG_EHANDLER and UNW_FLAG_UHANDLER flags must be cleared.
-//Also, the frame register and fixed-stack allocation fields must have the same values as in the primary unwind info
-#define UNW_FLAG_CHAININFO 0x04
-
-typedef enum _UNWIND_OP_CODES
+/// IMPORTS ///
+#pragma pack(push, 8)
+struct image_thunk_data64
 {
-	UWOP_PUSH_NONVOL = 0, /* info == register number */
-	UWOP_ALLOC_LARGE,     /* no info, alloc size in next 2 slots */
-	UWOP_ALLOC_SMALL,     /* info == size of allocation / 8 - 1 */
-	UWOP_SET_FPREG,       /* no info, FP = RSP + UNWIND_INFO.FPRegOffset*16 */
-	UWOP_SAVE_NONVOL,     /* info == register number, offset in next slot */
-	UWOP_SAVE_NONVOL_FAR, /* info == register number, offset in next 2 slots */
-	UWOP_SAVE_XMM128,     /* info == XMM reg number, offset in next slot */
-	UWOP_SAVE_XMM128_FAR, /* info == XMM reg number, offset in next 2 slots */
-	UWOP_PUSH_MACHFRAME   /* info == 0: no error-code, 1: error-code */
-} UNWIND_CODE_OPS;
+	union
+	{
+		uint64_t ForwarderString;  // PBYTE 
+		uint64_t Function;         // PDWORD
+		uint64_t Ordinal;
+		uint64_t AddressOfData;    // PIMAGE_IMPORT_BY_NAME
+	} u1;
+};
+#pragma pack(pop)
 
-union UNWIND_CODE
+struct image_thunk_data32
+{
+	union
+	{
+		uint32_t ForwarderString;      // PBYTE 
+		uint32_t Function;             // PDWORD
+		uint32_t Ordinal;
+		uint32_t AddressOfData;        // PIMAGE_IMPORT_BY_NAME
+	} u1;
+};
+
+struct image_import_descriptor
+{
+	union
+	{
+		uint32_t Characteristics;           // 0 for terminating null import descriptor
+		uint32_t OriginalFirstThunk;        // RVA to original unbound IAT (PIMAGE_THUNK_DATA)
+	};
+
+	uint32_t TimeDateStamp;                 // 0 if not bound,
+											// -1 if bound, and real date\time stamp
+											//     in IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT (new BIND)
+											// O.W. date/time stamp of DLL bound to (Old BIND)
+
+	uint32_t ForwarderChain;                // -1 if no forwarders
+	uint32_t Name;
+	uint32_t FirstThunk;                    // RVA to IAT (if bound this IAT has actual addresses)
+};
+
+
+/// TLS ///
+struct image_tls_directory64
+{
+	uint64_t StartAddressOfRawData;
+	uint64_t EndAddressOfRawData;
+	uint64_t AddressOfIndex;         // PDWORD
+	uint64_t AddressOfCallBacks;     // PIMAGE_TLS_CALLBACK *;
+	uint32_t SizeOfZeroFill;
+	uint32_t Characteristics;
+};
+
+struct image_tls_directory32
+{
+	uint32_t StartAddressOfRawData;
+	uint32_t EndAddressOfRawData;
+	uint32_t AddressOfIndex;             // PDWORD
+	uint32_t AddressOfCallBacks;         // PIMAGE_TLS_CALLBACK *
+	uint32_t SizeOfZeroFill;
+	uint32_t Characteristics;
+};
+
+
+/// Export Format ///
+struct image_export_directory
+{
+	uint32_t Characteristics;
+	uint32_t TimeDateStamp;
+	uint16_t MajorVersion;
+	uint16_t MinorVersion;
+	uint32_t Name;
+	uint32_t Base;
+	uint32_t NumberOfFunctions;
+	uint32_t NumberOfNames;
+	uint32_t AddressOfFunctions;     // RVA from base of image
+	uint32_t AddressOfNames;         // RVA from base of image
+	uint32_t AddressOfNameOrdinals;  // RVA from base of image
+};
+
+
+/// Based relocation format ///
+struct image_base_relocation
+{
+	uint32_t VirtualAddress;
+	uint32_t SizeOfBlock;
+	//  uint16_t TypeOffset[1];
+};
+
+
+/// New format import descriptors pointed to by DataDirectory[ IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT ] ///
+struct image_bound_import_descriptor
+{
+	uint32_t TimeDateStamp;
+	uint16_t OffsetModuleName;
+	uint16_t NumberOfModuleForwarderRefs;
+	// Array of zero or more IMAGE_BOUND_FORWARDER_REF follows
+};
+
+struct image_bound_forwarder_ref
+{
+	uint32_t TimeDateStamp;
+	uint16_t OffsetModuleName;
+	uint16_t Reserved;
+};
+
+
+/// Exception directory ///
+struct image_runtime_function_entry
+{
+	uint32_t BeginAddress;
+	uint32_t EndAddress;
+	uint32_t UnwindInfoAddress;
+};
+
+enum unwind_op_codes
+{
+	uwop_push_nonvol = 0, /* info == register number */
+	uwop_alloc_large,     /* no info, alloc size in next 2 slots */
+	uwop_alloc_small,     /* info == size of allocation / 8 - 1 */
+	uwop_set_fpreg,       /* no info, FP = RSP + UNWIND_INFO.FPRegOffset*16 */
+	uwop_save_nonvol,     /* info == register number, offset in next slot */
+	uwop_save_nonvol_far, /* info == register number, offset in next 2 slots */
+	uwop_save_xmm128,     /* info == XMM reg number, offset in next slot */
+	uwop_save_xmm128_far, /* info == XMM reg number, offset in next 2 slots */
+	uwop_push_machframe   /* info == 0: no error-code, 1: error-code */
+};
+
+union unwind_code
 {
 	struct s
 	{
-		BYTE CodeOffset;
-		BYTE UnwindOp : 4;
-		BYTE OpInfo   : 4;
+		uint8_t CodeOffset;
+		uint8_t UnwindOp : 4;
+		uint8_t OpInfo   : 4;
 	};
 
-	USHORT FrameOffset;
+	uint16_t FrameOffset;
 };
 
-struct UNWIND_INFO
+struct unwind_info
 {
-	BYTE Version       : 3;
-	BYTE Flags         : 5;
-	BYTE SizeOfProlog;
-	BYTE CountOfCodes;
-	BYTE FrameRegister : 4;
-	BYTE FrameOffset   : 4;
-	UNWIND_CODE UnwindCode[1];
-	/*  UNWIND_CODE MoreUnwindCode[((CountOfCodes + 1) & ~1) - 1];
+	uint8_t Version       : 3;
+	uint8_t Flags         : 5;
+	uint8_t SizeOfProlog;
+	uint8_t CountOfCodes;
+	uint8_t FrameRegister : 4;
+	uint8_t FrameOffset   : 4;
+	unwind_code UnwindCode[1];
+	/*  unwind_code MoreUnwindCode[((CountOfCodes + 1) & ~1) - 1];
 	*   union {
 	*       OPTIONAL ULONG ExceptionHandler;
 	*       OPTIONAL ULONG FunctionEntry;
@@ -948,7 +729,64 @@ struct UNWIND_INFO
 };
 
 
-//DEBUG
+
+/// Debug ///
+struct image_debug_misc
+{
+	uint32_t DataType;               // type of misc data, see defines
+	uint32_t Length;                 // total length of record, rounded to four
+	// byte multiple.
+	uint8_t  Unicode;                // TRUE if data is unicode string
+	uint8_t  Reserved[3];
+	uint8_t  Data[1];                // Actual data
+};
+
+struct image_coff_symbols_header
+{
+	uint32_t NumberOfSymbols;
+	uint32_t LvaToFirstSymbol;
+	uint32_t NumberOfLinenumbers;
+	uint32_t LvaToFirstLinenumber;
+	uint32_t RvaToFirstByteOfCode;
+	uint32_t RvaToLastByteOfCode;
+	uint32_t RvaToFirstByteOfData;
+	uint32_t RvaToLastByteOfData;
+};
+
+struct image_debug_directory
+{
+	uint32_t Characteristics;
+	uint32_t TimeDateStamp;
+	uint16_t MajorVersion;
+	uint16_t MinorVersion;
+	uint32_t Type;
+	uint32_t SizeOfData;
+	uint32_t AddressOfRawData;
+	uint32_t PointerToRawData;
+};
+
+
+#pragma pack(push, 2)
+struct image_symbol
+{
+	union
+	{
+		uint8_t ShortName[8];
+		struct
+		{
+			uint32_t Short;     // if 0, use LongName
+			uint32_t Long;      // offset into string table
+		} Name;
+		uint32_t LongName[2];    // PBYTE [2]
+	} N;
+	uint32_t Value;
+	int16_t  SectionNumber;
+	uint16_t Type;
+	uint8_t  StorageClass;
+	uint8_t  NumberOfAuxSymbols;
+};
+#pragma pack(pop)
+
 //CodeView Debug OMF signature. The signature at the end of the file is
 //a negative offset from the end of the file to another signature.  At
 //the negative offset (base address) is another signature whose filepos
@@ -959,39 +797,41 @@ struct UNWIND_INFO
 //to the executable. The NB08 signature is used by cvpack to indicate that
 //the CodeView Debug OMF has been packed. CodeView will only process
 //executables with the NB08 signature.
-typedef struct OMFSignature {
-	char        Signature[4];   // "NBxx"
-	long        filepos;        // offset in file
-} OMFSignature, *POMFSignature;
+struct OMFSignature
+{
+	char Signature[4];   // "NBxx"
+	uint32_t filepos;    // offset in file
+};
 
-typedef struct _CV_INFO_PDB20
+struct CV_INFO_PDB20
 {
 	OMFSignature CvHeader;
-	DWORD Signature;
-	DWORD Age;
-	BYTE PdbFileName[1];
-} CV_INFO_PDB20, *PCV_INFO_PDB20;
+	uint32_t Signature;
+	uint32_t Age;
+	uint8_t PdbFileName[1];
+};
 
-typedef struct _CV_INFO_PDB70
+struct CV_INFO_PDB70
 {
-	DWORD CvSignature;
-	GUID Signature;
-	DWORD Age;
-	BYTE PdbFileName[1];
-} CV_INFO_PDB70, *PCV_INFO_PDB70;
+	uint32_t CvSignature;
+	guid Signature;
+	uint32_t Age;
+	uint8_t PdbFileName[1];
+};
 
 //  directory information structure
 //  This structure contains the information describing the directory.
 //  It is pointed to by the signature at the base address or the directory
 //  link field of a preceeding directory.  The directory entries immediately
 //  follow this structure.
-typedef struct OMFDirHeader {
-	unsigned short  cbDirHeader;    // length of this structure
-	unsigned short  cbDirEntry;     // number of bytes in each directory entry
-	unsigned long   cDir;           // number of directorie entries
-	long            lfoNextDir;     // offset from base of next directory
-	unsigned long   flags;          // status flags
-} OMFDirHeader, *POMFDirHeader;
+struct OMFDirHeader
+{
+	uint16_t cbDirHeader;    // length of this structure
+	uint16_t cbDirEntry;     // number of bytes in each directory entry
+	uint32_t cDir;           // number of directorie entries
+	int32_t  lfoNextDir;     // offset from base of next directory
+	uint32_t flags;          // status flags
+};
 
 //  directory structure
 //  The data in this structure is used to reference the data for each
@@ -999,11 +839,148 @@ typedef struct OMFDirHeader {
 //  not associated with a specific module will have a module index of
 //  oxffff.  These tables are the global types table, the global symbol
 //  table, the global public table and the library table.
-typedef struct OMFDirEntry {
-	unsigned short  SubSection;     // subsection type (sst...)
-	unsigned short  iMod;           // module index
-	long            lfo;            // large file offset of subsection
-	unsigned long   cb;             // number of bytes in subsection
-} OMFDirEntry, *POMFDirEntry;
+struct OMFDirEntry
+{
+	uint16_t SubSection;     // subsection type (sst...)
+	uint16_t iMod;           // module index
+	int32_t  lfo;            // large file offset of subsection
+	uint32_t cb;             // number of bytes in subsection
+};
+
+
+/// CLR 2.0 header structure ///
+struct image_cor20_header
+{
+	//Header versioning
+	uint32_t cb;
+	uint16_t MajorRuntimeVersion;
+	uint16_t MinorRuntimeVersion;
+
+	// Symbol table and startup information
+	image_data_directory MetaData;
+	uint32_t Flags;
+
+	// If COMIMAGE_FLAGS_NATIVE_ENTRYPOINT is not set, EntryPointToken represents a managed entrypoint.
+	// If COMIMAGE_FLAGS_NATIVE_ENTRYPOINT is set, EntryPointRVA represents an RVA to a native entrypoint.
+	union
+	{
+		uint32_t EntryPointToken;
+		uint32_t EntryPointRVA;
+	};
+
+	// Binding information
+	image_data_directory Resources;
+	image_data_directory StrongNameSignature;
+
+	// Regular fixup and binding information
+	image_data_directory CodeManagerTable;
+	image_data_directory VTableFixups;
+	image_data_directory ExportAddressTableJumps;
+
+	// Precompiled image info (internal use only - set to zero)
+	image_data_directory ManagedNativeHeader;
+};
+
+enum replaces_cor_hdr_numeric_defines
+{
+	// COM+ Header entry point flags.
+	comimage_flags_ilonly               =0x00000001,
+	comimage_flags_32bitrequired        =0x00000002,
+	comimage_flags_il_library           =0x00000004,
+	comimage_flags_strongnamesigned     =0x00000008,
+	comimage_flags_native_entrypoint    =0x00000010,
+	comimage_flags_trackdebugdata       =0x00010000,
+
+	// Version flags for image.
+	cor_version_major_v2                =2,
+	cor_version_major                   =cor_version_major_v2,
+	cor_version_minor                   =0,
+	cor_deleted_name_length             =8,
+	cor_vtablegap_name_length           =8,
+
+	// Maximum size of a NativeType descriptor.
+	native_type_max_cb                  =1,
+	cor_ilmethod_sect_small_max_datasize=0xff,
+
+	// #defines for the MIH FLAGS
+	image_cor_mih_methodrva             =0x01,
+	image_cor_mih_ehrva                 =0x02,
+	image_cor_mih_basicblock            =0x08,
+
+	// V-table constants
+	cor_vtable_32bit                    =0x01,          // V-table slots are 32-bits in size.
+	cor_vtable_64bit                    =0x02,          // V-table slots are 64-bits in size.
+	cor_vtable_from_unmanaged           =0x04,          // If set, transition from unmanaged.
+	cor_vtable_from_unmanaged_retain_appdomain  =0x08,  // If set, transition from unmanaged with keeping the current appdomain.
+	cor_vtable_call_most_derived        =0x10,          // Call most derived method described by
+
+	// EATJ constants
+	image_cor_eatj_thunk_size           =32,            // Size of a jump thunk reserved range.
+
+	// Max name lengths
+	//@todo: Change to unlimited name lengths.
+	max_class_name                      =1024,
+	max_package_name                    =1024,
+};
+
+/// Load Configuration Directory Entry ///
+struct image_load_config_directory32
+{
+	uint32_t Size;
+	uint32_t TimeDateStamp;
+	uint16_t MajorVersion;
+	uint16_t MinorVersion;
+	uint32_t GlobalFlagsClear;
+	uint32_t GlobalFlagsSet;
+	uint32_t CriticalSectionDefaultTimeout;
+	uint32_t DeCommitFreeBlockThreshold;
+	uint32_t DeCommitTotalFreeThreshold;
+	uint32_t LockPrefixTable;            // VA
+	uint32_t MaximumAllocationSize;
+	uint32_t VirtualMemoryThreshold;
+	uint32_t ProcessHeapFlags;
+	uint32_t ProcessAffinityMask;
+	uint16_t CSDVersion;
+	uint16_t Reserved1;
+	uint32_t EditList;                   // VA
+	uint32_t SecurityCookie;             // VA
+	uint32_t SEHandlerTable;             // VA
+	uint32_t SEHandlerCount;
+};
+
+struct image_load_config_directory64
+{
+	uint32_t Size;
+	uint32_t TimeDateStamp;
+	uint16_t MajorVersion;
+	uint16_t MinorVersion;
+	uint32_t GlobalFlagsClear;
+	uint32_t GlobalFlagsSet;
+	uint32_t CriticalSectionDefaultTimeout;
+	uint64_t DeCommitFreeBlockThreshold;
+	uint64_t DeCommitTotalFreeThreshold;
+	uint64_t LockPrefixTable;         // VA
+	uint64_t MaximumAllocationSize;
+	uint64_t VirtualMemoryThreshold;
+	uint64_t ProcessAffinityMask;
+	uint32_t ProcessHeapFlags;
+	uint16_t CSDVersion;
+	uint16_t Reserved1;
+	uint64_t EditList;                // VA
+	uint64_t SecurityCookie;          // VA
+	uint64_t SEHandlerTable;          // VA
+	uint64_t SEHandlerCount;
+};
 
 #pragma pack(pop)
+
+
+#ifdef PELIB_ON_WINDOWS
+typedef wchar_t unicode16_t;
+typedef std::basic_string<unicode16_t> u16string;
+#else
+//Instead of wchar_t for windows
+typedef unsigned short unicode16_t;
+typedef std::basic_string<unicode16_t> u16string;
+#endif
+}

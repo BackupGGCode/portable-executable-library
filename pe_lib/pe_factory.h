@@ -3,6 +3,8 @@
 #include <istream>
 #include "pe_base.h"
 
+namespace pe_bliss
+{
 class pe_factory
 {
 public:
@@ -11,3 +13,4 @@ public:
 	//If read_debug_raw_data, raw debug data will be read (used to get image debug info)
 	static std::auto_ptr<pe_base> create_pe(std::istream& file, bool read_bound_import_raw_data = true, bool read_debug_raw_data = true);
 };
+}

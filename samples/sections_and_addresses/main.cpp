@@ -1,7 +1,11 @@
 ﻿#include <iostream>
 #include <fstream>
 #include <pe_factory.h>
+#ifdef PELIB_ON_WINDOWS
 #include "lib.h"
+#endif
+
+using namespace pe_bliss;
 
 //Пример, показывающий, как работать с секциями в PE-файле
 int main(int argc, char* argv[])
@@ -33,7 +37,7 @@ int main(int argc, char* argv[])
 
 		//Если у PE-файла есть импорты, выведем имя секции, в которой они находятся
 		if(image->has_imports())
-			std::cout << "Import section name: " << image->section_from_directory(IMAGE_DIRECTORY_ENTRY_IMPORT).get_name() << std::endl;
+			std::cout << "Import section name: " << image->section_from_directory(image_directory_entry_import).get_name() << std::endl;
 	}
 	catch(const pe_exception& e)
 	{

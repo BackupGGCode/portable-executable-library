@@ -326,6 +326,10 @@
 				RelativePath=".\pe_structures.h"
 				>
 			</File>
+			<File
+				RelativePath=".\stdint_defs.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"

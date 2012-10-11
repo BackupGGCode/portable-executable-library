@@ -1,7 +1,11 @@
 ﻿#include <iostream>
 #include <fstream>
 #include <pe_factory.h>
+#ifdef PELIB_ON_WINDOWS
 #include "lib.h"
+#endif
+
+using namespace pe_bliss;
 
 //Пример, показывающий, как считать и получить информацию о статическом TLS (Thread Local Storage, локальная память потока)
 //PE или PE+ файла

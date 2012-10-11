@@ -2,7 +2,11 @@
 #include <fstream>
 #include <pe_factory.h>
 #include <pe_resource_manager.h>
+#ifdef PELIB_ON_WINDOWS
 #include "lib.h"
+#endif
+
+using namespace pe_bliss;
 
 //Пример, показывающий, как читать ресурсы PE-файла
 int main(int argc, char* argv[])
@@ -101,7 +105,7 @@ int main(int argc, char* argv[])
 
 			//Для облегчения чтения информации о версии есть специальный класс
 			version_info_viewer version_viewer(strings, translations);
-			std::wcout << "Original filename: " << version_viewer.get_original_filename() << std::endl << std::endl;
+			std::wcout << L"Original filename: " << version_viewer.get_original_filename() << std::endl << std::endl;
 		}
 
 		{

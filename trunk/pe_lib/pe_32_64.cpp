@@ -1,9 +1,12 @@
 #include <ctime>
+#include <string.h>
 #include "pe_32_64.h"
 
+namespace pe_bliss
+{
 //Constructor of empty PE file
 template<typename PEClassType>
-pe<PEClassType>::pe(DWORD section_alignment, bool dll, WORD subsystem)
+pe<PEClassType>::pe(uint32_t section_alignment, bool dll, uint16_t subsystem)
 {
 	has_overlay_ = false;
 	memset(&nt_headers_, 0, sizeof(nt_headers_));
@@ -21,13 +24,13 @@ pe<PEClassType>::pe(DWORD section_alignment, bool dll, WORD subsystem)
 	nt_headers_.Signature = 0x4550; //"PE"
 	nt_headers_.FileHeader.Machine = 0x14C; //i386
 	nt_headers_.FileHeader.SizeOfOptionalHeader = sizeof(nt_headers_.OptionalHeader);
-	set_characteristics(IMAGE_FILE_EXECUTABLE_IMAGE | IMAGE_FILE_RELOCS_STRIPPED);
+	set_characteristics(image_file_executable_image | image_file_relocs_stripped);
 
 	if(get_pe_type() == pe_type_32)
-		set_characteristics_flags(IMAGE_FILE_32BIT_MACHINE);
+		set_characteristics_flags(image_file_32bit_machine);
 
 	if(dll)
-		set_characteristics_flags(IMAGE_FILE_DLL);
+		set_characteristics_flags(image_file_dll);
 
 	nt_headers_.OptionalHeader.Magic = PEClassType::Id;
 	nt_headers_.OptionalHeader.ImageBase = 0x400000;
@@ -54,7 +57,7 @@ pe<PEClassType>::pe(std::istream& file, bool read_bound_import_raw_data, bool re
 
 	try
 	{
-		file.exceptions(0);
+		file.exceptions(std::ios::goodbit);
 		//Read DOS header, PE headers and section data
 		read_dos_header(file);
 		read_pe(file, read_bound_import_raw_data, read_debug_raw_data);
@@ -97,21 +100,21 @@ void pe<PEClassType>::remove_directory(unsigned long id)
 		nt_headers_.OptionalHeader.DataDirectory[id].VirtualAddress = 0;
 		nt_headers_.OptionalHeader.DataDirectory[id].Size = 0;
 
-		if(id == IMAGE_DIRECTORY_ENTRY_BASERELOC)
+		if(id == image_directory_entry_basereloc)
 		{
-			set_characteristics_flags(IMAGE_FILE_RELOCS_STRIPPED);
-			set_dll_characteristics(get_dll_characteristics() & ~IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE);
+			set_characteristics_flags(image_file_relocs_stripped);
+			set_dll_characteristics(get_dll_characteristics() & ~image_dllcharacteristics_dynamic_base);
 		}
-		else if(id == IMAGE_DIRECTORY_ENTRY_EXPORT)
+		else if(id == image_directory_entry_export)
 		{
-			clear_characteristics_flags(IMAGE_FILE_DLL);
+			clear_characteristics_flags(image_file_dll);
 		}
 	}
 }
 
 //Returns directory RVA
 template<typename PEClassType>
-DWORD pe<PEClassType>::get_directory_rva(unsigned long id) const
+uint32_t pe<PEClassType>::get_directory_rva(unsigned long id) const
 {
 	//Check if directory exists
 	if(nt_headers_.OptionalHeader.NumberOfRvaAndSizes <= id)
@@ -122,7 +125,7 @@ DWORD pe<PEClassType>::get_directory_rva(unsigned long id) const
 
 //Returns directory size
 template<typename PEClassType>
-void pe<PEClassType>::set_directory_rva(unsigned long id, DWORD va)
+void pe<PEClassType>::set_directory_rva(unsigned long id, uint32_t va)
 {
 	//Check if directory exists
 	if(nt_headers_.OptionalHeader.NumberOfRvaAndSizes <= id)
@@ -132,7 +135,7 @@ void pe<PEClassType>::set_directory_rva(unsigned long id, DWORD va)
 }
 
 template<typename PEClassType>
-void pe<PEClassType>::set_directory_size(unsigned long id, DWORD size)
+void pe<PEClassType>::set_directory_size(unsigned long id, uint32_t size)
 {
 	//Check if directory exists
 	if(nt_headers_.OptionalHeader.NumberOfRvaAndSizes <= id)
@@ -143,7 +146,7 @@ void pe<PEClassType>::set_directory_size(unsigned long id, DWORD size)
 
 //Returns directory size
 template<typename PEClassType>
-DWORD pe<PEClassType>::get_directory_size(unsigned long id) const
+uint32_t pe<PEClassType>::get_directory_size(unsigned long id) const
 {
 	//Check if directory exists
 	if(nt_headers_.OptionalHeader.NumberOfRvaAndSizes <= id)
@@ -155,23 +158,23 @@ DWORD pe<PEClassType>::get_directory_size(unsigned long id) const
 //Strips only zero DATA_DIRECTORY entries to count = min_count
 //Returns resulting number of data directories
 template<typename PEClassType>
-unsigned long pe<PEClassType>::strip_data_directories(long min_count)
+unsigned long pe<PEClassType>::strip_data_directories(uint32_t min_count)
 {
-	long i = nt_headers_.OptionalHeader.NumberOfRvaAndSizes - 1;
+	uint32_t i = nt_headers_.OptionalHeader.NumberOfRvaAndSizes - 1;
 
 	//Enumerate all data directories from the end
 	for(; i >= 0; i--)
 	{
 		//If directory exists (and it is not IMAGE_DIRECTORY_ENTRY_IAT, we can strip it anyway), break
-		if(nt_headers_.OptionalHeader.DataDirectory[i].VirtualAddress && i != IMAGE_DIRECTORY_ENTRY_IAT)
+		if(nt_headers_.OptionalHeader.DataDirectory[i].VirtualAddress && i != image_directory_entry_iat)
 			break;
 
 		if(i <= min_count - 2)
 			break;
 	}
 
-	if(i == IMAGE_NUMBEROF_DIRECTORY_ENTRIES - 1)
-		return IMAGE_NUMBEROF_DIRECTORY_ENTRIES;
+	if(i == image_numberof_directory_entries - 1)
+		return image_numberof_directory_entries;
 
 	//Return new number of data directories
 	return nt_headers_.OptionalHeader.NumberOfRvaAndSizes = i + 1;
@@ -179,308 +182,308 @@ unsigned long pe<PEClassType>::strip_data_directories(long min_count)
 
 //Returns image base for PE32
 template<typename PEClassType>
-DWORD pe<PEClassType>::get_image_base_32() const
+uint32_t pe<PEClassType>::get_image_base_32() const
 {
-	return static_cast<DWORD>(nt_headers_.OptionalHeader.ImageBase);
+	return static_cast<uint32_t>(nt_headers_.OptionalHeader.ImageBase);
 }
 
 //Returns image base for PE32/PE64
 template<typename PEClassType>
-ULONGLONG pe<PEClassType>::get_image_base_64() const
+uint64_t pe<PEClassType>::get_image_base_64() const
 {
-	return static_cast<ULONGLONG>(nt_headers_.OptionalHeader.ImageBase);
+	return static_cast<uint64_t>(nt_headers_.OptionalHeader.ImageBase);
 }
 
 //Sets new image base
 template<typename PEClassType>
-void pe<PEClassType>::set_image_base(DWORD base)
+void pe<PEClassType>::set_image_base(uint32_t base)
 {
 	nt_headers_.OptionalHeader.ImageBase = base;
 }
 
 //Sets new image base
 template<typename PEClassType>
-void pe<PEClassType>::set_image_base_64(ULONGLONG base)
+void pe<PEClassType>::set_image_base_64(uint64_t base)
 {
 	nt_headers_.OptionalHeader.ImageBase = static_cast<typename PEClassType::BaseSize>(base);
 }
 
 //Returns image entry point
 template<typename PEClassType>
-DWORD pe<PEClassType>::get_ep() const
+uint32_t pe<PEClassType>::get_ep() const
 {
 	return nt_headers_.OptionalHeader.AddressOfEntryPoint;
 }
 
 //Sets image entry point
 template<typename PEClassType>
-void pe<PEClassType>::set_ep(DWORD new_ep)
+void pe<PEClassType>::set_ep(uint32_t new_ep)
 {
 	nt_headers_.OptionalHeader.AddressOfEntryPoint = new_ep;
 }
 
 //Returns file alignment
 template<typename PEClassType>
-DWORD pe<PEClassType>::get_file_alignment() const
+uint32_t pe<PEClassType>::get_file_alignment() const
 {
 	return nt_headers_.OptionalHeader.FileAlignment;
 }
 
 //Returns section alignment
 template<typename PEClassType>
-DWORD pe<PEClassType>::get_section_alignment() const
+uint32_t pe<PEClassType>::get_section_alignment() const
 {
 	return nt_headers_.OptionalHeader.SectionAlignment;
 }
 
 //Sets heap size commit for PE32
 template<typename PEClassType>
-void pe<PEClassType>::set_heap_size_commit(DWORD size)
+void pe<PEClassType>::set_heap_size_commit(uint32_t size)
 {
 	nt_headers_.OptionalHeader.SizeOfHeapCommit = static_cast<typename PEClassType::BaseSize>(size);
 }
 
 //Sets heap size commit for PE32/PE64
 template<typename PEClassType>
-void pe<PEClassType>::set_heap_size_commit(ULONGLONG size)
+void pe<PEClassType>::set_heap_size_commit(uint64_t size)
 {
 	nt_headers_.OptionalHeader.SizeOfHeapCommit = static_cast<typename PEClassType::BaseSize>(size);
 }
 
 //Sets heap size reserve for PE32
 template<typename PEClassType>
-void pe<PEClassType>::set_heap_size_reserve(DWORD size)
+void pe<PEClassType>::set_heap_size_reserve(uint32_t size)
 {
 	nt_headers_.OptionalHeader.SizeOfHeapReserve = static_cast<typename PEClassType::BaseSize>(size);
 }
 
 //Sets heap size reserve for PE32/PE64
 template<typename PEClassType>
-void pe<PEClassType>::set_heap_size_reserve(ULONGLONG size)
+void pe<PEClassType>::set_heap_size_reserve(uint64_t size)
 {
 	nt_headers_.OptionalHeader.SizeOfHeapReserve = static_cast<typename PEClassType::BaseSize>(size);
 }
 
 //Sets stack size commit for PE32
 template<typename PEClassType>
-void pe<PEClassType>::set_stack_size_commit(DWORD size)
+void pe<PEClassType>::set_stack_size_commit(uint32_t size)
 {
 	nt_headers_.OptionalHeader.SizeOfStackCommit = static_cast<typename PEClassType::BaseSize>(size);
 }
 
 //Sets stack size commit for PE32/PE64
 template<typename PEClassType>
-void pe<PEClassType>::set_stack_size_commit(ULONGLONG size)
+void pe<PEClassType>::set_stack_size_commit(uint64_t size)
 {
 	nt_headers_.OptionalHeader.SizeOfStackCommit = static_cast<typename PEClassType::BaseSize>(size);
 }
 
 //Sets stack size reserve for PE32
 template<typename PEClassType>
-void pe<PEClassType>::set_stack_size_reserve(DWORD size)
+void pe<PEClassType>::set_stack_size_reserve(uint32_t size)
 {
 	nt_headers_.OptionalHeader.SizeOfStackReserve = static_cast<typename PEClassType::BaseSize>(size);
 }
 
 //Sets stack size reserve for PE32/PE64
 template<typename PEClassType>
-void pe<PEClassType>::set_stack_size_reserve(ULONGLONG size)
+void pe<PEClassType>::set_stack_size_reserve(uint64_t size)
 {
 	nt_headers_.OptionalHeader.SizeOfStackReserve = static_cast<typename PEClassType::BaseSize>(size);
 }
 
 //Returns heap size commit for PE32
 template<typename PEClassType>
-DWORD pe<PEClassType>::get_heap_size_commit_32() const
+uint32_t pe<PEClassType>::get_heap_size_commit_32() const
 {
-	return static_cast<DWORD>(nt_headers_.OptionalHeader.SizeOfHeapCommit);
+	return static_cast<uint32_t>(nt_headers_.OptionalHeader.SizeOfHeapCommit);
 }
 
 //Returns heap size commit for PE32/PE64
 template<typename PEClassType>
-ULONGLONG pe<PEClassType>::get_heap_size_commit_64() const
+uint64_t pe<PEClassType>::get_heap_size_commit_64() const
 {
-	return static_cast<ULONGLONG>(nt_headers_.OptionalHeader.SizeOfHeapCommit);
+	return static_cast<uint64_t>(nt_headers_.OptionalHeader.SizeOfHeapCommit);
 }
 
 //Returns heap size reserve for PE32
 template<typename PEClassType>
-DWORD pe<PEClassType>::get_heap_size_reserve_32() const
+uint32_t pe<PEClassType>::get_heap_size_reserve_32() const
 {
-	return static_cast<DWORD>(nt_headers_.OptionalHeader.SizeOfHeapReserve);
+	return static_cast<uint32_t>(nt_headers_.OptionalHeader.SizeOfHeapReserve);
 }
 
 //Returns heap size reserve for PE32/PE64
 template<typename PEClassType>
-ULONGLONG pe<PEClassType>::get_heap_size_reserve_64() const
+uint64_t pe<PEClassType>::get_heap_size_reserve_64() const
 {
-	return static_cast<ULONGLONG>(nt_headers_.OptionalHeader.SizeOfHeapReserve);
+	return static_cast<uint64_t>(nt_headers_.OptionalHeader.SizeOfHeapReserve);
 }
 
 //Returns stack size commit for PE32
 template<typename PEClassType>
-DWORD pe<PEClassType>::get_stack_size_commit_32() const
+uint32_t pe<PEClassType>::get_stack_size_commit_32() const
 {
-	return static_cast<DWORD>(nt_headers_.OptionalHeader.SizeOfStackCommit);
+	return static_cast<uint32_t>(nt_headers_.OptionalHeader.SizeOfStackCommit);
 }
 
 //Returns stack size commit for PE32/PE64
 template<typename PEClassType>
-ULONGLONG pe<PEClassType>::get_stack_size_commit_64() const
+uint64_t pe<PEClassType>::get_stack_size_commit_64() const
 {
-	return static_cast<ULONGLONG>(nt_headers_.OptionalHeader.SizeOfStackCommit);
+	return static_cast<uint64_t>(nt_headers_.OptionalHeader.SizeOfStackCommit);
 }
 
 //Returns stack size reserve for PE32
 template<typename PEClassType>
-DWORD pe<PEClassType>::get_stack_size_reserve_32() const
+uint32_t pe<PEClassType>::get_stack_size_reserve_32() const
 {
-	return static_cast<DWORD>(nt_headers_.OptionalHeader.SizeOfStackReserve);
+	return static_cast<uint32_t>(nt_headers_.OptionalHeader.SizeOfStackReserve);
 }
 
 //Returns stack size reserve for PE32/PE64
 template<typename PEClassType>
-ULONGLONG pe<PEClassType>::get_stack_size_reserve_64() const
+uint64_t pe<PEClassType>::get_stack_size_reserve_64() const
 {
-	return static_cast<ULONGLONG>(nt_headers_.OptionalHeader.SizeOfStackReserve);
+	return static_cast<uint64_t>(nt_headers_.OptionalHeader.SizeOfStackReserve);
 }
 
 //Returns virtual size of image
 template<typename PEClassType>
-DWORD pe<PEClassType>::get_size_of_image() const
+uint32_t pe<PEClassType>::get_size_of_image() const
 {
 	return nt_headers_.OptionalHeader.SizeOfImage;
 }
 
 //Returns number of RVA and sizes (number of DATA_DIRECTORY entries)
 template<typename PEClassType>
-DWORD pe<PEClassType>::get_number_of_rvas_and_sizes() const
+uint32_t pe<PEClassType>::get_number_of_rvas_and_sizes() const
 {
 	return nt_headers_.OptionalHeader.NumberOfRvaAndSizes;
 }
 
 //Sets number of RVA and sizes (number of DATA_DIRECTORY entries)
 template<typename PEClassType>
-void pe<PEClassType>::set_number_of_rvas_and_sizes(DWORD number)
+void pe<PEClassType>::set_number_of_rvas_and_sizes(uint32_t number)
 {
 	nt_headers_.OptionalHeader.NumberOfRvaAndSizes = number;
 }
 
 //Returns PE characteristics
 template<typename PEClassType>
-WORD pe<PEClassType>::get_characteristics() const
+uint16_t pe<PEClassType>::get_characteristics() const
 {
 	return nt_headers_.FileHeader.Characteristics;
 }
 
 //Returns checksum of PE file from header
 template<typename PEClassType>
-DWORD pe<PEClassType>::get_checksum() const
+uint32_t pe<PEClassType>::get_checksum() const
 {
 	return nt_headers_.OptionalHeader.CheckSum;
 }
 
 //Sets checksum of PE file
 template<typename PEClassType>
-void pe<PEClassType>::set_checksum(DWORD checksum)
+void pe<PEClassType>::set_checksum(uint32_t checksum)
 {
 	nt_headers_.OptionalHeader.CheckSum = checksum;
 }
 
 //Returns DLL Characteristics
 template<typename PEClassType>
-WORD pe<PEClassType>::get_dll_characteristics() const
+uint16_t pe<PEClassType>::get_dll_characteristics() const
 {
 	return nt_headers_.OptionalHeader.DllCharacteristics;
 }
 
 //Returns timestamp of PE file from header
 template<typename PEClassType>
-DWORD pe<PEClassType>::get_time_date_stamp() const
+uint32_t pe<PEClassType>::get_time_date_stamp() const
 {
 	return nt_headers_.FileHeader.TimeDateStamp;
 }
 
 //Sets timestamp of PE file
 template<typename PEClassType>
-void pe<PEClassType>::set_time_date_stamp(DWORD timestamp)
+void pe<PEClassType>::set_time_date_stamp(uint32_t timestamp)
 {
 	nt_headers_.FileHeader.TimeDateStamp = timestamp;
 }
 
 //Sets DLL Characteristics
 template<typename PEClassType>
-void pe<PEClassType>::set_dll_characteristics(WORD characteristics)
+void pe<PEClassType>::set_dll_characteristics(uint16_t characteristics)
 {
 	nt_headers_.OptionalHeader.DllCharacteristics = characteristics;
 }
 
 //Returns Machine field value of PE file from header
 template<typename PEClassType>
-WORD pe<PEClassType>::get_machine() const
+uint16_t pe<PEClassType>::get_machine() const
 {
 	return nt_headers_.FileHeader.Machine;
 }
 
 //Sets Machine field value of PE file
 template<typename PEClassType>
-void pe<PEClassType>::set_machine(WORD machine)
+void pe<PEClassType>::set_machine(uint16_t machine)
 {
 	nt_headers_.FileHeader.Machine = machine;
 }
 
 //Sets PE characteristics
 template<typename PEClassType>
-void pe<PEClassType>::set_characteristics(WORD ch)
+void pe<PEClassType>::set_characteristics(uint16_t ch)
 {
 	nt_headers_.FileHeader.Characteristics = ch;
 }
 
 //Returns size of headers
 template<typename PEClassType>
-DWORD pe<PEClassType>::get_size_of_headers() const
+uint32_t pe<PEClassType>::get_size_of_headers() const
 {
 	return nt_headers_.OptionalHeader.SizeOfHeaders;
 }
 
 //Returns subsystem
 template<typename PEClassType>
-WORD pe<PEClassType>::get_subsystem() const
+uint16_t pe<PEClassType>::get_subsystem() const
 {
 	return nt_headers_.OptionalHeader.Subsystem;
 }
 
 //Sets subsystem
 template<typename PEClassType>
-void pe<PEClassType>::set_subsystem(WORD subsystem)
+void pe<PEClassType>::set_subsystem(uint16_t subsystem)
 {
 	nt_headers_.OptionalHeader.Subsystem = subsystem;
 }
 
 //Returns size of optional header
 template<typename PEClassType>
-WORD pe<PEClassType>::get_size_of_optional_header() const
+uint16_t pe<PEClassType>::get_size_of_optional_header() const
 {
 	return nt_headers_.FileHeader.SizeOfOptionalHeader;
 }
 
 //Returns PE signature
 template<typename PEClassType>
-DWORD pe<PEClassType>::get_pe_signature() const
+uint32_t pe<PEClassType>::get_pe_signature() const
 {
 	return nt_headers_.Signature;
 }
 
 //Returns PE magic value
 template<typename PEClassType>
-DWORD pe<PEClassType>::get_magic() const
+uint32_t pe<PEClassType>::get_magic() const
 {
 	return nt_headers_.OptionalHeader.Magic;
 }
 
 //Sets required operation system version
 template<typename PEClassType>
-void pe<PEClassType>::set_os_version(WORD major, WORD minor)
+void pe<PEClassType>::set_os_version(uint16_t major, uint16_t minor)
 {
 	nt_headers_.OptionalHeader.MinorOperatingSystemVersion = minor;
 	nt_headers_.OptionalHeader.MajorOperatingSystemVersion = major;
@@ -488,14 +491,14 @@ void pe<PEClassType>::set_os_version(WORD major, WORD minor)
 
 //Returns required operation system version (minor word)
 template<typename PEClassType>
-WORD pe<PEClassType>::get_minor_os_version() const
+uint16_t pe<PEClassType>::get_minor_os_version() const
 {
 	return nt_headers_.OptionalHeader.MinorOperatingSystemVersion;
 }
 
 //Returns required operation system version (major word)
 template<typename PEClassType>
-WORD pe<PEClassType>::get_major_os_version() const
+uint16_t pe<PEClassType>::get_major_os_version() const
 {
 	return nt_headers_.OptionalHeader.MajorOperatingSystemVersion;
 }
@@ -503,7 +506,7 @@ WORD pe<PEClassType>::get_major_os_version() const
 
 //Sets required subsystem version
 template<typename PEClassType>
-void pe<PEClassType>::set_subsystem_version(WORD major, WORD minor)
+void pe<PEClassType>::set_subsystem_version(uint16_t major, uint16_t minor)
 {
 	nt_headers_.OptionalHeader.MinorSubsystemVersion = minor;
 	nt_headers_.OptionalHeader.MajorSubsystemVersion = major;
@@ -511,86 +514,86 @@ void pe<PEClassType>::set_subsystem_version(WORD major, WORD minor)
 
 //Returns required subsystem version (minor word)
 template<typename PEClassType>
-WORD pe<PEClassType>::get_minor_subsystem_version() const
+uint16_t pe<PEClassType>::get_minor_subsystem_version() const
 {
 	return nt_headers_.OptionalHeader.MinorSubsystemVersion;
 }
 
 //Returns required subsystem version (major word)
 template<typename PEClassType>
-WORD pe<PEClassType>::get_major_subsystem_version() const
+uint16_t pe<PEClassType>::get_major_subsystem_version() const
 {
 	return nt_headers_.OptionalHeader.MajorSubsystemVersion;
 }
 
 //Virtual Address (VA) to Relative Virtual Address (RVA) convertions for PE32
 template<typename PEClassType>
-DWORD pe<PEClassType>::va_to_rva(DWORD va, bool bound_check) const
+uint32_t pe<PEClassType>::va_to_rva(uint32_t va, bool bound_check) const
 {
-	if(bound_check && static_cast<ULONGLONG>(va) - nt_headers_.OptionalHeader.ImageBase > max_dword)
+	if(bound_check && static_cast<uint64_t>(va) - nt_headers_.OptionalHeader.ImageBase > max_dword)
 		throw pe_exception("Incorrect address conversion", pe_exception::incorrect_address_conversion);
 
-	return static_cast<DWORD>(va - nt_headers_.OptionalHeader.ImageBase);
+	return static_cast<uint32_t>(va - nt_headers_.OptionalHeader.ImageBase);
 }
 
 //Virtual Address (VA) to Relative Virtual Address (RVA) convertions for PE32/PE64
 template<typename PEClassType>
-DWORD pe<PEClassType>::va_to_rva(ULONGLONG va, bool bound_check) const
+uint32_t pe<PEClassType>::va_to_rva(uint64_t va, bool bound_check) const
 {
 	if(bound_check && va - nt_headers_.OptionalHeader.ImageBase > max_dword)
 		throw pe_exception("Incorrect address conversion", pe_exception::incorrect_address_conversion);
 
-	return static_cast<DWORD>(va - nt_headers_.OptionalHeader.ImageBase);
+	return static_cast<uint32_t>(va - nt_headers_.OptionalHeader.ImageBase);
 }
 
 //Relative Virtual Address (RVA) to Virtual Address (VA) convertions for PE32
 template<typename PEClassType>
-DWORD pe<PEClassType>::rva_to_va_32(DWORD rva) const
+uint32_t pe<PEClassType>::rva_to_va_32(uint32_t rva) const
 {
-	if(!is_sum_safe(rva, static_cast<DWORD>(nt_headers_.OptionalHeader.ImageBase)))
+	if(!is_sum_safe(rva, static_cast<uint32_t>(nt_headers_.OptionalHeader.ImageBase)))
 		throw pe_exception("Incorrect address conversion", pe_exception::incorrect_address_conversion);
 
-	return static_cast<DWORD>(rva + nt_headers_.OptionalHeader.ImageBase);
+	return static_cast<uint32_t>(rva + nt_headers_.OptionalHeader.ImageBase);
 }
 
 //Relative Virtual Address (RVA) to Virtual Address (VA) convertions for PE32/PE64
 template<typename PEClassType>
-ULONGLONG pe<PEClassType>::rva_to_va_64(DWORD rva) const
+uint64_t pe<PEClassType>::rva_to_va_64(uint32_t rva) const
 {
-	return static_cast<ULONGLONG>(rva) + nt_headers_.OptionalHeader.ImageBase;
+	return static_cast<uint64_t>(rva) + nt_headers_.OptionalHeader.ImageBase;
 }
 
 //Returns number of sections
 template<typename PEClassType>
-WORD pe<PEClassType>::get_number_of_sections() const
+uint16_t pe<PEClassType>::get_number_of_sections() const
 {
 	return nt_headers_.FileHeader.NumberOfSections;
 }
 
 //Sets number of sections
 template<typename PEClassType>
-void pe<PEClassType>::set_number_of_sections(WORD number)
+void pe<PEClassType>::set_number_of_sections(uint16_t number)
 {
 	nt_headers_.FileHeader.NumberOfSections = number;
 }
 
 //Sets virtual size of image
 template<typename PEClassType>
-void pe<PEClassType>::set_size_of_image(DWORD size)
+void pe<PEClassType>::set_size_of_image(uint32_t size)
 {
 	nt_headers_.OptionalHeader.SizeOfImage = size;
 }
 
 //Sets size of headers
 template<typename PEClassType>
-void pe<PEClassType>::set_size_of_headers(DWORD size)
+void pe<PEClassType>::set_size_of_headers(uint32_t size)
 {
 	nt_headers_.OptionalHeader.SizeOfHeaders = size;
 }
 
 //Sets size of optional headers
 template<typename PEClassType>
-void pe<PEClassType>::set_size_of_optional_header(WORD size)
+void pe<PEClassType>::set_size_of_optional_header(uint16_t size)
 {
 	nt_headers_.FileHeader.SizeOfOptionalHeader = size;
 }
@@ -618,21 +621,21 @@ unsigned long pe<PEClassType>::get_sizeof_opt_headers() const
 
 //Sets file alignment (no checks)
 template<typename PEClassType>
-void pe<PEClassType>::set_file_alignment_unchecked(DWORD alignment) 
+void pe<PEClassType>::set_file_alignment_unchecked(uint32_t alignment) 
 {
 	nt_headers_.OptionalHeader.FileAlignment = alignment;
 }
 
 //Sets base of code
 template<typename PEClassType>
-void pe<PEClassType>::set_base_of_code(DWORD base)
+void pe<PEClassType>::set_base_of_code(uint32_t base)
 {
 	nt_headers_.OptionalHeader.BaseOfCode = base;
 }
 
 //Returns needed PE magic for PE or PE+ (from template parameters)
 template<typename PEClassType>
-DWORD pe<PEClassType>::get_needed_magic() const
+uint32_t pe<PEClassType>::get_needed_magic() const
 {
 	return PEClassType::Id;
 }
@@ -647,9 +650,9 @@ const pe_base::imported_functions_list pe<PEClassType>::get_imported_functions()
 	if(!has_imports())
 		return ret;
 
-	unsigned long current_descriptor_pos = get_directory_rva(IMAGE_DIRECTORY_ENTRY_IMPORT);
+	unsigned long current_descriptor_pos = get_directory_rva(image_directory_entry_import);
 	//Get first IMAGE_IMPORT_DESCRIPTOR
-	IMAGE_IMPORT_DESCRIPTOR import_descriptor = section_data_from_rva<IMAGE_IMPORT_DESCRIPTOR>(current_descriptor_pos, section_data_virtual, true);
+	image_import_descriptor import_descriptor = section_data_from_rva<image_import_descriptor>(current_descriptor_pos, section_data_virtual, true);
 
 	//Iterate them until we reach zero-element
 	//We don't need to check correctness of this, because exception will be thrown
@@ -680,7 +683,7 @@ const pe_base::imported_functions_list pe<PEClassType>::get_imported_functions()
 		lib.set_rva_to_original_iat(import_descriptor.OriginalFirstThunk);
 
 		//Get RVA to IAT (it must be filled by loader when loading PE)
-		DWORD current_thunk_rva = import_descriptor.FirstThunk;
+		uint32_t current_thunk_rva = import_descriptor.FirstThunk;
 		typename PEClassType::BaseSize import_address_table = section_data_from_rva<typename PEClassType::BaseSize>(current_thunk_rva, section_data_virtual, true);
 
 		//Get RVA to original IAT (lookup table), which must handle imported functions names
@@ -688,7 +691,7 @@ const pe_base::imported_functions_list pe<PEClassType>::get_imported_functions()
 		//Such image is valid, but it is not possible to restore imported functions names
 		//afted image was loaded, because IAT becomes the only one table
 		//containing both function names and function RVAs after loading
-		DWORD current_original_thunk_rva = import_descriptor.OriginalFirstThunk;
+		uint32_t current_original_thunk_rva = import_descriptor.OriginalFirstThunk;
 		typename PEClassType::BaseSize import_lookup_table = current_original_thunk_rva == 0 ? import_address_table : section_data_from_rva<typename PEClassType::BaseSize>(current_original_thunk_rva, section_data_virtual, true);
 		if(current_original_thunk_rva == 0)
 			current_original_thunk_rva = current_thunk_rva;
@@ -721,27 +724,27 @@ const pe_base::imported_functions_list pe<PEClassType>::get_imported_functions()
 				if((lookup & PEClassType::ImportSnapFlag) != 0)
 				{
 					//Set function ordinal
-					func.set_ordinal(static_cast<WORD>(lookup & 0xffff));
+					func.set_ordinal(static_cast<uint16_t>(lookup & 0xffff));
 				}
 				else
 				{
 					//Get byte count that we have for function name
-					if(lookup > static_cast<DWORD>(-1) - sizeof(WORD))
+					if(lookup > static_cast<uint32_t>(-1) - sizeof(uint16_t))
 						throw pe_exception("Incorrect import directory", pe_exception::incorrect_import_directory);
 
 					//Get maximum available length of function name
-					if((max_name_length = section_data_length_from_rva(static_cast<DWORD>(lookup + sizeof(WORD)), static_cast<DWORD>(lookup + sizeof(WORD)), section_data_virtual, true)) < 2)
+					if((max_name_length = section_data_length_from_rva(static_cast<uint32_t>(lookup + sizeof(uint16_t)), static_cast<uint32_t>(lookup + sizeof(uint16_t)), section_data_virtual, true)) < 2)
 						throw pe_exception("Incorrect import directory", pe_exception::incorrect_import_directory);
 
 					//Get imported function name
-					const char* func_name = section_data_from_rva(static_cast<DWORD>(lookup + sizeof(WORD)), section_data_virtual, true);
+					const char* func_name = section_data_from_rva(static_cast<uint32_t>(lookup + sizeof(uint16_t)), section_data_virtual, true);
 
 					//Check for null-termination
 					if(!is_null_terminated(func_name, max_name_length))
 						throw pe_exception("Incorrect import directory", pe_exception::incorrect_import_directory);
 
 					//HINT in import table is ORDINAL in export table
-					WORD hint = section_data_from_rva<WORD>(static_cast<DWORD>(lookup), section_data_virtual, true);
+					uint16_t hint = section_data_from_rva<uint16_t>(static_cast<uint32_t>(lookup), section_data_virtual, true);
 
 					//Save hint and name
 					func.set_name(func_name);
@@ -754,12 +757,12 @@ const pe_base::imported_functions_list pe<PEClassType>::get_imported_functions()
 		}
 
 		//Check possible overflow
-		if(!is_sum_safe(current_descriptor_pos, sizeof(IMAGE_IMPORT_DESCRIPTOR)))
+		if(!is_sum_safe(current_descriptor_pos, sizeof(image_import_descriptor)))
 			throw pe_exception("Incorrect import directory", pe_exception::incorrect_import_directory);
 
 		//Go to next library
-		current_descriptor_pos += sizeof(IMAGE_IMPORT_DESCRIPTOR);
-		import_descriptor = section_data_from_rva<IMAGE_IMPORT_DESCRIPTOR>(current_descriptor_pos, section_data_virtual, true);
+		current_descriptor_pos += sizeof(image_import_descriptor);
+		import_descriptor = section_data_from_rva<image_import_descriptor>(current_descriptor_pos, section_data_virtual, true);
 
 		//Save import information
 		ret.push_back(lib);
@@ -784,27 +787,27 @@ const pe_base::image_directory pe<PEClassType>::rebuild_imports(const imported_f
 	if(!section_attached(import_section))
 		throw pe_exception("Import section must be attached to PE file", pe_exception::section_is_not_attached);
 
-	DWORD needed_size = 0; //Calculate needed size for import structures and strings
-	DWORD needed_size_for_strings = 0; //Calculate needed size for import strings (library and function names and hints)
-	DWORD size_of_iat = 0; //Size of IAT structures
+	uint32_t needed_size = 0; //Calculate needed size for import structures and strings
+	uint32_t needed_size_for_strings = 0; //Calculate needed size for import strings (library and function names and hints)
+	uint32_t size_of_iat = 0; //Size of IAT structures
 
-	needed_size += static_cast<DWORD>((1 /* ending null descriptor */ + imports.size()) * sizeof(IMAGE_IMPORT_DESCRIPTOR));
+	needed_size += static_cast<uint32_t>((1 /* ending null descriptor */ + imports.size()) * sizeof(image_import_descriptor));
 	
 	//Enumerate imported functions
 	for(imported_functions_list::const_iterator it = imports.begin(); it != imports.end(); ++it)
 	{
-		needed_size_for_strings += static_cast<DWORD>((*it).get_name().length() + 1 /* nullbyte */);
+		needed_size_for_strings += static_cast<uint32_t>((*it).get_name().length() + 1 /* nullbyte */);
 
 		const import_library::imported_list& funcs = (*it).get_imported_functions();
 
 		//IMAGE_THUNK_DATA
-		size_of_iat += static_cast<DWORD>(sizeof(typename PEClassType::BaseSize) * (1 /*ending null */ + funcs.size()));
+		size_of_iat += static_cast<uint32_t>(sizeof(typename PEClassType::BaseSize) * (1 /*ending null */ + funcs.size()));
 
 		//Enumerate all imported functions in library
 		for(import_library::imported_list::const_iterator f = funcs.begin(); f != funcs.end(); ++f)
 		{
 			if((*f).has_name())
-				needed_size_for_strings += static_cast<DWORD>((*f).get_name().length() + 1 /* nullbyte */ + sizeof(WORD) /* hint */);
+				needed_size_for_strings += static_cast<uint32_t>((*f).get_name().length() + 1 /* nullbyte */ + sizeof(uint16_t) /* hint */);
 		}
 	}
 
@@ -829,20 +832,21 @@ const pe_base::image_directory pe<PEClassType>::rebuild_imports(const imported_f
 	if(raw_data.length() < needed_size + import_settings.get_offset_from_section_start())
 		raw_data.resize(needed_size + import_settings.get_offset_from_section_start()); //Expand section raw data
 	
-	DWORD current_string_pointer = import_settings.get_offset_from_section_start();/* we will paste structures after strings */
+	uint32_t current_string_pointer = import_settings.get_offset_from_section_start();/* we will paste structures after strings */
 	
 	//Position for IAT
-	DWORD current_pos_for_iat = align_up(static_cast<DWORD>(needed_size_for_strings + import_settings.get_offset_from_section_start() + (1 + imports.size()) * sizeof(IMAGE_IMPORT_DESCRIPTOR)), sizeof(typename PEClassType::BaseSize));
+	uint32_t current_pos_for_iat = align_up(static_cast<uint32_t>(needed_size_for_strings + import_settings.get_offset_from_section_start() + (1 + imports.size()) * sizeof(image_import_descriptor)), sizeof(typename PEClassType::BaseSize));
 	//Position for original IAT
-	DWORD current_pos_for_original_iat = current_pos_for_iat + size_of_iat;
+	uint32_t current_pos_for_original_iat = current_pos_for_iat + size_of_iat;
 	//Position for import descriptors
-	DWORD current_pos_for_descriptors = needed_size_for_strings + import_settings.get_offset_from_section_start();
+	uint32_t current_pos_for_descriptors = needed_size_for_strings + import_settings.get_offset_from_section_start();
 
 	//Build imports
 	for(imported_functions_list::const_iterator it = imports.begin(); it != imports.end(); ++it)
 	{
 		//Create import descriptor
-		IMAGE_IMPORT_DESCRIPTOR descr = {0};
+		image_import_descriptor descr;
+		memset(&descr, 0, sizeof(descr));
 		descr.TimeDateStamp = (*it).get_timestamp(); //Restore timestamp
 		descr.Name = rva_from_section_offset(import_section, current_string_pointer); //Library name RVA
 
@@ -857,8 +861,8 @@ const pe_base::image_directory pe<PEClassType>::rebuild_imports(const imported_f
 		bool rewrite_saved_iat = save_iats_for_this_descriptor && import_settings.rewrite_iat_and_original_iat_contents() && (*it).get_rva_to_iat() != 0;
 
 		//Helper values if we're rewriting existing IAT or orig.IAT
-		DWORD original_first_thunk = 0;
-		DWORD first_thunk = 0;
+		uint32_t original_first_thunk = 0;
+		uint32_t first_thunk = 0;
 
 		if(save_iats_for_this_descriptor)
 		{
@@ -897,7 +901,7 @@ const pe_base::image_directory pe<PEClassType>::rebuild_imports(const imported_f
 
 		//Save library name
 		memcpy(&raw_data[current_string_pointer], (*it).get_name().c_str(), (*it).get_name().length() + 1 /* nullbyte */);
-		current_string_pointer += static_cast<DWORD>((*it).get_name().length() + 1 /* nullbyte */);
+		current_string_pointer += static_cast<uint32_t>((*it).get_name().length() + 1 /* nullbyte */);
 		
 		//List all imported functions
 		const import_library::imported_list& funcs = (*it).get_imported_functions();
@@ -971,14 +975,14 @@ const pe_base::image_directory pe<PEClassType>::rebuild_imports(const imported_f
 				}
 
 				//Write IMAGE_IMPORT_BY_NAME (WORD hint + string function name)
-				WORD hint = (*f).get_hint();
+				uint16_t hint = (*f).get_hint();
 				memcpy(&raw_data[current_string_pointer], &hint, sizeof(hint));
-				memcpy(&raw_data[current_string_pointer + sizeof(WORD)], (*f).get_name().c_str(), (*f).get_name().length() + 1 /* nullbyte */);
-				current_string_pointer += static_cast<DWORD>((*f).get_name().length() + 1 /* nullbyte */ + sizeof(WORD) /* hint */);
+				memcpy(&raw_data[current_string_pointer + sizeof(uint16_t)], (*f).get_name().c_str(), (*f).get_name().length() + 1 /* nullbyte */);
+				current_string_pointer += static_cast<uint32_t>((*f).get_name().length() + 1 /* nullbyte */ + sizeof(uint16_t) /* hint */);
 			}
 			else //Function is imported by ordinal
 			{
-				WORD ordinal = (*f).get_ordinal();
+				uint16_t ordinal = (*f).get_ordinal();
 				typename PEClassType::BaseSize thunk_value = ordinal;
 				thunk_value |= PEClassType::ImportSnapFlag; //Imported by ordinal
 
@@ -1089,7 +1093,8 @@ const pe_base::image_directory pe<PEClassType>::rebuild_imports(const imported_f
 
 	{
 		//Null ending descriptor
-		IMAGE_IMPORT_DESCRIPTOR descr = {0};
+		image_import_descriptor descr;
+		memset(&descr, 0, sizeof(descr));
 		memcpy(&raw_data[current_pos_for_descriptors], &descr, sizeof(descr));
 	}
 
@@ -1106,14 +1111,14 @@ const pe_base::image_directory pe<PEClassType>::rebuild_imports(const imported_f
 	//If auto-rewrite of PE headers is required
 	if(import_settings.auto_set_to_pe_headers())
 	{
-		set_directory_rva(IMAGE_DIRECTORY_ENTRY_IMPORT, ret.get_rva());
-		set_directory_size(IMAGE_DIRECTORY_ENTRY_IMPORT, ret.get_size());
+		set_directory_rva(image_directory_entry_import, ret.get_rva());
+		set_directory_size(image_directory_entry_import, ret.get_size());
 
 		//If we are requested to zero IMAGE_DIRECTORY_ENTRY_IAT also
 		if(import_settings.zero_directory_entry_iat())
 		{
-			set_directory_rva(IMAGE_DIRECTORY_ENTRY_IAT, 0);
-			set_directory_size(IMAGE_DIRECTORY_ENTRY_IAT, 0);
+			set_directory_rva(image_directory_entry_iat, 0);
+			set_directory_size(image_directory_entry_iat, 0);
 		}
 	}
 
@@ -1132,14 +1137,14 @@ const pe_base::tls_info pe<PEClassType>::get_tls_info() const
 		throw pe_exception("Image does not have TLS directory", pe_exception::directory_does_not_exist);
 
 	//Get TLS directory data
-	typename PEClassType::TLSStruct tls_directory_data = section_data_from_rva<typename PEClassType::TLSStruct>(get_directory_rva(IMAGE_DIRECTORY_ENTRY_TLS), section_data_virtual, true);
+	typename PEClassType::TLSStruct tls_directory_data = section_data_from_rva<typename PEClassType::TLSStruct>(get_directory_rva(image_directory_entry_tls), section_data_virtual, true);
 
 	//Check data addresses
 	if(tls_directory_data.EndAddressOfRawData == tls_directory_data.StartAddressOfRawData)
 	{
 		try
 		{
-			va_to_rva(tls_directory_data.EndAddressOfRawData);
+			va_to_rva(static_cast<typename PEClassType::BaseSize>(tls_directory_data.EndAddressOfRawData));
 		}
 		catch(const pe_exception&)
 		{
@@ -1149,16 +1154,16 @@ const pe_base::tls_info pe<PEClassType>::get_tls_info() const
 	}
 
 	if(tls_directory_data.StartAddressOfRawData &&
-		section_data_length_from_va(tls_directory_data.StartAddressOfRawData, tls_directory_data.StartAddressOfRawData, section_data_virtual, true)
+		section_data_length_from_va(static_cast<typename PEClassType::BaseSize>(tls_directory_data.StartAddressOfRawData), static_cast<typename PEClassType::BaseSize>(tls_directory_data.StartAddressOfRawData), section_data_virtual, true)
 		< (tls_directory_data.EndAddressOfRawData - tls_directory_data.StartAddressOfRawData))
 		throw pe_exception("Incorrect TLS directory", pe_exception::incorrect_tls_directory);
 
 	//Fill TLS info
 	//VAs are not checked
-	ret.set_raw_data_start_rva(tls_directory_data.StartAddressOfRawData ? va_to_rva(tls_directory_data.StartAddressOfRawData) : 0);
-	ret.set_raw_data_end_rva(tls_directory_data.EndAddressOfRawData ? va_to_rva(tls_directory_data.EndAddressOfRawData) : 0);
-	ret.set_index_rva(tls_directory_data.AddressOfIndex ? va_to_rva(tls_directory_data.AddressOfIndex) : 0);
-	ret.set_callbacks_rva(tls_directory_data.AddressOfCallBacks ? va_to_rva(tls_directory_data.AddressOfCallBacks) : 0);
+	ret.set_raw_data_start_rva(tls_directory_data.StartAddressOfRawData ? va_to_rva(static_cast<typename PEClassType::BaseSize>(tls_directory_data.StartAddressOfRawData)) : 0);
+	ret.set_raw_data_end_rva(tls_directory_data.EndAddressOfRawData ? va_to_rva(static_cast<typename PEClassType::BaseSize>(tls_directory_data.EndAddressOfRawData)) : 0);
+	ret.set_index_rva(tls_directory_data.AddressOfIndex ? va_to_rva(static_cast<typename PEClassType::BaseSize>(tls_directory_data.AddressOfIndex)) : 0);
+	ret.set_callbacks_rva(tls_directory_data.AddressOfCallBacks ? va_to_rva(static_cast<typename PEClassType::BaseSize>(tls_directory_data.AddressOfCallBacks)) : 0);
 	ret.set_size_of_zero_fill(tls_directory_data.SizeOfZeroFill);
 	ret.set_characteristics(tls_directory_data.Characteristics);
 
@@ -1166,20 +1171,20 @@ const pe_base::tls_info pe<PEClassType>::get_tls_info() const
 	{
 		//Read and save TLS RAW data
 		ret.set_raw_data(std::string(
-			section_data_from_va(tls_directory_data.StartAddressOfRawData, section_data_virtual, true),
-			static_cast<DWORD>(tls_directory_data.EndAddressOfRawData - tls_directory_data.StartAddressOfRawData)));
+			section_data_from_va(static_cast<typename PEClassType::BaseSize>(tls_directory_data.StartAddressOfRawData), section_data_virtual, true),
+			static_cast<uint32_t>(tls_directory_data.EndAddressOfRawData - tls_directory_data.StartAddressOfRawData)));
 	}
 
 	//If file has TLS callbacks
 	if(ret.get_callbacks_rva())
 	{
 		//Read callbacks VAs
-		DWORD current_tls_callback = 0;
+		uint32_t current_tls_callback = 0;
 
 		while(true)
 		{
 			//Read TLS callback VA
-			typename PEClassType::BaseSize va = section_data_from_va<typename PEClassType::BaseSize>(tls_directory_data.AddressOfCallBacks + current_tls_callback, section_data_virtual, true);
+			typename PEClassType::BaseSize va = section_data_from_va<typename PEClassType::BaseSize>(static_cast<typename PEClassType::BaseSize>(tls_directory_data.AddressOfCallBacks + current_tls_callback), section_data_virtual, true);
 			if(va == 0)
 				break;
 
@@ -1202,13 +1207,13 @@ const pe_base::tls_info pe<PEClassType>::get_tls_info() const
 //auto_strip_last_section - if true and TLS are placed in the last section, it will be automatically stripped
 //Note/TODO: TLS Callbacks array is not DWORD-aligned (seems to work on WinXP - Win7)
 template<typename PEClassType>
-const pe_base::image_directory pe<PEClassType>::rebuild_tls(const tls_info& info, section& tls_section, DWORD offset_from_section_start, bool write_tls_callbacks, bool write_tls_data, tls_data_expand_type expand, bool save_to_pe_header, bool auto_strip_last_section)
+const pe_base::image_directory pe<PEClassType>::rebuild_tls(const tls_info& info, section& tls_section, uint32_t offset_from_section_start, bool write_tls_callbacks, bool write_tls_data, tls_data_expand_type expand, bool save_to_pe_header, bool auto_strip_last_section)
 {
 	//Check that tls_section is attached to this PE image
 	if(!section_attached(tls_section))
 		throw pe_exception("TLS section must be attached to PE file", pe_exception::section_is_not_attached);
 
-	DWORD needed_size = sizeof(typename PEClassType::TLSStruct) + sizeof(typename PEClassType::BaseSize); //Calculate needed size for TLS table
+	uint32_t needed_size = sizeof(typename PEClassType::TLSStruct) + sizeof(typename PEClassType::BaseSize); //Calculate needed size for TLS table
 	//sizeof(typename PEClassType::BaseSize) = for DWORD/QWORD alignment
 	
 	//Check if tls_section is last one. If it's not, check if there's enough place for TLS data
@@ -1226,24 +1231,33 @@ const pe_base::image_directory pe<PEClassType>::rebuild_tls(const tls_info& info
 	if(raw_data.length() < needed_size + offset_from_section_start)
 		raw_data.resize(needed_size + offset_from_section_start); //Expand section raw data
 
-	DWORD tls_data_pos = align_up(offset_from_section_start, sizeof(typename PEClassType::BaseSize));
+	uint32_t tls_data_pos = align_up(offset_from_section_start, sizeof(typename PEClassType::BaseSize));
 
 	//Create and fill TLS structure
 	typename PEClassType::TLSStruct tls_struct = {0};
-
+	
+	typename PEClassType::BaseSize va;
 	if(info.get_raw_data_start_rva())
 	{
-		rva_to_va(info.get_raw_data_start_rva(), tls_struct.StartAddressOfRawData);
+		rva_to_va(info.get_raw_data_start_rva(), va);
+		tls_struct.StartAddressOfRawData = va;
 		tls_struct.SizeOfZeroFill = info.get_size_of_zero_fill();
 	}
 
 	if(info.get_raw_data_end_rva())
-		rva_to_va(info.get_raw_data_end_rva(), tls_struct.EndAddressOfRawData);
+	{
+		rva_to_va(info.get_raw_data_end_rva(), va);
+		tls_struct.EndAddressOfRawData = va;
+	}
 
-	rva_to_va(info.get_index_rva(), tls_struct.AddressOfIndex);
+	rva_to_va(info.get_index_rva(), va);
+	tls_struct.AddressOfIndex = va;
 
 	if(info.get_callbacks_rva())
-		rva_to_va(info.get_callbacks_rva(), tls_struct.AddressOfCallBacks);
+	{
+		rva_to_va(info.get_callbacks_rva(), va);
+		tls_struct.AddressOfCallBacks = va;
+	}
 
 	tls_struct.Characteristics = info.get_characteristics();
 
@@ -1335,8 +1349,8 @@ const pe_base::image_directory pe<PEClassType>::rebuild_tls(const tls_info& info
 	//If auto-rewrite of PE headers is required
 	if(save_to_pe_header)
 	{
-		set_directory_rva(IMAGE_DIRECTORY_ENTRY_TLS, ret.get_rva());
-		set_directory_size(IMAGE_DIRECTORY_ENTRY_TLS, ret.get_size());
+		set_directory_rva(image_directory_entry_tls, ret.get_rva());
+		set_directory_size(image_directory_entry_tls, ret.get_size());
 	}
 
 	return ret;
@@ -1353,7 +1367,7 @@ const pe_base::image_config_info pe<PEClassType>::get_image_config() const
 		throw pe_exception("Image does not have load config directory", pe_exception::directory_does_not_exist);
 
 	//Get load config structure
-	typename PEClassType::ConfigStruct config_info = section_data_from_rva<typename PEClassType::ConfigStruct>(get_directory_rva(IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG), section_data_virtual);
+	typename PEClassType::ConfigStruct config_info = section_data_from_rva<typename PEClassType::ConfigStruct>(get_directory_rva(image_directory_entry_load_config), section_data_virtual);
 
 	//Check size of config directory
 	if(config_info.Size != sizeof(config_info))
@@ -1363,13 +1377,13 @@ const pe_base::image_config_info pe<PEClassType>::get_image_config() const
 	image_config_info ret(config_info);
 
 	//Check possible overflow
-	if(config_info.SEHandlerCount >= max_dword / sizeof(DWORD)
-		|| config_info.SEHandlerTable >= static_cast<typename PEClassType::BaseSize>(-1) - config_info.SEHandlerCount * sizeof(DWORD))
+	if(config_info.SEHandlerCount >= max_dword / sizeof(uint32_t)
+		|| config_info.SEHandlerTable >= static_cast<typename PEClassType::BaseSize>(-1) - config_info.SEHandlerCount * sizeof(uint32_t))
 		throw pe_exception("Incorrect load config directory", pe_exception::incorrect_config_directory);
 
 	//Read sorted SE handler RVA list (if any)
 	for(typename PEClassType::BaseSize i = 0; i != config_info.SEHandlerCount; ++i)
-		ret.add_se_handler_rva(section_data_from_va<DWORD>(config_info.SEHandlerTable + i * sizeof(DWORD)));
+		ret.add_se_handler_rva(section_data_from_va<uint32_t>(static_cast<typename PEClassType::BaseSize>(config_info.SEHandlerTable + i * sizeof(uint32_t))));
 
 	if(config_info.LockPrefixTable)
 	{
@@ -1377,7 +1391,7 @@ const pe_base::image_config_info pe<PEClassType>::get_image_config() const
 		unsigned long current = 0;
 		while(true)
 		{
-			typename PEClassType::BaseSize lock_prefix_va = section_data_from_va<typename PEClassType::BaseSize>(config_info.LockPrefixTable + current * sizeof(typename PEClassType::BaseSize));
+			typename PEClassType::BaseSize lock_prefix_va = section_data_from_va<typename PEClassType::BaseSize>(static_cast<typename PEClassType::BaseSize>(config_info.LockPrefixTable + current * sizeof(typename PEClassType::BaseSize)));
 			if(!lock_prefix_va)
 				break;
 
@@ -1395,29 +1409,29 @@ const pe_base::image_config_info pe<PEClassType>::get_image_config() const
 //If write_se_handlers = true, SE Handlers list will be written just after image config directory structure
 //If write_lock_prefixes = true, Lock Prefixes address list will be written just after image config directory structure
 template<typename PEClassType>
-const pe_base::image_directory pe<PEClassType>::rebuild_image_config(const image_config_info& info, section& image_config_section, DWORD offset_from_section_start, bool write_se_handlers, bool write_lock_prefixes, bool save_to_pe_header, bool auto_strip_last_section)
+const pe_base::image_directory pe<PEClassType>::rebuild_image_config(const image_config_info& info, section& image_config_section, uint32_t offset_from_section_start, bool write_se_handlers, bool write_lock_prefixes, bool save_to_pe_header, bool auto_strip_last_section)
 {
 	//Check that image_config_section is attached to this PE image
 	if(!section_attached(image_config_section))
 		throw pe_exception("Image Config section must be attached to PE file", pe_exception::section_is_not_attached);
 	
-	DWORD alignment = align_up(offset_from_section_start, sizeof(typename PEClassType::BaseSize)) - offset_from_section_start;
+	uint32_t alignment = align_up(offset_from_section_start, sizeof(typename PEClassType::BaseSize)) - offset_from_section_start;
 
-	DWORD needed_size = sizeof(typename PEClassType::ConfigStruct) + alignment; //Calculate needed size for Image Config table
+	uint32_t needed_size = sizeof(typename PEClassType::ConfigStruct) + alignment; //Calculate needed size for Image Config table
 
-	DWORD current_pos_of_se_handlers = 0;
-	DWORD current_pos_of_lock_prefixes = 0;
+	uint32_t current_pos_of_se_handlers = 0;
+	uint32_t current_pos_of_lock_prefixes = 0;
 	
 	if(write_se_handlers)
 	{
 		current_pos_of_se_handlers = needed_size + offset_from_section_start;
-		needed_size += static_cast<DWORD>(info.get_se_handler_rvas().size()) * sizeof(DWORD); //RVAs of SE Handlers
+		needed_size += static_cast<uint32_t>(info.get_se_handler_rvas().size()) * sizeof(uint32_t); //RVAs of SE Handlers
 	}
 	
 	if(write_lock_prefixes)
 	{
 		current_pos_of_lock_prefixes = needed_size + offset_from_section_start;
-		needed_size += static_cast<DWORD>((info.get_lock_prefix_rvas().size() + 1) * sizeof(typename PEClassType::BaseSize)); //VAs of Lock Prefixes (and ending null element)
+		needed_size += static_cast<uint32_t>((info.get_lock_prefix_rvas().size() + 1) * sizeof(typename PEClassType::BaseSize)); //VAs of Lock Prefixes (and ending null element)
 	}
 
 	//Check if image_config_section is last one. If it's not, check if there's enough place for Image Config data
@@ -1431,7 +1445,7 @@ const pe_base::image_directory pe<PEClassType>::rebuild_image_config(const image
 	if(raw_data.length() < needed_size + offset_from_section_start)
 		raw_data.resize(needed_size + offset_from_section_start); //Expand section raw data
 
-	DWORD image_config_data_pos = offset_from_section_start + alignment;
+	uint32_t image_config_data_pos = offset_from_section_start + alignment;
 
 	//Create and fill Image Config structure
 	typename PEClassType::ConfigStruct image_config_section_struct = {0};
@@ -1463,7 +1477,9 @@ const pe_base::image_directory pe<PEClassType>::rebuild_image_config(const image
 		}
 		else
 		{
-			rva_to_va(rva_from_section_offset(image_config_section, current_pos_of_se_handlers), image_config_section_struct.SEHandlerTable);
+			typename PEClassType::BaseSize va;
+			rva_to_va(rva_from_section_offset(image_config_section, current_pos_of_se_handlers), va);
+			image_config_section_struct.SEHandlerTable = va;
 		}
 	}
 	else
@@ -1480,7 +1496,9 @@ const pe_base::image_directory pe<PEClassType>::rebuild_image_config(const image
 		}
 		else
 		{
-			rva_to_va(rva_from_section_offset(image_config_section, current_pos_of_lock_prefixes), image_config_section_struct.LockPrefixTable);
+			typename PEClassType::BaseSize va;
+			rva_to_va(rva_from_section_offset(image_config_section, current_pos_of_lock_prefixes), va);
+			image_config_section_struct.LockPrefixTable = va;
 		}
 	}
 	else
@@ -1500,7 +1518,7 @@ const pe_base::image_directory pe<PEClassType>::rebuild_image_config(const image
 		//Write SE Handlers table
 		for(image_config_info::se_handler_list::const_iterator it = sorted_list.begin(); it != sorted_list.end(); ++it)
 		{
-			DWORD se_handler_rva = *it;
+			uint32_t se_handler_rva = *it;
 			memcpy(&raw_data[current_pos_of_se_handlers], &se_handler_rva, sizeof(se_handler_rva));
 			current_pos_of_se_handlers += sizeof(se_handler_rva);
 		}
@@ -1527,13 +1545,13 @@ const pe_base::image_directory pe<PEClassType>::rebuild_image_config(const image
 	//Adjust section raw and virtual sizes
 	recalculate_section_sizes(image_config_section, auto_strip_last_section);
 
-	image_directory ret(rva_from_section_offset(image_config_section, image_config_data_pos), sizeof(PEClassType::ConfigStruct));
+	image_directory ret(rva_from_section_offset(image_config_section, image_config_data_pos), sizeof(typename PEClassType::ConfigStruct));
 
 	//If auto-rewrite of PE headers is required
 	if(save_to_pe_header)
 	{
-		set_directory_rva(IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG, ret.get_rva());
-		set_directory_size(IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG, ret.get_size());
+		set_directory_rva(image_directory_entry_load_config, ret.get_rva());
+		set_directory_size(image_directory_entry_load_config, ret.get_size());
 	}
 
 	return ret;
@@ -1547,14 +1565,14 @@ const pe_base::image_directory pe<PEClassType>::rebuild_image_config(const image
 //positions of TLS VAs. Instead, some bytes that now doesn't belong to TLS will be fixed.
 //It is recommended to rebase image in the very beginning and move all structures afterwards.
 template<typename PEClassType>
-void pe<PEClassType>::rebase_image(const relocation_table_list& tables, ULONGLONG new_base)
+void pe<PEClassType>::rebase_image(const relocation_table_list& tables, uint64_t new_base)
 {
 	//Get current image base value
 	typename PEClassType::BaseSize image_base;
 	get_image_base(image_base);
 
 	//ImageBase difference
-	typename PEClassType::BaseSize base_rel = static_cast<typename PEClassType::BaseSize>(static_cast<LONGLONG>(new_base) - image_base);
+	typename PEClassType::BaseSize base_rel = static_cast<typename PEClassType::BaseSize>(static_cast<int32_t>(new_base) - image_base);
 
 	//We need to fix addresses from relocation tables
 	//Enumerate relocation tables
@@ -1562,13 +1580,13 @@ void pe<PEClassType>::rebase_image(const relocation_table_list& tables, ULONGLON
 	{
 		const relocation_table::relocation_list& relocs = (*it).get_relocations();
 
-		DWORD base_rva = (*it).get_rva();
+		uint32_t base_rva = (*it).get_rva();
 
 		//Enumerate relocations
 		for(relocation_table::relocation_list::const_iterator rel = relocs.begin(); rel != relocs.end(); ++rel)
 		{
 			//Recalculate value by RVA and rewrite it
-			DWORD current_rva = base_rva + (*rel).get_rva();
+			uint32_t current_rva = base_rva + (*rel).get_rva();
 			typename PEClassType::BaseSize value = section_data_from_rva<typename PEClassType::BaseSize>(current_rva, section_data_raw, true);
 			value += base_rel;
 			memcpy(section_data_from_rva(current_rva, true), &value, sizeof(value));
@@ -1583,9 +1601,10 @@ void pe<PEClassType>::rebase_image(const relocation_table_list& tables, ULONGLON
 template<typename PEClassType>
 pe_base::pe_type pe<PEClassType>::get_pe_type() const
 {
-	return PEClassType::Id == IMAGE_NT_OPTIONAL_HDR32_MAGIC ? pe_type_32 : pe_type_64;
+	return PEClassType::Id == image_nt_optional_hdr32_magic ? pe_type_32 : pe_type_64;
 }
 
 //Two used instantiations for PE32 (PE) and PE64 (PE+)
-template class pe<pe_class_type<IMAGE_NT_HEADERS32, IMAGE_OPTIONAL_HEADER32, IMAGE_NT_OPTIONAL_HDR32_MAGIC, DWORD, IMAGE_ORDINAL_FLAG32, IMAGE_TLS_DIRECTORY32, IMAGE_LOAD_CONFIG_DIRECTORY32> >;
-template class pe<pe_class_type<IMAGE_NT_HEADERS64, IMAGE_OPTIONAL_HEADER64, IMAGE_NT_OPTIONAL_HDR64_MAGIC, ULONGLONG, IMAGE_ORDINAL_FLAG64, IMAGE_TLS_DIRECTORY64, IMAGE_LOAD_CONFIG_DIRECTORY64> >;
+template class pe<pe_class_type<image_nt_headers32, image_optional_header32, image_nt_optional_hdr32_magic, uint32_t, image_ordinal_flag32, image_tls_directory32, image_load_config_directory32> >;
+template class pe<pe_class_type<image_nt_headers64, image_optional_header64, image_nt_optional_hdr64_magic, uint64_t, image_ordinal_flag64, image_tls_directory64, image_load_config_directory64> >;
+}

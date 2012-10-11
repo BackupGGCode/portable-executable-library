@@ -1,4 +1,3 @@
-#pragma once
 #include <string>
 #include <vector>
 #include <istream>
@@ -6,9 +5,16 @@
 #include <algorithm>
 #include <cmath>
 #include <set>
+#include <string.h>
 #include "pe_exception.h"
 #include "pe_base.h"
 
+#ifndef PELIB_ON_WINDOWS
+#include <iconv.h>
+#endif
+
+namespace pe_bliss
+{
 const double pe_base::log_2 = 1.44269504088896340736; //instead of using M_LOG2E
 
 //Destructor
@@ -19,7 +25,7 @@ pe_base::~pe_base()
 pe_base::section::section()
 	:raw_size_aligned_(0), virtual_size_aligned_(0), old_size_(static_cast<size_t>(-1))
 {
-	memset(&header_, 0, sizeof(IMAGE_SECTION_HEADER));
+	memset(&header_, 0, sizeof(image_section_header));
 }
 
 //Sets the name of section (8 characters maximum)
@@ -41,9 +47,9 @@ const std::string pe_base::section::get_name() const
 pe_base::section& pe_base::section::readable(bool readable)
 {
 	if(readable)
-		header_.Characteristics |= IMAGE_SCN_MEM_READ;
+		header_.Characteristics |= image_scn_mem_read;
 	else
-		header_.Characteristics &= ~IMAGE_SCN_MEM_READ;
+		header_.Characteristics &= ~image_scn_mem_read;
 
 	return *this;
 }
@@ -52,9 +58,9 @@ pe_base::section& pe_base::section::readable(bool readable)
 pe_base::section& pe_base::section::writeable(bool writeable)
 {
 	if(writeable)
-		header_.Characteristics |= IMAGE_SCN_MEM_WRITE;
+		header_.Characteristics |= image_scn_mem_write;
 	else
-		header_.Characteristics &= ~IMAGE_SCN_MEM_WRITE;
+		header_.Characteristics &= ~image_scn_mem_write;
 
 	return *this;
 }
@@ -63,9 +69,9 @@ pe_base::section& pe_base::section::writeable(bool writeable)
 pe_base::section& pe_base::section::executable(bool executable)
 {
 	if(executable)
-		header_.Characteristics |= IMAGE_SCN_MEM_EXECUTE;
+		header_.Characteristics |= image_scn_mem_execute;
 	else
-		header_.Characteristics &= ~IMAGE_SCN_MEM_EXECUTE;
+		header_.Characteristics &= ~image_scn_mem_execute;
 
 	return *this;
 }
@@ -73,19 +79,19 @@ pe_base::section& pe_base::section::executable(bool executable)
 //Returns true if section is readable
 bool pe_base::section::readable() const
 {
-	return (header_.Characteristics & IMAGE_SCN_MEM_READ) != 0;
+	return (header_.Characteristics & image_scn_mem_read) != 0;
 }
 
 //Returns true if section is writeable
 bool pe_base::section::writeable() const
 {
-	return (header_.Characteristics & IMAGE_SCN_MEM_WRITE) != 0;
+	return (header_.Characteristics & image_scn_mem_write) != 0;
 }
 
 //Returns true if section is executable
 bool pe_base::section::executable() const
 {
-	return (header_.Characteristics & IMAGE_SCN_MEM_EXECUTE) != 0;
+	return (header_.Characteristics & image_scn_mem_execute) != 0;
 }
 
 //Returns true if section has no RAW data
@@ -135,7 +141,7 @@ std::string& pe_base::section::get_virtual_data()
 //Maps virtual section data
 void pe_base::section::map_virtual() const
 {
-	if(old_size_ == -1 && virtual_size_aligned_ && virtual_size_aligned_ > raw_data_.length())
+	if(old_size_ == static_cast<size_t>(-1) && virtual_size_aligned_ && virtual_size_aligned_ > raw_data_.length())
 	{
 		old_size_ = raw_data_.length();
 		raw_data_.resize(virtual_size_aligned_, 0);
@@ -153,79 +159,79 @@ void pe_base::section::unmap_virtual() const
 }
 
 //Returns section virtual size
-DWORD pe_base::section::get_virtual_size() const
+uint32_t pe_base::section::get_virtual_size() const
 {
 	return header_.Misc.VirtualSize;
 }
 
 //Returns section virtual address
-DWORD pe_base::section::get_virtual_address() const
+uint32_t pe_base::section::get_virtual_address() const
 {
 	return header_.VirtualAddress;
 }
 
 //Returns size of section raw data
-DWORD pe_base::section::get_size_of_raw_data() const
+uint32_t pe_base::section::get_size_of_raw_data() const
 {
 	return header_.SizeOfRawData;
 }
 
 //Returns pointer to raw section data in PE file
-DWORD pe_base::section::get_pointer_to_raw_data() const
+uint32_t pe_base::section::get_pointer_to_raw_data() const
 {
 	return header_.PointerToRawData;
 }
 
 //Returns section characteristics
-DWORD pe_base::section::get_characteristics() const
+uint32_t pe_base::section::get_characteristics() const
 {
 	return header_.Characteristics;
 }
 
 //Sets size of raw section data
-void pe_base::section::set_size_of_raw_data(DWORD size_of_raw_data)
+void pe_base::section::set_size_of_raw_data(uint32_t size_of_raw_data)
 {
 	header_.SizeOfRawData = size_of_raw_data;
 }
 
 //Sets pointer to section raw data
-void pe_base::section::set_pointer_to_raw_data(DWORD pointer_to_raw_data)
+void pe_base::section::set_pointer_to_raw_data(uint32_t pointer_to_raw_data)
 {
 	header_.PointerToRawData = pointer_to_raw_data;
 }
 
 //Sets section characteristics
-void pe_base::section::set_characteristics(DWORD characteristics)
+void pe_base::section::set_characteristics(uint32_t characteristics)
 {
 	header_.Characteristics = characteristics;
 }
 
 //Sets section virtual size
-void pe_base::section::set_virtual_size(DWORD virtual_size)
+void pe_base::section::set_virtual_size(uint32_t virtual_size)
 {
 	header_.Misc.VirtualSize = virtual_size;
 }
 
 //Sets section virtual address
-void pe_base::section::set_virtual_address(DWORD virtual_address)
+void pe_base::section::set_virtual_address(uint32_t virtual_address)
 {
 	header_.VirtualAddress = virtual_address;
 }
 
 //Returns dos header
-const IMAGE_DOS_HEADER& pe_base::get_dos_header() const
+const image_dos_header& pe_base::get_dos_header() const
 {
 	return dos_header_;
 }
 
 //Returns dos header
-IMAGE_DOS_HEADER& pe_base::get_dos_header()
+image_dos_header& pe_base::get_dos_header()
 {
 	return dos_header_;
 }
 
 //Returns PE headers start position (e_lfanew)
-LONG pe_base::get_pe_header_start() const
+int32_t pe_base::get_pe_header_start() const
 {
 	return dos_header_.e_lfanew;
 }
@@ -289,12 +295,12 @@ void pe_base::realign_section(unsigned int index)
 	}
 
 	//Calculate aligned raw size of section
-	(*it).raw_size_aligned_ = static_cast<DWORD>(align_up((*it).get_raw_data().length() - strip, get_file_alignment()));
+	(*it).raw_size_aligned_ = static_cast<uint32_t>(align_up((*it).get_raw_data().length() - strip, get_file_alignment()));
 
 	if(it == sections_.end() - 1) //If we're realigning the last section
 	{
 		//We can strip ending null bytes
-		(*it).header_.SizeOfRawData = static_cast<DWORD>((*it).get_raw_data().length() - strip);
+		(*it).header_.SizeOfRawData = static_cast<uint32_t>((*it).get_raw_data().length() - strip);
 		(*it).get_raw_data().resize((*it).get_raw_data().length() - strip, 0);
 	}
 	else
@@ -306,7 +312,7 @@ void pe_base::realign_section(unsigned int index)
 }
 
 //Sets file alignment
-void pe_base::set_file_alignment(DWORD alignment)
+void pe_base::set_file_alignment(uint32_t alignment)
 {
 	//Check alignment
 	if(alignment < minimum_file_alignment)
@@ -323,7 +329,7 @@ void pe_base::set_file_alignment(DWORD alignment)
 }
 
 //Returns section from RVA
-pe_base::section& pe_base::section_from_rva(DWORD rva)
+pe_base::section& pe_base::section_from_rva(uint32_t rva)
 {
 	//Search for section
 	for(section_list::iterator i = sections_.begin(); i != sections_.end(); ++i)
@@ -337,7 +343,7 @@ pe_base::section& pe_base::section_from_rva(DWORD rva)
 }
 
 //Returns section from RVA
-const pe_base::section& pe_base::section_from_rva(DWORD rva) const
+const pe_base::section& pe_base::section_from_rva(uint32_t rva) const
 {
 	//Search for section
 	for(section_list::const_iterator i = sections_.begin(); i != sections_.end(); ++i)
@@ -363,7 +369,7 @@ const pe_base::section& pe_base::section_from_directory(unsigned long directory_
 }
 
 //Sets section virtual size (actual for the last one of this PE or for unbound section)
-void pe_base::set_section_virtual_size(section& s, DWORD vsize)
+void pe_base::set_section_virtual_size(section& s, uint32_t vsize)
 {
 	//Check if we're changing virtual size of the last section
 	//Of course, we can change virtual size of section that's not bound to this PE file
@@ -392,7 +398,7 @@ void pe_base::set_section_virtual_size(section& s, DWORD vsize)
 //Expands section raw or virtual size to hold data from specified RVA with specified size
 //Section must be free (not bound to any image)
 //or the last section of this image
-bool pe_base::expand_section(section& s, DWORD needed_rva, DWORD needed_size, section_expand_type expand)
+bool pe_base::expand_section(section& s, uint32_t needed_rva, uint32_t needed_size, section_expand_type expand)
 {
 	//Check if we're changing the last section
 	//Of course, we can change the section that's not bound to this PE file
@@ -428,7 +434,7 @@ void pe_base::update_image_size()
 void pe_base::prepare_section(section& s)
 {
 	//Calculate its size of raw data
-	s.header_.SizeOfRawData = static_cast<DWORD>(align_up(s.get_raw_data().length(), get_file_alignment()));
+	s.header_.SizeOfRawData = static_cast<uint32_t>(align_up(s.get_raw_data().length(), get_file_alignment()));
 	s.raw_size_aligned_ = s.header_.SizeOfRawData;
 
 	//Check section virtual and raw size
@@ -445,7 +451,7 @@ void pe_base::prepare_section(section& s)
 	else
 	{
 		//Else calculate its virtual size
-		s.virtual_size_aligned_ = std::max<DWORD>(align_up(s.header_.SizeOfRawData, get_file_alignment()),  align_up(s.header_.Misc.VirtualSize, get_section_alignment()));
+		s.virtual_size_aligned_ = std::max<uint32_t>(align_up(s.header_.SizeOfRawData, get_file_alignment()),  align_up(s.header_.Misc.VirtualSize, get_section_alignment()));
 	}
 }
 
@@ -465,7 +471,7 @@ pe_base::section& pe_base::add_section(section s)
 
 		//We should align last section raw size, if it wasn't aligned
 		section& last = sections_.back();
-		last.header_.SizeOfRawData = static_cast<DWORD>(align_up(last.get_raw_data().length(), get_file_alignment()));
+		last.header_.SizeOfRawData = static_cast<uint32_t>(align_up(last.get_raw_data().length(), get_file_alignment()));
 		s.raw_size_aligned_ = s.header_.SizeOfRawData;
 	}
 	else
@@ -479,7 +485,7 @@ pe_base::section& pe_base::add_section(section s)
 	//Add section to the end of section list
 	sections_.push_back(s);
 	//Set number of sections in PE header
-	set_number_of_sections(static_cast<WORD>(sections_.size()));
+	set_number_of_sections(static_cast<uint16_t>(sections_.size()));
 	//Recalculate virtual size of image
 	set_size_of_image(get_size_of_image() + s.virtual_size_aligned_);
 	//Return last section
@@ -495,77 +501,77 @@ bool pe_base::section_attached(const section& s) const
 //Returns true if image has import directory
 bool pe_base::has_imports() const
 {
-	return directory_exists(IMAGE_DIRECTORY_ENTRY_IMPORT);
+	return directory_exists(image_directory_entry_import);
 }
 
 //Returns true if image has export directory
 bool pe_base::has_exports() const
 {
-	return directory_exists(IMAGE_DIRECTORY_ENTRY_EXPORT);
+	return directory_exists(image_directory_entry_export);
 }
 
 //Returns true if image has resource directory
 bool pe_base::has_resources() const
 {
-	return directory_exists(IMAGE_DIRECTORY_ENTRY_RESOURCE);
+	return directory_exists(image_directory_entry_resource);
 }
 
 //Returns true if image has security directory
 bool pe_base::has_security() const
 {
-	return directory_exists(IMAGE_DIRECTORY_ENTRY_SECURITY);
+	return directory_exists(image_directory_entry_security);
 }
 
 //Returns true if image has relocations
 bool pe_base::has_reloc() const
 {
-	return directory_exists(IMAGE_DIRECTORY_ENTRY_BASERELOC) && !(get_characteristics() & IMAGE_FILE_RELOCS_STRIPPED);
+	return directory_exists(image_directory_entry_basereloc) && !(get_characteristics() & image_file_relocs_stripped);
 }
 
 //Returns true if image has TLS directory
 bool pe_base::has_tls() const
 {
-	return directory_exists(IMAGE_DIRECTORY_ENTRY_TLS);
+	return directory_exists(image_directory_entry_tls);
 }
 
 //Returns true if image has config directory
 bool pe_base::has_config() const
 {
-	return directory_exists(IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG);
+	return directory_exists(image_directory_entry_load_config);
 }
 
 //Returns true if image has bound import directory
 bool pe_base::has_bound_import() const
 {
-	return directory_exists(IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT);
+	return directory_exists(image_directory_entry_bound_import);
 }
 
 //Returns true if image has delay import directory
 bool pe_base::has_delay_import() const
 {
-	return directory_exists(IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT);
+	return directory_exists(image_directory_entry_delay_import);
 }
 
 //Returns true if image has COM directory
 bool pe_base::is_dotnet() const
 {
-	return directory_exists(IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR);
+	return directory_exists(image_directory_entry_com_descriptor);
 }
 
 //Returns true if image has exception directory
 bool pe_base::has_exception_directory() const
 {
-	return directory_exists(IMAGE_DIRECTORY_ENTRY_EXCEPTION);
+	return directory_exists(image_directory_entry_exception);
 }
 
 //Returns true if image has debug directory
 bool pe_base::has_debug() const
 {
-	return directory_exists(IMAGE_DIRECTORY_ENTRY_DEBUG);
+	return directory_exists(image_directory_entry_debug);
 }
 
 //Returns corresponding section data pointer from RVA inside section "s" (checks bounds)
-char* pe_base::section_data_from_rva(section& s, DWORD rva)
+char* pe_base::section_data_from_rva(section& s, uint32_t rva)
 {
 	//Check if RVA is inside section "s"
 	if(rva >= s.header_.VirtualAddress && rva < s.header_.VirtualAddress + s.virtual_size_aligned_)
@@ -580,7 +586,7 @@ char* pe_base::section_data_from_rva(section& s, DWORD rva)
 }
 
 //Returns corresponding section data pointer from RVA inside section "s" (checks bounds)
-const char* pe_base::section_data_from_rva(const section& s, DWORD rva, section_data_type datatype)
+const char* pe_base::section_data_from_rva(const section& s, uint32_t rva, section_data_type datatype)
 {
 	//Check if RVA is inside section "s"
 	if(rva >= s.header_.VirtualAddress && rva < s.header_.VirtualAddress + s.virtual_size_aligned_)
@@ -590,7 +596,7 @@ const char* pe_base::section_data_from_rva(const section& s, DWORD rva, section_
 }
 
 //Returns section TOTAL RAW/VIRTUAL data length from RVA inside section
-unsigned long pe_base::section_data_length_from_rva(DWORD rva, section_data_type datatype, bool include_headers) const
+unsigned long pe_base::section_data_length_from_rva(uint32_t rva, section_data_type datatype, bool include_headers) const
 {
 	//if RVA is inside of headers and we're searching them too...
 	if(include_headers && rva < full_headers_data_.length())
@@ -601,19 +607,19 @@ unsigned long pe_base::section_data_length_from_rva(DWORD rva, section_data_type
 }
 
 //Returns section TOTAL RAW/VIRTUAL data length from VA inside section for PE32
-unsigned long pe_base::section_data_length_from_va(DWORD va, section_data_type datatype, bool include_headers) const
+unsigned long pe_base::section_data_length_from_va(uint32_t va, section_data_type datatype, bool include_headers) const
 {
 	return section_data_length_from_rva(va_to_rva(va), datatype, include_headers);
 }
 
 //Returns section TOTAL RAW/VIRTUAL data length from VA inside section for PE32/PE64
-unsigned long pe_base::section_data_length_from_va(ULONGLONG va, section_data_type datatype, bool include_headers) const
+unsigned long pe_base::section_data_length_from_va(uint64_t va, section_data_type datatype, bool include_headers) const
 {
 	return section_data_length_from_rva(va_to_rva(va), datatype, include_headers);
 }
 
 //Returns section remaining RAW/VIRTUAL data length from RVA "rva_inside" to the end of section containing RVA "rva"
-unsigned long pe_base::section_data_length_from_rva(DWORD rva, DWORD rva_inside, section_data_type datatype, bool include_headers) const
+unsigned long pe_base::section_data_length_from_rva(uint32_t rva, uint32_t rva_inside, section_data_type datatype, bool include_headers) const
 {
 	//if RVAs are inside of headers and we're searching them too...
 	if(include_headers && rva < full_headers_data_.length() && rva_inside < full_headers_data_.length())
@@ -631,19 +637,19 @@ unsigned long pe_base::section_data_length_from_rva(DWORD rva, DWORD rva_inside,
 }
 
 //Returns section remaining RAW/VIRTUAL data length from VA "va_inside" to the end of section containing VA "va" for PE32
-unsigned long pe_base::section_data_length_from_va(DWORD va, DWORD va_inside, section_data_type datatype, bool include_headers) const
+unsigned long pe_base::section_data_length_from_va(uint32_t va, uint32_t va_inside, section_data_type datatype, bool include_headers) const
 {
 	return section_data_length_from_rva(va_to_rva(va), va_to_rva(va_inside), datatype, include_headers);
 }
 
 //Returns section remaining RAW/VIRTUAL data length from VA "va_inside" to the end of section containing VA "va" for PE32/PE64
-unsigned long pe_base::section_data_length_from_va(ULONGLONG va, ULONGLONG va_inside, section_data_type datatype, bool include_headers) const
+unsigned long pe_base::section_data_length_from_va(uint64_t va, uint64_t va_inside, section_data_type datatype, bool include_headers) const
 {
 	return section_data_length_from_rva(va_to_rva(va), va_to_rva(va_inside), datatype, include_headers);
 }
 
 //Returns section remaining RAW/VIRTUAL data length from RVA to the end of section "s" (checks bounds)
-unsigned long pe_base::section_data_length_from_rva(const section& s, DWORD rva_inside, section_data_type datatype)
+unsigned long pe_base::section_data_length_from_rva(const section& s, uint32_t rva_inside, section_data_type datatype)
 {
 	//Check rva_inside
 	if(rva_inside >= s.header_.VirtualAddress && rva_inside < s.header_.VirtualAddress + s.virtual_size_aligned_)
@@ -662,19 +668,19 @@ unsigned long pe_base::section_data_length_from_rva(const section& s, DWORD rva_
 }
 
 //Returns section remaining RAW/VIRTUAL data length from VA to the end of section "s" for PE32 (checks bounds)
-unsigned long pe_base::section_data_length_from_va(const section& s, DWORD va_inside, section_data_type datatype) const
+unsigned long pe_base::section_data_length_from_va(const section& s, uint32_t va_inside, section_data_type datatype) const
 {
 	return section_data_length_from_rva(s, va_to_rva(va_inside), datatype);
 }
 
 //Returns section remaining RAW/VIRTUAL data length from VA to the end of section "s" for PE32/PE64 (checks bounds)
-unsigned long pe_base::section_data_length_from_va(const section& s, ULONGLONG va_inside, section_data_type datatype) const
+unsigned long pe_base::section_data_length_from_va(const section& s, uint64_t va_inside, section_data_type datatype) const
 {
 	return section_data_length_from_rva(s, va_to_rva(va_inside), datatype);
 }
 
 //Returns corresponding section data pointer from RVA inside section
-char* pe_base::section_data_from_rva(DWORD rva, bool include_headers)
+char* pe_base::section_data_from_rva(uint32_t rva, bool include_headers)
 {
 	//if RVA is inside of headers and we're searching them too...
 	if(include_headers && rva < full_headers_data_.length())
@@ -689,7 +695,7 @@ char* pe_base::section_data_from_rva(DWORD rva, bool include_headers)
 }
 
 //Returns corresponding section data pointer from RVA inside section
-const char* pe_base::section_data_from_rva(DWORD rva, section_data_type datatype, bool include_headers) const
+const char* pe_base::section_data_from_rva(uint32_t rva, section_data_type datatype, bool include_headers) const
 {
 	//if RVA is inside of headers and we're searching them too...
 	if(include_headers && rva < full_headers_data_.length())
@@ -707,32 +713,32 @@ pe_base::rich_data::rich_data()
 {}
 
 //Who knows, what these fields mean...
-DWORD pe_base::rich_data::get_number() const
+uint32_t pe_base::rich_data::get_number() const
 {
 	return number_;
 }
 
-DWORD pe_base::rich_data::get_version() const
+uint32_t pe_base::rich_data::get_version() const
 {
 	return version_;
 }
 
-DWORD pe_base::rich_data::get_times() const
+uint32_t pe_base::rich_data::get_times() const
 {
 	return times_;
 }
 
-void pe_base::rich_data::set_number(DWORD number)
+void pe_base::rich_data::set_number(uint32_t number)
 {
 	number_ = number;
 }
 
-void pe_base::rich_data::set_version(DWORD version)
+void pe_base::rich_data::set_version(uint32_t version)
 {
 	version_ = version;
 }
 
-void pe_base::rich_data::set_times(DWORD times)
+void pe_base::rich_data::set_times(uint32_t times)
 {
 	times_ = times;
 }
@@ -744,21 +750,21 @@ const pe_base::rich_data_list pe_base::get_rich_data() const
 	rich_data_list ret;
 
 	//If there's no rich overlay, return empty vector
-	if(rich_overlay_.size() < sizeof(DWORD))
+	if(rich_overlay_.size() < sizeof(uint32_t))
 		return ret;
 
 	//True if rich data was found
 	bool found = false;
 
 	//Rich overlay ID ("Rich" word)
-	static const DWORD rich_overlay_id = 0x68636952;
+	static const uint32_t rich_overlay_id = 0x68636952;
 
 	//Search for rich data overlay ID
 	const char* begin = &rich_overlay_[0];
 	const char* end = begin + rich_overlay_.length();
 	for(; begin != end; ++begin)
 	{
-		if(*reinterpret_cast<const DWORD*>(begin) == rich_overlay_id)
+		if(*reinterpret_cast<const uint32_t*>(begin) == rich_overlay_id)
 		{
 			found = true; //We've found it!
 			break;
@@ -769,11 +775,11 @@ const pe_base::rich_data_list pe_base::get_rich_data() const
 	if(found)
 	{
 		//Check remaining length
-		if(end - begin < sizeof(DWORD))
+		if(static_cast<size_t>(end - begin) < sizeof(uint32_t))
 			return ret;
 
 		//The XOR key is after "Rich" word, we should get it
-		DWORD xorkey = *reinterpret_cast<const DWORD*>(begin + sizeof(DWORD));
+		uint32_t xorkey = *reinterpret_cast<const uint32_t*>(begin + sizeof(uint32_t));
 
 		//True if rich data was found
 		found = false;
@@ -782,7 +788,7 @@ const pe_base::rich_data_list pe_base::get_rich_data() const
 		begin = &rich_overlay_[0];
 		for(; begin != end; ++begin)
 		{
-			if((*reinterpret_cast<const DWORD*>(begin) ^ xorkey) == 'SnaD')
+			if((*reinterpret_cast<const uint32_t*>(begin) ^ xorkey) == 0x536e6144) //"DanS"
 			{
 				found = true;
 				break;
@@ -792,28 +798,28 @@ const pe_base::rich_data_list pe_base::get_rich_data() const
 		//If second signature is found
 		if(found)
 		{
-			begin += sizeof(DWORD) * 3;
+			begin += sizeof(uint32_t) * 3;
 			//List all rich data structures
 			while(begin < end)
 			{
-				begin += sizeof(DWORD);
+				begin += sizeof(uint32_t);
 				if(begin >= end)
 					break;
 
 				//Check for rich overlay data end ("Rich" word reached)
-				if(*reinterpret_cast<const DWORD*>(begin) == rich_overlay_id)
+				if(*reinterpret_cast<const uint32_t*>(begin) == rich_overlay_id)
 					break;
 
 				//Create rich_data structure
 				rich_data data;
-				data.set_number((*reinterpret_cast<const DWORD*>(begin) ^ xorkey) >> 16);
-				data.set_version((*reinterpret_cast<const DWORD*>(begin) ^ xorkey) & 0xFFFF);
+				data.set_number((*reinterpret_cast<const uint32_t*>(begin) ^ xorkey) >> 16);
+				data.set_version((*reinterpret_cast<const uint32_t*>(begin) ^ xorkey) & 0xFFFF);
 
-				begin += sizeof(DWORD);
+				begin += sizeof(uint32_t);
 				if(begin >= end)
 					break;
 
-				data.set_times(*reinterpret_cast<const DWORD*>(begin) ^ xorkey);
+				data.set_times(*reinterpret_cast<const uint32_t*>(begin) ^ xorkey);
 
 				//Save rich data structure
 				ret.push_back(data);
@@ -830,33 +836,33 @@ const pe_base::rich_data_list pe_base::get_rich_data() const
 void pe_base::rebuild_pe(bool strip_dos_header, bool change_size_of_headers)
 {
 	//Set start of PE headers
-	dos_header_.e_lfanew = sizeof(IMAGE_DOS_HEADER) + static_cast<DWORD>(rich_overlay_.size());
+	dos_header_.e_lfanew = sizeof(image_dos_header) + static_cast<uint32_t>(rich_overlay_.size());
 
 	if(strip_dos_header)
 	{
 		//Set base of code as 8 * sizeof(WORD)
 		//Leave first 8 WORDs of DOS header untouched
-		set_base_of_code(8 * sizeof(WORD));
+		set_base_of_code(8 * sizeof(uint16_t));
 		//Strip stub overlay
 		strip_stub_overlay();
 	}
 
 	//Calculate pointer to section data
-	ptr_to_section_data_ = align_up((strip_dos_header ? 8 * sizeof(WORD) : sizeof(IMAGE_DOS_HEADER)) + get_sizeof_nt_header() + rich_overlay_.size()
-		- sizeof(IMAGE_DATA_DIRECTORY) * (IMAGE_NUMBEROF_DIRECTORY_ENTRIES - get_number_of_rvas_and_sizes())
-		+ sections_.size() * sizeof(IMAGE_SECTION_HEADER), get_file_alignment());
+	ptr_to_section_data_ = align_up((strip_dos_header ? 8 * sizeof(uint16_t) : sizeof(image_dos_header)) + get_sizeof_nt_header() + rich_overlay_.size()
+		- sizeof(image_data_directory) * (image_numberof_directory_entries - get_number_of_rvas_and_sizes())
+		+ sections_.size() * sizeof(image_section_header), get_file_alignment());
 
 	//Set size of headers and size of optional header
 	if(!sections_.empty() && change_size_of_headers)
-		set_size_of_headers(std::min<DWORD>(static_cast<DWORD>(ptr_to_section_data_), (*sections_.begin()).header_.VirtualAddress));
+		set_size_of_headers(std::min<uint32_t>(static_cast<uint32_t>(ptr_to_section_data_), (*sections_.begin()).header_.VirtualAddress));
 
-	set_size_of_optional_header(static_cast<WORD>(get_sizeof_opt_headers() - sizeof(IMAGE_DATA_DIRECTORY) * (IMAGE_NUMBEROF_DIRECTORY_ENTRIES - get_number_of_rvas_and_sizes())));
+	set_size_of_optional_header(static_cast<uint16_t>(get_sizeof_opt_headers() - sizeof(image_data_directory) * (image_numberof_directory_entries - get_number_of_rvas_and_sizes())));
 
 	//Recalculate pointer to raw data according to section list
 	for(section_list::iterator it = sections_.begin(); it != sections_.end(); ++it)
 	{
 		//Save section headers PointerToRawData
-		(*it).header_.PointerToRawData = static_cast<DWORD>(ptr_to_section_data_);
+		(*it).header_.PointerToRawData = static_cast<uint32_t>(ptr_to_section_data_);
 		ptr_to_section_data_ += (*it).raw_size_aligned_;
 	}
 }
@@ -869,33 +875,33 @@ void pe_base::rebuild_pe(std::ostream& out, bool strip_dos_header, bool change_s
 		throw pe_exception("Stream is bad", pe_exception::stream_is_bad);
 
 	//Change ostream state
-	out.exceptions(0);
+	out.exceptions(std::ios::goodbit);
 	out.clear();
 
 	//Rebuild PE image headers
 	rebuild_pe(strip_dos_header, change_size_of_headers);
 
 	//Write DOS header
-	out.write(reinterpret_cast<const char*>(&dos_header_), strip_dos_header ? 8 * sizeof(WORD) : sizeof(IMAGE_DOS_HEADER));
+	out.write(reinterpret_cast<const char*>(&dos_header_), strip_dos_header ? 8 * sizeof(uint16_t) : sizeof(image_dos_header));
 	//If we have rich overlay, write it too
 	if(rich_overlay_.size())
 		out.write(rich_overlay_.data(), rich_overlay_.size());
 
 	//Write NT headers
-	out.write(get_nt_headers_ptr(), get_sizeof_nt_header() - sizeof(IMAGE_DATA_DIRECTORY) * (IMAGE_NUMBEROF_DIRECTORY_ENTRIES - get_number_of_rvas_and_sizes()));
+	out.write(get_nt_headers_ptr(), get_sizeof_nt_header() - sizeof(image_data_directory) * (image_numberof_directory_entries - get_number_of_rvas_and_sizes()));
 
 	//Write section headers
 	for(section_list::iterator it = sections_.begin(); it != sections_.end(); ++it)
 	{
 		if(it == sections_.end() - 1) //If last section encountered
 		{
-			IMAGE_SECTION_HEADER header = (*it).header_;
-			header.SizeOfRawData = static_cast<DWORD>((*it).get_raw_data().length()); //Set non-aligned actual data length for it
-			out.write(reinterpret_cast<const char*>(&header), sizeof(IMAGE_SECTION_HEADER));
+			image_section_header header = (*it).header_;
+			header.SizeOfRawData = static_cast<uint32_t>((*it).get_raw_data().length()); //Set non-aligned actual data length for it
+			out.write(reinterpret_cast<const char*>(&header), sizeof(image_section_header));
 		}
 		else
 		{
-			out.write(reinterpret_cast<const char*>(&(*it).header_), sizeof(IMAGE_SECTION_HEADER));
+			out.write(reinterpret_cast<const char*>(&(*it).header_), sizeof(image_section_header));
 		}
 	}
 
@@ -914,19 +920,19 @@ void pe_base::rebuild_pe(std::ostream& out, bool strip_dos_header, bool change_s
 }
 
 //Reads DOS headers from istream
-void pe_base::read_dos_header(std::istream& file, IMAGE_DOS_HEADER& header)
+void pe_base::read_dos_header(std::istream& file, image_dos_header& header)
 {
 	//Check istream flags
 	if(file.bad() || file.eof())
 		throw pe_exception("PE file stream is bad or closed.", pe_exception::bad_pe_file);
 
 	//Read DOS header and check istream
-	file.read(reinterpret_cast<char*>(&header), sizeof(IMAGE_DOS_HEADER));
+	file.read(reinterpret_cast<char*>(&header), sizeof(image_dos_header));
 	if(file.bad() || file.eof())
 		throw pe_exception("Unable to read IMAGE_DOS_HEADER", pe_exception::bad_dos_header);
 
 	//Check DOS header magic
-	if(header.e_magic != 'ZM')
+	if(header.e_magic != 0x5a4d) //"MZ"
 		throw pe_exception("IMAGE_DOS_HEADER signature is incorrect", pe_exception::bad_dos_header);
 }
 
@@ -943,7 +949,7 @@ void pe_base::read_pe(std::istream& file, bool read_bound_import_raw_data, bool 
 	std::streamoff filesize = get_file_size(file);
 
 	//Check if PE header is DWORD-aligned
-	if((dos_header_.e_lfanew % sizeof(DWORD)) != 0)
+	if((dos_header_.e_lfanew % sizeof(uint32_t)) != 0)
 		throw pe_exception("PE header is not DWORD-aligned", pe_exception::bad_dos_header);
 
 	//Seek to NT headers
@@ -952,22 +958,22 @@ void pe_base::read_pe(std::istream& file, bool read_bound_import_raw_data, bool 
 		throw pe_exception("Cannot reach IMAGE_NT_HEADERS", pe_exception::image_nt_headers_not_found);
 
 	//Read NT headers
-	file.read(get_nt_headers_ptr(), get_sizeof_nt_header() - sizeof(IMAGE_DATA_DIRECTORY) * 16);
+	file.read(get_nt_headers_ptr(), get_sizeof_nt_header() - sizeof(image_data_directory) * image_numberof_directory_entries);
 	if(file.bad() || file.eof())
 		throw pe_exception("Error reading IMAGE_NT_HEADERS", pe_exception::error_reading_image_nt_headers);
 
 	//Check PE signature
-	if(get_pe_signature() != 'EP')
+	if(get_pe_signature() != 0x4550) //"PE"
 		throw pe_exception("Incorrect PE signature", pe_exception::pe_signature_incorrect);
 
 	//Check number of directories
-	if(get_number_of_rvas_and_sizes() > IMAGE_NUMBEROF_DIRECTORY_ENTRIES)
-		set_number_of_rvas_and_sizes(IMAGE_NUMBEROF_DIRECTORY_ENTRIES);
+	if(get_number_of_rvas_and_sizes() > image_numberof_directory_entries)
+		set_number_of_rvas_and_sizes(image_numberof_directory_entries);
 
 	if(get_number_of_rvas_and_sizes() > 0)
 	{
 		//Read data directory headers, if any
-		file.read(get_nt_headers_ptr() + (get_sizeof_nt_header() - sizeof(IMAGE_DATA_DIRECTORY) * IMAGE_NUMBEROF_DIRECTORY_ENTRIES), sizeof(IMAGE_DATA_DIRECTORY) * get_number_of_rvas_and_sizes());
+		file.read(get_nt_headers_ptr() + (get_sizeof_nt_header() - sizeof(image_data_directory) * image_numberof_directory_entries), sizeof(image_data_directory) * get_number_of_rvas_and_sizes());
 		if(file.bad() || file.eof())
 			throw pe_exception("Error reading DATA_DIRECTORY headers", pe_exception::error_reading_data_directories);
 	}
@@ -997,18 +1003,18 @@ void pe_base::read_pe(std::istream& file, bool read_bound_import_raw_data, bool 
 		throw pe_exception("Incorrect size of image", pe_exception::incorrect_size_of_image);
 	
 	//Read rich data overlay / DOS stub (if any)
-	if(dos_header_.e_lfanew > sizeof(IMAGE_DOS_HEADER))
+	if(static_cast<uint32_t>(dos_header_.e_lfanew) > sizeof(image_dos_header))
 	{
-		rich_overlay_.resize(dos_header_.e_lfanew - sizeof(IMAGE_DOS_HEADER));
-		file.seekg(sizeof(IMAGE_DOS_HEADER));
-		file.read(&rich_overlay_[0], dos_header_.e_lfanew - sizeof(IMAGE_DOS_HEADER));
+		rich_overlay_.resize(dos_header_.e_lfanew - sizeof(image_dos_header));
+		file.seekg(sizeof(image_dos_header));
+		file.read(&rich_overlay_[0], dos_header_.e_lfanew - sizeof(image_dos_header));
 		if(file.bad() || file.eof())
 			throw pe_exception("Error reading 'Rich' & 'DOS stub' overlay", pe_exception::error_reading_overlay);
 	}
 
 	//Calculate first section raw position
 	//Sum is safe here
-	DWORD first_section = dos_header_.e_lfanew + get_size_of_optional_header() + sizeof(IMAGE_FILE_HEADER) + sizeof(DWORD) /* Signature */;
+	uint32_t first_section = dos_header_.e_lfanew + get_size_of_optional_header() + sizeof(image_file_header) + sizeof(uint32_t) /* Signature */;
 
 	if(get_number_of_sections() > 0)
 	{
@@ -1018,14 +1024,14 @@ void pe_base::read_pe(std::istream& file, bool read_bound_import_raw_data, bool 
 			throw pe_exception("Cannot reach section headers", pe_exception::image_section_headers_not_found);
 	}
 
-	DWORD last_raw_size = 0;
+	uint32_t last_raw_size = 0;
 
 	//Read all sections
 	for(int i = 0; i < get_number_of_sections(); i++)
 	{
 		section s;
 		//Read section header
-		file.read(reinterpret_cast<char*>(&s.header_), sizeof(IMAGE_SECTION_HEADER));
+		file.read(reinterpret_cast<char*>(&s.header_), sizeof(image_section_header));
 		if(file.bad() || file.eof())
 			throw pe_exception("Error reading section header", pe_exception::error_reading_section_header);
 
@@ -1053,7 +1059,7 @@ void pe_base::read_pe(std::istream& file, bool read_bound_import_raw_data, bool 
 			//Check virtual and raw section sizes and addresses
 			if(s.header_.VirtualAddress + align_up(s.header_.Misc.VirtualSize, get_section_alignment()) > align_up(get_size_of_image(), get_section_alignment())
 				||
-				align_down(s.header_.PointerToRawData, get_file_alignment()) + s.header_.SizeOfRawData > static_cast<DWORD>(filesize))
+				align_down(s.header_.PointerToRawData, get_file_alignment()) + s.header_.SizeOfRawData > static_cast<uint32_t>(filesize))
 				throw pe_exception("Incorrect section address or size", pe_exception::section_incorrect_addr_or_size);
 
 			//Seek to section raw data
@@ -1126,12 +1132,12 @@ void pe_base::read_pe(std::istream& file, bool read_bound_import_raw_data, bool 
 	{
 		//RVA of IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT is actually RAW address
 		//So we need to read this RAW data
-		file.seekg(get_directory_rva(IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT));
+		file.seekg(get_directory_rva(image_directory_entry_bound_import));
 
 		try
 		{
-			bound_import_data_.resize(get_directory_size(IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT));
-			file.read(&bound_import_data_[0], get_directory_size(IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT));
+			bound_import_data_.resize(get_directory_size(image_directory_entry_bound_import));
+			file.read(&bound_import_data_[0], get_directory_size(image_directory_entry_bound_import));
 			if(file.bad() || file.eof())
 				bound_import_data_.resize(0); //Don't throw error here, we'll throw it at request of bound import info
 		}
@@ -1154,22 +1160,22 @@ void pe_base::read_pe(std::istream& file, bool read_bound_import_raw_data, bool 
 		try
 		{
 			//Check the length in bytes of the section containing debug directory
-			if(section_data_length_from_rva(get_directory_rva(IMAGE_DIRECTORY_ENTRY_DEBUG), get_directory_rva(IMAGE_DIRECTORY_ENTRY_DEBUG), section_data_virtual, true) < sizeof(IMAGE_DEBUG_DIRECTORY))
+			if(section_data_length_from_rva(get_directory_rva(image_directory_entry_debug), get_directory_rva(image_directory_entry_debug), section_data_virtual, true) < sizeof(image_debug_directory))
 				break;
 
-			unsigned long current_pos = get_directory_rva(IMAGE_DIRECTORY_ENTRY_DEBUG);
+			unsigned long current_pos = get_directory_rva(image_directory_entry_debug);
 
 			//First IMAGE_DEBUG_DIRECTORY table
-			IMAGE_DEBUG_DIRECTORY directory = section_data_from_rva<IMAGE_DEBUG_DIRECTORY>(current_pos, section_data_virtual, true);
+			image_debug_directory directory = section_data_from_rva<image_debug_directory>(current_pos, section_data_virtual, true);
 
 			//Iterate over all IMAGE_DEBUG_DIRECTORY directories
 			while(directory.PointerToRawData
-				&& current_pos < get_directory_rva(IMAGE_DIRECTORY_ENTRY_DEBUG) + get_directory_size(IMAGE_DIRECTORY_ENTRY_DEBUG))
+				&& current_pos < get_directory_rva(image_directory_entry_debug) + get_directory_size(image_directory_entry_debug))
 			{
 				//If we have something to read
-				if((directory.Type == IMAGE_DEBUG_TYPE_CODEVIEW
-					|| directory.Type == IMAGE_DEBUG_TYPE_MISC
-					|| directory.Type == IMAGE_DEBUG_TYPE_COFF)
+				if((directory.Type == image_debug_type_codeview
+					|| directory.Type == image_debug_type_misc
+					|| directory.Type == image_debug_type_coff)
 					&& directory.SizeOfData)
 				{
 					std::string data;
@@ -1183,8 +1189,8 @@ void pe_base::read_pe(std::istream& file, bool read_bound_import_raw_data, bool 
 				}
 
 				//Go to next debug entry
-				current_pos += sizeof(IMAGE_DEBUG_DIRECTORY);
-				directory = section_data_from_rva<IMAGE_DEBUG_DIRECTORY>(current_pos, section_data_virtual, true);
+				current_pos += sizeof(image_debug_directory);
+				directory = section_data_from_rva<image_debug_directory>(current_pos, section_data_virtual, true);
 			}
 
 			break;
@@ -1208,13 +1214,13 @@ pe_base::pe_type pe_base::get_pe_type(std::istream& file)
 	//Save state of the istream
 	std::ios_base::iostate state = file.exceptions();
 	std::streamoff old_offset = file.tellg();
-	IMAGE_NT_HEADERS32 nt_headers;
-	IMAGE_DOS_HEADER header;
+	image_nt_headers32 nt_headers;
+	image_dos_header header;
 
 	try
 	{
 		//Read dos header
-		file.exceptions(0);
+		file.exceptions(std::ios::goodbit);
 		read_dos_header(file, header);
 
 		//Seek to the NT headers start
@@ -1223,16 +1229,16 @@ pe_base::pe_type pe_base::get_pe_type(std::istream& file)
 			throw pe_exception("Cannot reach IMAGE_NT_HEADERS", pe_exception::image_nt_headers_not_found);
 
 		//Read NT headers (we're using 32-bit version, because there's no significant differencies between 32 and 64 bit version structures)
-		file.read(reinterpret_cast<char*>(&nt_headers), sizeof(IMAGE_NT_HEADERS32) - sizeof(IMAGE_DATA_DIRECTORY) * 16);
+		file.read(reinterpret_cast<char*>(&nt_headers), sizeof(image_nt_headers32) - sizeof(image_data_directory) * image_numberof_directory_entries);
 		if(file.bad() || file.eof())
 			throw pe_exception("Error reading IMAGE_NT_HEADERS", pe_exception::error_reading_image_nt_headers);
 
 		//Check NT headers signature
-		if(nt_headers.Signature != 'EP')
+		if(nt_headers.Signature != 0x4550) //"PE"
 			throw pe_exception("Incorrect PE signature", pe_exception::pe_signature_incorrect);
 
 		//Check NT headers magic
-		if(nt_headers.OptionalHeader.Magic != IMAGE_NT_OPTIONAL_HDR32_MAGIC && nt_headers.OptionalHeader.Magic != IMAGE_NT_OPTIONAL_HDR64_MAGIC)
+		if(nt_headers.OptionalHeader.Magic != image_nt_optional_hdr32_magic && nt_headers.OptionalHeader.Magic != image_nt_optional_hdr64_magic)
 			throw pe_exception("Incorrect PE signature", pe_exception::pe_signature_incorrect);
 	}
 	catch(const std::exception&)
@@ -1251,7 +1257,7 @@ pe_base::pe_type pe_base::get_pe_type(std::istream& file)
 	file.clear();
 
 	//Determine PE type and return it
-	return nt_headers.OptionalHeader.Magic == IMAGE_NT_OPTIONAL_HDR64_MAGIC ? pe_type_64 : pe_type_32;
+	return nt_headers.OptionalHeader.Magic == image_nt_optional_hdr64_magic ? pe_type_64 : pe_type_32;
 }
 
 //Returns stream size
@@ -1267,7 +1273,7 @@ std::streamoff pe_base::get_file_size(std::istream& file)
 }
 
 //Calculate checksum of image
-DWORD pe_base::calculate_checksum(std::istream& file)
+uint32_t pe_base::calculate_checksum(std::istream& file)
 {
 	//Save istream state
 	std::ios_base::iostate state = file.exceptions();
@@ -1278,9 +1284,9 @@ DWORD pe_base::calculate_checksum(std::istream& file)
 
 	try
 	{
-		IMAGE_DOS_HEADER header;
+		image_dos_header header;
 
-		file.exceptions(0);
+		file.exceptions(std::ios::goodbit);
 
 		//Read DOS header
 		read_dos_header(file, header);
@@ -1294,7 +1300,7 @@ DWORD pe_base::calculate_checksum(std::istream& file)
 		static const unsigned long checksum_pos_in_optional_headers = 64;
 		//Calculate real PE headers "CheckSum" field position
 		//Sum is safe here
-		unsigned long pe_checksum_pos = header.e_lfanew + sizeof(IMAGE_FILE_HEADER) + sizeof(DWORD) + checksum_pos_in_optional_headers;
+		unsigned long pe_checksum_pos = header.e_lfanew + sizeof(image_file_header) + sizeof(uint32_t) + checksum_pos_in_optional_headers;
 
 		//Calculate checksum for each byte of file
 		std::streamoff filesize = get_file_size(file);
@@ -1337,7 +1343,7 @@ DWORD pe_base::calculate_checksum(std::istream& file)
 	file.clear();
 
 	//Return checksum
-	return static_cast<DWORD>(checksum);	
+	return static_cast<uint32_t>(checksum);	
 }
 
 //Returns true if image has overlay data at the end of file
@@ -1347,19 +1353,19 @@ bool pe_base::has_overlay() const
 }
 
 //Clears PE characteristics flag
-void pe_base::clear_characteristics_flags(WORD flags)
+void pe_base::clear_characteristics_flags(uint16_t flags)
 {
 	set_characteristics(get_characteristics() & ~flags);
 }
 
 //Sets PE characteristics flag
-void pe_base::set_characteristics_flags(WORD flags)
+void pe_base::set_characteristics_flags(uint16_t flags)
 {
 	set_characteristics(get_characteristics() | flags);
 }
 
 //Returns true if PE characteristics flag set
-bool pe_base::check_characteristics_flag(WORD flag) const
+bool pe_base::check_characteristics_flag(uint16_t flag) const
 {
 	return (get_characteristics() & flag) ? true : false;
 }
@@ -1367,140 +1373,140 @@ bool pe_base::check_characteristics_flag(WORD flag) const
 //Returns true if image has console subsystem
 bool pe_base::is_console() const
 {
-	return (get_subsystem() & IMAGE_SUBSYSTEM_WINDOWS_CUI) ? true : false;
+	return (get_subsystem() & image_subsystem_windows_cui) ? true : false;
 }
 
 //Returns true if image has Windows GUI subsystem
 bool pe_base::is_gui() const
 {
-	return (get_subsystem() & IMAGE_SUBSYSTEM_WINDOWS_GUI) ? true : false;
+	return (get_subsystem() & image_subsystem_windows_gui) ? true : false;
 }
 
 //Returns corresponding section data pointer from VA inside section "s" for PE32 (checks bounds)
-char* pe_base::section_data_from_va(section& s, DWORD va) //Always returns raw data
+char* pe_base::section_data_from_va(section& s, uint32_t va) //Always returns raw data
 {
 	return section_data_from_rva(s, va_to_rva(va));
 }
 
 //Returns corresponding section data pointer from VA inside section "s" for PE32 (checks bounds)
-const char* pe_base::section_data_from_va(const section& s, DWORD va, section_data_type datatype) const
+const char* pe_base::section_data_from_va(const section& s, uint32_t va, section_data_type datatype) const
 {
 	return section_data_from_rva(s, va_to_rva(va), datatype);
 }
 
 //Returns corresponding section data pointer from VA inside section for PE32
-char* pe_base::section_data_from_va(DWORD va, bool include_headers) //Always returns raw data
+char* pe_base::section_data_from_va(uint32_t va, bool include_headers) //Always returns raw data
 {
 	return section_data_from_rva(va_to_rva(va), include_headers);
 }
 
 //Returns corresponding section data pointer from VA inside section for PE32
-const char* pe_base::section_data_from_va(DWORD va, section_data_type datatype, bool include_headers) const
+const char* pe_base::section_data_from_va(uint32_t va, section_data_type datatype, bool include_headers) const
 {
 	return section_data_from_rva(va_to_rva(va), datatype, include_headers);
 }
 
 //Returns corresponding section data pointer from VA inside section "s" for PE32/PE64 (checks bounds)
-char* pe_base::section_data_from_va(section& s, ULONGLONG va)  //Always returns raw data
+char* pe_base::section_data_from_va(section& s, uint64_t va)  //Always returns raw data
 {
 	return section_data_from_rva(s, va_to_rva(va));
 }
 
 //Returns corresponding section data pointer from VA inside section "s" for PE32/PE64 (checks bounds)
-const char* pe_base::section_data_from_va(const section& s, ULONGLONG va, section_data_type datatype) const
+const char* pe_base::section_data_from_va(const section& s, uint64_t va, section_data_type datatype) const
 {
 	return section_data_from_rva(s, va_to_rva(va), datatype);
 }
 
 //Returns corresponding section data pointer from VA inside section for PE32/PE64
-char* pe_base::section_data_from_va(ULONGLONG va, bool include_headers)  //Always returns raw data
+char* pe_base::section_data_from_va(uint64_t va, bool include_headers)  //Always returns raw data
 {
 	return section_data_from_rva(va_to_rva(va), include_headers);
 }
 
 //Returns corresponding section data pointer from VA inside section for PE32/PE64
-const char* pe_base::section_data_from_va(ULONGLONG va, section_data_type datatype, bool include_headers) const
+const char* pe_base::section_data_from_va(uint64_t va, section_data_type datatype, bool include_headers) const
 {
 	return section_data_from_rva(va_to_rva(va), datatype, include_headers);
 }
 
 //Returns section from VA inside it for PE32
-pe_base::section& pe_base::section_from_va(DWORD va)
+pe_base::section& pe_base::section_from_va(uint32_t va)
 {
 	return section_from_rva(va_to_rva(va));
 }
 
 //Returns section from VA inside it for PE32/PE64
-pe_base::section& pe_base::section_from_va(ULONGLONG va)
+pe_base::section& pe_base::section_from_va(uint64_t va)
 {
 	return section_from_rva(va_to_rva(va));
 }
 
 //Returns section from RVA inside it for PE32
-const pe_base::section& pe_base::section_from_va(DWORD va) const
+const pe_base::section& pe_base::section_from_va(uint32_t va) const
 {
 	return section_from_rva(va_to_rva(va));
 }
 
 //Returns section from RVA inside it for PE32/PE64
-const pe_base::section& pe_base::section_from_va(ULONGLONG va) const
+const pe_base::section& pe_base::section_from_va(uint64_t va) const
 {
 	return section_from_rva(va_to_rva(va));
 }
 
 //Relative Virtual Address (RVA) to Virtual Address (VA) convertion for PE32
-void pe_base::rva_to_va(DWORD rva, DWORD& va) const
+void pe_base::rva_to_va(uint32_t rva, uint32_t& va) const
 {
 	va = rva_to_va_32(rva);
 }
 
 //Relative Virtual Address (RVA) to Virtual Address (VA) convertions for PE32/PE64
-void pe_base::rva_to_va(DWORD rva, ULONGLONG& va) const
+void pe_base::rva_to_va(uint32_t rva, uint64_t& va) const
 {
 	va = rva_to_va_64(rva);
 }
 
 //Returns section from file offset (4gb max)
-pe_base::section& pe_base::section_from_file_offset(DWORD offset)
+pe_base::section& pe_base::section_from_file_offset(uint32_t offset)
 {
 	return *file_offset_to_section(offset);
 }
 
 //Returns section from file offset (4gb max)
-const pe_base::section& pe_base::section_from_file_offset(DWORD offset) const
+const pe_base::section& pe_base::section_from_file_offset(uint32_t offset) const
 {
 	return *file_offset_to_section(offset);
 }
 
 //Returns section and offset (raw data only) from its start from RVA
-const std::pair<DWORD, const pe_base::section*> pe_base::section_and_offset_from_rva(DWORD rva) const
+const std::pair<uint32_t, const pe_base::section*> pe_base::section_and_offset_from_rva(uint32_t rva) const
 {
 	const section& s = section_from_rva(rva);
 	return std::make_pair(rva - s.get_virtual_address(), &s);
 }
 
 //Returns image base for PE32
-void pe_base::get_image_base(DWORD& base) const
+void pe_base::get_image_base(uint32_t& base) const
 {
 	base = get_image_base_32();
 }
 
 //RVA to RAW file offset convertion (4gb max)
-DWORD pe_base::rva_to_file_offset(DWORD rva) const
+uint32_t pe_base::rva_to_file_offset(uint32_t rva) const
 {
 	const section& s = section_from_rva(rva);
 	return s.get_pointer_to_raw_data() + rva - s.get_virtual_address();
 }
 
 //RAW file offset to RVA convertion (4gb max)
-DWORD pe_base::file_offset_to_rva(DWORD offset) const
+uint32_t pe_base::file_offset_to_rva(uint32_t offset) const
 {
 	const section_list::const_iterator it = file_offset_to_section(offset);
 	return offset - (*it).get_pointer_to_raw_data() + (*it).get_virtual_address();
 }
 
 //RAW file offset to section convertion helper (4gb max)
-pe_base::section_list::const_iterator pe_base::file_offset_to_section(DWORD offset) const
+pe_base::section_list::const_iterator pe_base::file_offset_to_section(uint32_t offset) const
 {
 	section_list::const_iterator it = std::find_if(sections_.begin(), sections_.end(), section_by_raw_offset(offset));
 	if(it == sections_.end())
@@ -1510,7 +1516,7 @@ pe_base::section_list::const_iterator pe_base::file_offset_to_section(DWORD offs
 }
 
 //RAW file offset to section convertion helper (4gb max)
-pe_base::section_list::iterator pe_base::file_offset_to_section(DWORD offset)
+pe_base::section_list::iterator pe_base::file_offset_to_section(uint32_t offset)
 {
 	section_list::iterator it = std::find_if(sections_.begin(), sections_.end(), section_by_raw_offset(offset));
 	if(it == sections_.end())
@@ -1520,7 +1526,7 @@ pe_base::section_list::iterator pe_base::file_offset_to_section(DWORD offset)
 }
 
 //Section by file offset finder helper (4gb max)
-pe_base::section_by_raw_offset::section_by_raw_offset(DWORD offset)
+pe_base::section_by_raw_offset::section_by_raw_offset(uint32_t offset)
 	:offset_(offset)
 {}
 
@@ -1531,61 +1537,61 @@ bool pe_base::section_by_raw_offset::operator()(const section& s) const
 }
 
 //RVA from section raw data offset
-DWORD pe_base::rva_from_section_offset(const section& s, DWORD raw_offset_from_section_start)
+uint32_t pe_base::rva_from_section_offset(const section& s, uint32_t raw_offset_from_section_start)
 {
 	return s.get_virtual_address() + raw_offset_from_section_start;
 }
 
 //Returns image base for PE32/PE64
-void pe_base::get_image_base(ULONGLONG& base) const
+void pe_base::get_image_base(uint64_t& base) const
 {
 	base = get_image_base_64();
 }
 
 //Returns heap size commit for PE32
-void pe_base::get_heap_size_commit(DWORD& size) const
+void pe_base::get_heap_size_commit(uint32_t& size) const
 {
 	size = get_heap_size_commit_32();
 }
 
 //Returns heap size commit for PE32/PE64
-void pe_base::get_heap_size_commit(ULONGLONG& size) const
+void pe_base::get_heap_size_commit(uint64_t& size) const
 {
 	size = get_heap_size_commit_64();
 }
 
 //Returns heap size reserve for PE32
-void pe_base::get_heap_size_reserve(DWORD& size) const
+void pe_base::get_heap_size_reserve(uint32_t& size) const
 {
 	size = get_heap_size_reserve_32();
 }
 
 //Returns heap size reserve for PE32/PE64
-void pe_base::get_heap_size_reserve(ULONGLONG& size) const
+void pe_base::get_heap_size_reserve(uint64_t& size) const
 {
 	size = get_heap_size_reserve_64();
 }
 
 //Returns stack size commit for PE32
-void pe_base::get_stack_size_commit(DWORD& size) const
+void pe_base::get_stack_size_commit(uint32_t& size) const
 {
 	size = get_stack_size_commit_32();
 }
 
 //Returns stack size commit for PE32/PE64
-void pe_base::get_stack_size_commit(ULONGLONG& size) const
+void pe_base::get_stack_size_commit(uint64_t& size) const
 {
 	size = get_stack_size_commit_64();
 }
 
 //Returns stack size reserve for PE32
-void pe_base::get_stack_size_reserve(DWORD& size) const
+void pe_base::get_stack_size_reserve(uint32_t& size) const
 {
 	size = get_stack_size_reserve_32();
 }
 
 //Returns stack size reserve for PE32/PE64
-void pe_base::get_stack_size_reserve(ULONGLONG& size) const
+void pe_base::get_stack_size_reserve(uint64_t& size) const
 {
 	size = get_stack_size_reserve_64();
 }
@@ -1598,13 +1604,13 @@ pe_base::exported_function::exported_function()
 {}
 
 //Returns ordinal of function (actually, ordinal = hint + ordinal base)
-WORD pe_base::exported_function::get_ordinal() const
+uint16_t pe_base::exported_function::get_ordinal() const
 {
 	return ordinal_;
 }
 
 //Returns RVA of function
-DWORD pe_base::exported_function::get_rva() const
+uint32_t pe_base::exported_function::get_rva() const
 {
 	return rva_;
 }
@@ -1622,7 +1628,7 @@ bool pe_base::exported_function::has_name() const
 }
 
 //Returns name ordinal of function
-WORD pe_base::exported_function::get_name_ordinal() const
+uint16_t pe_base::exported_function::get_name_ordinal() const
 {
 	return name_ordinal_;
 }
@@ -1640,13 +1646,13 @@ const std::string& pe_base::exported_function::get_forwarded_name() const
 }
 
 //Sets ordinal of function
-void pe_base::exported_function::set_ordinal(WORD ordinal)
+void pe_base::exported_function::set_ordinal(uint16_t ordinal)
 {
 	ordinal_ = ordinal;
 }
 
 //Sets RVA of function
-void pe_base::exported_function::set_rva(DWORD rva)
+void pe_base::exported_function::set_rva(uint32_t rva)
 {
 	rva_ = rva;
 }
@@ -1659,7 +1665,7 @@ void pe_base::exported_function::set_name(const std::string& name)
 }
 
 //Sets name ordinal
-void pe_base::exported_function::set_name_ordinal(WORD name_ordinal)
+void pe_base::exported_function::set_name_ordinal(uint16_t name_ordinal)
 {
 	name_ordinal_ = name_ordinal;
 }
@@ -1686,25 +1692,25 @@ pe_base::export_info::export_info()
 {}
 
 //Returns characteristics
-DWORD pe_base::export_info::get_characteristics() const
+uint32_t pe_base::export_info::get_characteristics() const
 {
 	return characteristics_;
 }
 
 //Returns timestamp
-DWORD pe_base::export_info::get_timestamp() const
+uint32_t pe_base::export_info::get_timestamp() const
 {
 	return timestamp_;
 }
 
 //Returns major version
-WORD pe_base::export_info::get_major_version() const
+uint16_t pe_base::export_info::get_major_version() const
 {
 	return major_version_;
 }
 
 //Returns minor version
-WORD pe_base::export_info::get_minor_version() const
+uint16_t pe_base::export_info::get_minor_version() const
 {
 	return minor_version_;
 }
@@ -1716,61 +1722,61 @@ const std::string& pe_base::export_info::get_name() const
 }
 
 //Returns ordinal base
-DWORD pe_base::export_info::get_ordinal_base() const
+uint32_t pe_base::export_info::get_ordinal_base() const
 {
 	return ordinal_base_;
 }
 
 //Returns number of functions
-DWORD pe_base::export_info::get_number_of_functions() const
+uint32_t pe_base::export_info::get_number_of_functions() const
 {
 	return number_of_functions_;
 }
 
 //Returns number of function names
-DWORD pe_base::export_info::get_number_of_names() const
+uint32_t pe_base::export_info::get_number_of_names() const
 {
 	return number_of_names_;
 }
 
 //Returns RVA of function address table
-DWORD pe_base::export_info::get_rva_of_functions() const
+uint32_t pe_base::export_info::get_rva_of_functions() const
 {
 	return address_of_functions_;
 }
 
 //Returns RVA of function name address table
-DWORD pe_base::export_info::get_rva_of_names() const
+uint32_t pe_base::export_info::get_rva_of_names() const
 {
 	return address_of_names_;
 }
 
 //Returns RVA of name ordinals table
-DWORD pe_base::export_info::get_rva_of_name_ordinals() const
+uint32_t pe_base::export_info::get_rva_of_name_ordinals() const
 {
 	return address_of_name_ordinals_;
 }
 
 //Sets characteristics
-void pe_base::export_info::set_characteristics(DWORD characteristics)
+void pe_base::export_info::set_characteristics(uint32_t characteristics)
 {
 	characteristics_ = characteristics;
 }
 
 //Sets timestamp
-void pe_base::export_info::set_timestamp(DWORD timestamp)
+void pe_base::export_info::set_timestamp(uint32_t timestamp)
 {
 	timestamp_ = timestamp;
 }
 
 //Sets major version
-void pe_base::export_info::set_major_version(WORD major_version)
+void pe_base::export_info::set_major_version(uint16_t major_version)
 {
 	major_version_ = major_version;
 }
 
 //Sets minor version
-void pe_base::export_info::set_minor_version(WORD minor_version)
+void pe_base::export_info::set_minor_version(uint16_t minor_version)
 {
 	minor_version_ = minor_version;
 }
@@ -1782,37 +1788,37 @@ void pe_base::export_info::set_name(const std::string& name)
 }
 
 //Sets ordinal base
-void pe_base::export_info::set_ordinal_base(DWORD ordinal_base)
+void pe_base::export_info::set_ordinal_base(uint32_t ordinal_base)
 {
 	ordinal_base_ = ordinal_base;
 }
 
 //Sets number of functions
-void pe_base::export_info::set_number_of_functions(DWORD number_of_functions)
+void pe_base::export_info::set_number_of_functions(uint32_t number_of_functions)
 {
 	number_of_functions_ = number_of_functions;
 }
 
 //Sets number of function names
-void pe_base::export_info::set_number_of_names(DWORD number_of_names)
+void pe_base::export_info::set_number_of_names(uint32_t number_of_names)
 {
 	number_of_names_ = number_of_names;
 }
 
 //Sets RVA of function address table
-void pe_base::export_info::set_rva_of_functions(DWORD rva_of_functions)
+void pe_base::export_info::set_rva_of_functions(uint32_t rva_of_functions)
 {
 	address_of_functions_ = rva_of_functions;
 }
 
 //Sets RVA of function name address table
-void pe_base::export_info::set_rva_of_names(DWORD rva_of_names)
+void pe_base::export_info::set_rva_of_names(uint32_t rva_of_names)
 {
 	address_of_names_ = rva_of_names;
 }
 
 //Sets RVA of name ordinals table
-void pe_base::export_info::set_rva_of_name_ordinals(DWORD rva_of_name_ordinals)
+void pe_base::export_info::set_rva_of_name_ordinals(uint32_t rva_of_name_ordinals)
 {
 	address_of_name_ordinals_ = rva_of_name_ordinals;
 }
@@ -1838,10 +1844,10 @@ const std::vector<pe_base::exported_function> pe_base::get_exported_functions(ex
 	if(has_exports())
 	{
 		//Check the length in bytes of the section containing export directory
-		if(section_data_length_from_rva(get_directory_rva(IMAGE_DIRECTORY_ENTRY_EXPORT), get_directory_rva(IMAGE_DIRECTORY_ENTRY_EXPORT), section_data_virtual, true) < sizeof(IMAGE_EXPORT_DIRECTORY))
+		if(section_data_length_from_rva(get_directory_rva(image_directory_entry_export), get_directory_rva(image_directory_entry_export), section_data_virtual, true) < sizeof(image_export_directory))
 			throw pe_exception("Incorrect export directory", pe_exception::incorrect_export_directory);
 
-		IMAGE_EXPORT_DIRECTORY exports = section_data_from_rva<IMAGE_EXPORT_DIRECTORY>(get_directory_rva(IMAGE_DIRECTORY_ENTRY_EXPORT), section_data_virtual, true);
+		image_export_directory exports = section_data_from_rva<image_export_directory>(get_directory_rva(image_directory_entry_export), section_data_virtual, true);
 
 		unsigned long max_name_length;
 
@@ -1885,33 +1891,33 @@ const std::vector<pe_base::exported_function> pe_base::get_exported_functions(ex
 		if((!exports.AddressOfNameOrdinals && exports.AddressOfNames) ||
 			(exports.AddressOfNameOrdinals && !exports.AddressOfNames) ||
 			!exports.AddressOfFunctions
-			|| exports.NumberOfFunctions >= max_dword / sizeof(DWORD)
-			|| exports.NumberOfNames > max_dword / sizeof(DWORD)
-			|| !is_sum_safe(exports.AddressOfFunctions, exports.NumberOfFunctions * sizeof(DWORD))
-			|| !is_sum_safe(exports.AddressOfNames, exports.NumberOfNames * sizeof(DWORD))
-			|| !is_sum_safe(exports.AddressOfNameOrdinals, exports.NumberOfFunctions * sizeof(DWORD))
-			|| !is_sum_safe(get_directory_rva(IMAGE_DIRECTORY_ENTRY_EXPORT), get_directory_size(IMAGE_DIRECTORY_ENTRY_EXPORT)))
+			|| exports.NumberOfFunctions >= max_dword / sizeof(uint32_t)
+			|| exports.NumberOfNames > max_dword / sizeof(uint32_t)
+			|| !is_sum_safe(exports.AddressOfFunctions, exports.NumberOfFunctions * sizeof(uint32_t))
+			|| !is_sum_safe(exports.AddressOfNames, exports.NumberOfNames * sizeof(uint32_t))
+			|| !is_sum_safe(exports.AddressOfNameOrdinals, exports.NumberOfFunctions * sizeof(uint32_t))
+			|| !is_sum_safe(get_directory_rva(image_directory_entry_export), get_directory_size(image_directory_entry_export)))
 			throw pe_exception("Incorrect export directory", pe_exception::incorrect_export_directory);
 
 		//Check if it is enough bytes to hold AddressOfFunctions table
-		if(section_data_length_from_rva(exports.AddressOfFunctions, exports.AddressOfFunctions, section_data_virtual, true) < exports.NumberOfFunctions * sizeof(DWORD))
+		if(section_data_length_from_rva(exports.AddressOfFunctions, exports.AddressOfFunctions, section_data_virtual, true) < exports.NumberOfFunctions * sizeof(uint32_t))
 			throw pe_exception("Incorrect export directory", pe_exception::incorrect_export_directory);
 
 		if(exports.AddressOfNames)
 		{
 			//Check if it is enough bytes to hold name and ordinal tables
-			if(section_data_length_from_rva(exports.AddressOfNameOrdinals, exports.AddressOfNameOrdinals, section_data_virtual, true) < exports.NumberOfNames * sizeof(WORD))
+			if(section_data_length_from_rva(exports.AddressOfNameOrdinals, exports.AddressOfNameOrdinals, section_data_virtual, true) < exports.NumberOfNames * sizeof(uint16_t))
 				throw pe_exception("Incorrect export directory", pe_exception::incorrect_export_directory);
 
-			if(section_data_length_from_rva(exports.AddressOfNames, exports.AddressOfNames, section_data_virtual, true) < exports.NumberOfNames * sizeof(DWORD))
+			if(section_data_length_from_rva(exports.AddressOfNames, exports.AddressOfNames, section_data_virtual, true) < exports.NumberOfNames * sizeof(uint32_t))
 				throw pe_exception("Incorrect export directory", pe_exception::incorrect_export_directory);
 		}
 		
-		for(DWORD ordinal = 0; ordinal < exports.NumberOfFunctions; ordinal++)
+		for(uint32_t ordinal = 0; ordinal < exports.NumberOfFunctions; ordinal++)
 		{
 			//Get function address
 			//Sum and multiplication are safe (checked above)
-			DWORD rva = section_data_from_rva<DWORD>(exports.AddressOfFunctions + ordinal * sizeof(DWORD), section_data_virtual, true);
+			uint32_t rva = section_data_from_rva<uint32_t>(exports.AddressOfFunctions + ordinal * sizeof(uint32_t), section_data_virtual, true);
 
 			//If we have a skip
 			if(!rva)
@@ -1923,19 +1929,19 @@ const std::vector<pe_base::exported_function> pe_base::get_exported_functions(ex
 			if(!is_sum_safe(exports.Base, ordinal) || exports.Base + ordinal > max_word)
 				throw pe_exception("Incorrect export directory", pe_exception::incorrect_export_directory);
 
-			func.set_ordinal(static_cast<WORD>(ordinal + exports.Base));
+			func.set_ordinal(static_cast<uint16_t>(ordinal + exports.Base));
 
 			//Scan for function name ordinal
-			for(DWORD i = 0; i < exports.NumberOfNames; i++)
+			for(uint32_t i = 0; i < exports.NumberOfNames; i++)
 			{
-				WORD ordinal2 = section_data_from_rva<WORD>(exports.AddressOfNameOrdinals + i * sizeof(WORD), section_data_virtual, true);
+				uint16_t ordinal2 = section_data_from_rva<uint16_t>(exports.AddressOfNameOrdinals + i * sizeof(uint16_t), section_data_virtual, true);
 
 				//If function has name (and name ordinal)
 				if(ordinal == ordinal2)
 				{
 					//Get function name
 					//Sum and multiplication are safe (checked above)
-					DWORD function_name_rva = section_data_from_rva<DWORD>(exports.AddressOfNames + i * sizeof(DWORD), section_data_virtual, true);
+					uint32_t function_name_rva = section_data_from_rva<uint32_t>(exports.AddressOfNames + i * sizeof(uint32_t), section_data_virtual, true);
 
 					//Get byte count that we have for function name
 					if((max_name_length = section_data_length_from_rva(function_name_rva, function_name_rva, section_data_virtual, true)) < 2)
@@ -1953,8 +1959,8 @@ const std::vector<pe_base::exported_function> pe_base::get_exported_functions(ex
 					func.set_name_ordinal(ordinal2);
 
 					//If the function is just a redirect, save its name
-					if(rva >= get_directory_rva(IMAGE_DIRECTORY_ENTRY_EXPORT) + sizeof(IMAGE_DIRECTORY_ENTRY_EXPORT) &&
-						rva < get_directory_rva(IMAGE_DIRECTORY_ENTRY_EXPORT) + get_directory_size(IMAGE_DIRECTORY_ENTRY_EXPORT))
+					if(rva >= get_directory_rva(image_directory_entry_export) + sizeof(image_directory_entry_export) &&
+						rva < get_directory_rva(image_directory_entry_export) + get_directory_size(image_directory_entry_export))
 					{
 						if((max_name_length = section_data_length_from_rva(rva, rva, section_data_virtual, true)) < 2)
 							throw pe_exception("Incorrect export directory", pe_exception::incorrect_export_directory);
@@ -1984,20 +1990,20 @@ const std::vector<pe_base::exported_function> pe_base::get_exported_functions(ex
 
 //Helper export functions
 //Returns pair: <ordinal base for supplied functions; maximum ordinal value for supplied functions>
-const std::pair<WORD, WORD> pe_base::get_export_ordinal_limits(const exported_functions_list& exports)
+const std::pair<uint16_t, uint16_t> pe_base::get_export_ordinal_limits(const exported_functions_list& exports)
 {
 	if(exports.empty())
 		return std::make_pair(0, 0);
 
-	WORD max_ordinal = 0; //Maximum ordinal number
-	WORD ordinal_base = max_word; //Minimum ordinal value
+	uint16_t max_ordinal = 0; //Maximum ordinal number
+	uint16_t ordinal_base = max_word; //Minimum ordinal value
 	for(exported_functions_list::const_iterator it = exports.begin(); it != exports.end(); ++it)
 	{
 		const exported_function& func = (*it);
 
 		//Calculate maximum and minimum ordinal numbers
-		max_ordinal = std::max<WORD>(max_ordinal, func.get_ordinal());
-		ordinal_base = std::min<WORD>(ordinal_base, func.get_ordinal());
+		max_ordinal = std::max<uint16_t>(max_ordinal, func.get_ordinal());
+		ordinal_base = std::min<uint16_t>(ordinal_base, func.get_ordinal());
 	}
 
 	return std::make_pair(ordinal_base, max_ordinal);
@@ -2016,7 +2022,7 @@ bool pe_base::exported_name_exists(const std::string& function_name, const expor
 }
 
 //Checks if exported function name already exists
-bool pe_base::exported_ordinal_exists(WORD ordinal, const exported_functions_list& exports)
+bool pe_base::exported_ordinal_exists(uint16_t ordinal, const exported_functions_list& exports)
 {
 	for(exported_functions_list::const_iterator it = exports.begin(); it != exports.end(); ++it)
 	{
@@ -2045,37 +2051,37 @@ bool pe_base::ordinal_sorter::operator()(const exported_function& func1, const e
 //Returns new export directory information
 //exported_functions_list is copied intentionally to be sorted by ordinal values later
 //Name ordinals in exported function doesn't matter, they will be recalculated
-const pe_base::image_directory pe_base::rebuild_exports(const export_info& info, exported_functions_list exports, section& exports_section, DWORD offset_from_section_start, bool save_to_pe_header, bool auto_strip_last_section)
+const pe_base::image_directory pe_base::rebuild_exports(const export_info& info, exported_functions_list exports, section& exports_section, uint32_t offset_from_section_start, bool save_to_pe_header, bool auto_strip_last_section)
 {
 	//Check that exports_section is attached to this PE image
 	if(!section_attached(exports_section))
 		throw pe_exception("Exports section must be attached to PE file", pe_exception::section_is_not_attached);
 
 	//Needed space for strings
-	DWORD needed_size_for_strings = static_cast<DWORD>(info.get_name().length() + 1);
-	DWORD number_of_names = 0; //Number of named functions
-	DWORD max_ordinal = 0; //Maximum ordinal number
-	DWORD ordinal_base = static_cast<DWORD>(-1); //Minimum ordinal value
+	uint32_t needed_size_for_strings = static_cast<uint32_t>(info.get_name().length() + 1);
+	uint32_t number_of_names = 0; //Number of named functions
+	uint32_t max_ordinal = 0; //Maximum ordinal number
+	uint32_t ordinal_base = static_cast<uint32_t>(-1); //Minimum ordinal value
 	
 	if(exports.empty())
 		ordinal_base = info.get_ordinal_base();
 
-	DWORD needed_size_for_function_names = 0; //Needed space for function name strings
-	DWORD needed_size_for_function_forwards = 0; //Needed space for function forwards names
+	uint32_t needed_size_for_function_names = 0; //Needed space for function name strings
+	uint32_t needed_size_for_function_forwards = 0; //Needed space for function forwards names
 	
 	//List all exported functions
 	//Calculate needed size for function list
 	{
 		//Also check that there're no duplicate names and ordinals
 		std::set<std::string> used_function_names;
-		std::set<WORD> used_function_ordinals;
+		std::set<uint16_t> used_function_ordinals;
 
 		for(exported_functions_list::const_iterator it = exports.begin(); it != exports.end(); ++it)
 		{
 			const exported_function& func = (*it);
 			//Calculate maximum and minimum ordinal numbers
-			max_ordinal = std::max<DWORD>(max_ordinal, func.get_ordinal());
-			ordinal_base = std::min<DWORD>(ordinal_base, func.get_ordinal());
+			max_ordinal = std::max<uint32_t>(max_ordinal, func.get_ordinal());
+			ordinal_base = std::min<uint32_t>(ordinal_base, func.get_ordinal());
 
 			//Check if ordinal is unique
 			if(!used_function_ordinals.insert(func.get_ordinal()).second)
@@ -2085,7 +2091,7 @@ const pe_base::image_directory pe_base::rebuild_exports(const export_info& info,
 			{
 				//If function is named
 				++number_of_names;
-				needed_size_for_function_names += static_cast<DWORD>(func.get_name().length() + 1);
+				needed_size_for_function_names += static_cast<uint32_t>(func.get_name().length() + 1);
 				
 				//Check if it's name and name ordinal are unique
 				if(!used_function_names.insert(func.get_name()).second)
@@ -2094,7 +2100,7 @@ const pe_base::image_directory pe_base::rebuild_exports(const export_info& info,
 
 			//If function is forwarded to another DLL
 			if(func.is_forwarded())
-				needed_size_for_function_forwards += static_cast<DWORD>(func.get_forwarded_name().length() + 1);
+				needed_size_for_function_forwards += static_cast<uint32_t>(func.get_forwarded_name().length() + 1);
 		}
 	}
 	
@@ -2104,13 +2110,13 @@ const pe_base::image_directory pe_base::rebuild_exports(const export_info& info,
 	//Calculate needed space for different things...
 	needed_size_for_strings += needed_size_for_function_names;
 	needed_size_for_strings += needed_size_for_function_forwards;
-	DWORD needed_size_for_function_name_ordinals = number_of_names * sizeof(WORD);
-	DWORD needed_size_for_function_name_rvas = number_of_names * sizeof(DWORD);
-	DWORD needed_size_for_function_addresses = (max_ordinal - ordinal_base + 1) * sizeof(DWORD);
+	uint32_t needed_size_for_function_name_ordinals = number_of_names * sizeof(uint16_t);
+	uint32_t needed_size_for_function_name_rvas = number_of_names * sizeof(uint32_t);
+	uint32_t needed_size_for_function_addresses = (max_ordinal - ordinal_base + 1) * sizeof(uint32_t);
 	
-	DWORD needed_size = sizeof(IMAGE_EXPORT_DIRECTORY) + sizeof(DWORD); //Calculate needed size for export tables and strings
+	uint32_t needed_size = sizeof(image_export_directory) + sizeof(uint32_t); //Calculate needed size for export tables and strings
 	//sizeof(IMAGE_EXPORT_DIRECTORY) = export directory header
-	//sizeof(DWORD) = for DWORD alignment
+	//sizeof(uint32_t) = for DWORD alignment
 
 	//Total needed space...
 	needed_size += needed_size_for_function_name_ordinals; //For list of names ordinals
@@ -2130,21 +2136,21 @@ const pe_base::image_directory pe_base::rebuild_exports(const export_info& info,
 		raw_data.resize(needed_size + offset_from_section_start); //Expand section raw data
 
 	//Export directory header will be placed first
-	DWORD directory_pos = align_up(offset_from_section_start, sizeof(DWORD));
+	uint32_t directory_pos = align_up(offset_from_section_start, sizeof(uint32_t));
 	//Library name will be placed after it
-	DWORD current_pos_of_function_names = static_cast<DWORD>(info.get_name().length() + 1 + directory_pos + sizeof(IMAGE_EXPORT_DIRECTORY));
+	uint32_t current_pos_of_function_names = static_cast<uint32_t>(info.get_name().length() + 1 + directory_pos + sizeof(image_export_directory));
 	//Next - function names
-	DWORD current_pos_of_function_name_ordinals = current_pos_of_function_names + needed_size_for_function_names;
+	uint32_t current_pos_of_function_name_ordinals = current_pos_of_function_names + needed_size_for_function_names;
 	//Next - function name ordinals
-	DWORD current_pos_of_function_forwards = current_pos_of_function_name_ordinals + needed_size_for_function_name_ordinals;
+	uint32_t current_pos_of_function_forwards = current_pos_of_function_name_ordinals + needed_size_for_function_name_ordinals;
 	//Finally - function addresses
-	DWORD current_pos_of_function_addresses = current_pos_of_function_forwards + needed_size_for_function_forwards;
+	uint32_t current_pos_of_function_addresses = current_pos_of_function_forwards + needed_size_for_function_forwards;
 	//Next - function names RVAs
-	DWORD current_pos_of_function_names_rvas = current_pos_of_function_addresses + needed_size_for_function_addresses;
+	uint32_t current_pos_of_function_names_rvas = current_pos_of_function_addresses + needed_size_for_function_addresses;
 
 	{
 		//Create export directory and fill it
-		IMAGE_EXPORT_DIRECTORY dir = {0};
+		image_export_directory dir = {0};
 		dir.Characteristics = info.get_characteristics();
 		dir.MajorVersion = info.get_major_version();
 		dir.MinorVersion = info.get_minor_version();
@@ -2155,20 +2161,20 @@ const pe_base::image_directory pe_base::rebuild_exports(const export_info& info,
 		dir.AddressOfFunctions = rva_from_section_offset(exports_section, current_pos_of_function_addresses);
 		dir.AddressOfNameOrdinals = rva_from_section_offset(exports_section, current_pos_of_function_name_ordinals);
 		dir.AddressOfNames = rva_from_section_offset(exports_section, current_pos_of_function_names_rvas);
-		dir.Name = rva_from_section_offset(exports_section, directory_pos + sizeof(IMAGE_EXPORT_DIRECTORY));
+		dir.Name = rva_from_section_offset(exports_section, directory_pos + sizeof(image_export_directory));
 
 		//Save it
 		memcpy(&raw_data[directory_pos], &dir, sizeof(dir));
 	}
 
 	//Sve library name
-	memcpy(&raw_data[directory_pos + sizeof(IMAGE_EXPORT_DIRECTORY)], info.get_name().c_str(), info.get_name().length() + 1);
+	memcpy(&raw_data[directory_pos + sizeof(image_export_directory)], info.get_name().c_str(), info.get_name().length() + 1);
 
 	//A map to sort function names alphabetically
-	typedef std::map<std::string, WORD> funclist; //function name; function name ordinal
+	typedef std::map<std::string, uint16_t> funclist; //function name; function name ordinal
 	funclist funcs;
 
-	DWORD last_ordinal = ordinal_base;
+	uint32_t last_ordinal = ordinal_base;
 	//Enumerate all exported functions
 	for(exported_functions_list::const_iterator it = exports.begin(); it != exports.end(); ++it)
 	{
@@ -2178,7 +2184,7 @@ const pe_base::image_directory pe_base::rebuild_exports(const export_info& info,
 		if(func.get_ordinal() > last_ordinal)
 		{
 			//Fill this function RVAs data with zeros
-			DWORD len = sizeof(DWORD) * (func.get_ordinal() - last_ordinal - 1);
+			uint32_t len = sizeof(uint32_t) * (func.get_ordinal() - last_ordinal - 1);
 			if(len)
 			{
 				memset(&raw_data[current_pos_of_function_addresses], 0, len);
@@ -2191,23 +2197,23 @@ const pe_base::image_directory pe_base::rebuild_exports(const export_info& info,
 		
 		//If function is named, save its name ordinal and name in sorted alphabetically order
 		if(func.has_name())
-			funcs.insert(std::make_pair(func.get_name(), static_cast<WORD>(func.get_ordinal() - ordinal_base))); //Calculate name ordinal
+			funcs.insert(std::make_pair(func.get_name(), static_cast<uint16_t>(func.get_ordinal() - ordinal_base))); //Calculate name ordinal
 
 		//If function is forwarded to another DLL
 		if(func.is_forwarded())
 		{
 			//Write its forwarded name and its RVA
-			DWORD function_rva = rva_from_section_offset(exports_section, current_pos_of_function_forwards);
+			uint32_t function_rva = rva_from_section_offset(exports_section, current_pos_of_function_forwards);
 			memcpy(&raw_data[current_pos_of_function_addresses], &function_rva, sizeof(function_rva));
 			current_pos_of_function_addresses += sizeof(function_rva);
 
 			memcpy(&raw_data[current_pos_of_function_forwards], func.get_forwarded_name().c_str(), func.get_forwarded_name().length() + 1);
-			current_pos_of_function_forwards += static_cast<DWORD>(func.get_forwarded_name().length() + 1);
+			current_pos_of_function_forwards += static_cast<uint32_t>(func.get_forwarded_name().length() + 1);
 		}
 		else
 		{
 			//Write actual function RVA
-			DWORD function_rva = func.get_rva();
+			uint32_t function_rva = func.get_rva();
 			memcpy(&raw_data[current_pos_of_function_addresses], &function_rva, sizeof(function_rva));
 			current_pos_of_function_addresses += sizeof(function_rva);
 		}
@@ -2217,16 +2223,16 @@ const pe_base::image_directory pe_base::rebuild_exports(const export_info& info,
 	for(funclist::const_iterator it = funcs.begin(); it != funcs.end(); ++it)
 	{
 		//Save function name RVA
-		DWORD function_name_rva = rva_from_section_offset(exports_section, current_pos_of_function_names);
+		uint32_t function_name_rva = rva_from_section_offset(exports_section, current_pos_of_function_names);
 		memcpy(&raw_data[current_pos_of_function_names_rvas], &function_name_rva, sizeof(function_name_rva));
 		current_pos_of_function_names_rvas += sizeof(function_name_rva);
 
 		//Save function name
 		memcpy(&raw_data[current_pos_of_function_names], (*it).first.c_str(), (*it).first.length() + 1);
-		current_pos_of_function_names += static_cast<DWORD>((*it).first.length() + 1);
+		current_pos_of_function_names += static_cast<uint32_t>((*it).first.length() + 1);
 
 		//Save function name ordinal
-		WORD name_ordinal = (*it).second;
+		uint16_t name_ordinal = (*it).second;
 		memcpy(&raw_data[current_pos_of_function_name_ordinals], &name_ordinal, sizeof(name_ordinal));
 		current_pos_of_function_name_ordinals += sizeof(name_ordinal);
 	}
@@ -2239,8 +2245,8 @@ const pe_base::image_directory pe_base::rebuild_exports(const export_info& info,
 	//If auto-rewrite of PE headers is required
 	if(save_to_pe_header)
 	{
-		set_directory_rva(IMAGE_DIRECTORY_ENTRY_EXPORT, ret.get_rva());
-		set_directory_size(IMAGE_DIRECTORY_ENTRY_EXPORT, ret.get_size());
+		set_directory_rva(image_directory_entry_export, ret.get_rva());
+		set_directory_size(image_directory_entry_export, ret.get_size());
 	}
 
 	return ret;
@@ -2266,7 +2272,7 @@ pe_base::import_rebuilder_settings::import_rebuilder_settings(bool set_to_pe_hea
 {}
 
 //Returns offset from section start where import directory data will be placed
-DWORD pe_base::import_rebuilder_settings::get_offset_from_section_start() const
+uint32_t pe_base::import_rebuilder_settings::get_offset_from_section_start() const
 {
 	return offset_from_section_start_;
 }
@@ -2318,7 +2324,7 @@ bool pe_base::import_rebuilder_settings::auto_strip_last_section_enabled() const
 }
 
 //Sets offset from section start where import directory data will be placed
-void pe_base::import_rebuilder_settings::set_offset_from_section_start(DWORD offset)
+void pe_base::import_rebuilder_settings::set_offset_from_section_start(uint32_t offset)
 {
 	offset_from_section_start_ = offset;
 }
@@ -2383,19 +2389,19 @@ bool pe_base::imported_function::has_name() const
 }
 
 //Returns hint
-WORD pe_base::imported_function::get_hint() const
+uint16_t pe_base::imported_function::get_hint() const
 {
 	return hint_;
 }
 
 //Returns ordinal of function
-WORD pe_base::imported_function::get_ordinal() const
+uint16_t pe_base::imported_function::get_ordinal() const
 {
 	return ordinal_;
 }
 
 //Returns IAT entry VA (usable if image has both IAT and original IAT and is bound)
-ULONGLONG pe_base::imported_function::get_iat_va() const
+uint64_t pe_base::imported_function::get_iat_va() const
 {
 	return iat_va_;
 }
@@ -2407,19 +2413,19 @@ void pe_base::imported_function::set_name(const std::string& name)
 }
 
 //Sets hint
-void pe_base::imported_function::set_hint(WORD hint)
+void pe_base::imported_function::set_hint(uint16_t hint)
 {
 	hint_ = hint;
 }
 
 //Sets ordinal
-void pe_base::imported_function::set_ordinal(WORD ordinal)
+void pe_base::imported_function::set_ordinal(uint16_t ordinal)
 {
 	ordinal_ = ordinal;
 }
 
 //Sets IAT entry VA (usable if image has both IAT and original IAT and is bound)
-void pe_base::imported_function::set_iat_va(ULONGLONG va)
+void pe_base::imported_function::set_iat_va(uint64_t va)
 {
 	iat_va_ = va;
 }
@@ -2436,19 +2442,19 @@ const std::string& pe_base::import_library::get_name() const
 }
 
 //Returns RVA to Import Address Table (IAT)
-DWORD pe_base::import_library::get_rva_to_iat() const
+uint32_t pe_base::import_library::get_rva_to_iat() const
 {
 	return rva_to_iat_;
 }
 
 //Returns RVA to Original Import Address Table (Original IAT)
-DWORD pe_base::import_library::get_rva_to_original_iat() const
+uint32_t pe_base::import_library::get_rva_to_original_iat() const
 {
 	return rva_to_original_iat_;
 }
 
 //Returns timestamp
-DWORD pe_base::import_library::get_timestamp() const
+uint32_t pe_base::import_library::get_timestamp() const
 {
 	return timestamp_;
 }
@@ -2460,19 +2466,19 @@ void pe_base::import_library::set_name(const std::string& name)
 }
 
 //Sets RVA to Import Address Table (IAT)
-void pe_base::import_library::set_rva_to_iat(DWORD rva_to_iat)
+void pe_base::import_library::set_rva_to_iat(uint32_t rva_to_iat)
 {
 	rva_to_iat_ = rva_to_iat;
 }
 
 //Sets RVA to Original Import Address Table (Original IAT)
-void pe_base::import_library::set_rva_to_original_iat(DWORD rva_to_original_iat)
+void pe_base::import_library::set_rva_to_original_iat(uint32_t rva_to_original_iat)
 {
 	rva_to_original_iat_ = rva_to_original_iat;
 }
 
 //Sets timestamp
-void pe_base::import_library::set_timestamp(DWORD timestamp)
+void pe_base::import_library::set_timestamp(uint32_t timestamp)
 {
 	timestamp_ = timestamp;
 }
@@ -2502,47 +2508,47 @@ pe_base::relocation_entry::relocation_entry()
 {}
 
 //Constructor from relocation item (WORD)
-pe_base::relocation_entry::relocation_entry(WORD relocation_value)
+pe_base::relocation_entry::relocation_entry(uint16_t relocation_value)
 	:rva_(relocation_value & ((1 << 12) - 1)), type_(relocation_value >> 12)
 {}
 
 //Constructor from relative rva and relocation type
-pe_base::relocation_entry::relocation_entry(WORD rrva, WORD type)
+pe_base::relocation_entry::relocation_entry(uint16_t rrva, uint16_t type)
 	:rva_(rrva), type_(type)
 {}
 
 //Returns RVA of relocation
-WORD pe_base::relocation_entry::get_rva() const
+uint16_t pe_base::relocation_entry::get_rva() const
 {
 	return rva_;
 }
 
 //Returns type of relocation
-WORD pe_base::relocation_entry::get_type() const
+uint16_t pe_base::relocation_entry::get_type() const
 {
 	return type_;
 }
 
 //Sets RVA of relocation
-void pe_base::relocation_entry::set_rva(WORD rva)
+void pe_base::relocation_entry::set_rva(uint16_t rva)
 {
 	rva_ = rva;
 }
 
 //Sets type of relocation
-void pe_base::relocation_entry::set_type(WORD type)
+void pe_base::relocation_entry::set_type(uint16_t type)
 {
 	type_ = type;
 }
 
 //Returns relocation item (rrva + type)
-WORD pe_base::relocation_entry::get_item() const
+uint16_t pe_base::relocation_entry::get_item() const
 {
 	return rva_ | (type_ << 12);
 }
 
 //Sets relocation item (rrva + type)
-void pe_base::relocation_entry::set_item(WORD item)
+void pe_base::relocation_entry::set_item(uint16_t item)
 {
 	rva_ = item & ((1 << 12) - 1);
 	type_ = item >> 12;
@@ -2566,18 +2572,18 @@ pe_base::relocation_table::relocation_table()
 {}
 
 //Constructor from RVA of relocation table
-pe_base::relocation_table::relocation_table(DWORD rva)
+pe_base::relocation_table::relocation_table(uint32_t rva)
 	:rva_(rva)
 {}
 
 //Returns RVA of block
-DWORD pe_base::relocation_table::get_rva() const
+uint32_t pe_base::relocation_table::get_rva() const
 {
 	return rva_;
 }
 
 //Sets RVA of block
-void pe_base::relocation_table::set_rva(DWORD rva)
+void pe_base::relocation_table::set_rva(uint32_t rva)
 {
 	rva_ = rva;
 }
@@ -2589,7 +2595,7 @@ pe_base::relocation_table::relocation_list& pe_base::relocation_table::get_reloc
 }
 
 //Get relocation list of pe file, supports one-word sized relocations only
-	//If list_absolute_entries = true, IMAGE_REL_BASED_ABSOLUTE will be listed
+//If list_absolute_entries = true, IMAGE_REL_BASED_ABSOLUTE will be listed
 const pe_base::relocation_table_list pe_base::get_relocations(bool list_absolute_entries) const
 {
 	relocation_table_list ret;
@@ -2599,17 +2605,17 @@ const pe_base::relocation_table_list pe_base::get_relocations(bool list_absolute
 		return ret;
 
 	//Check the length in bytes of the section containing relocation directory
-	if(section_data_length_from_rva(get_directory_rva(IMAGE_DIRECTORY_ENTRY_BASERELOC), get_directory_rva(IMAGE_DIRECTORY_ENTRY_BASERELOC), section_data_virtual, true) < sizeof(IMAGE_BASE_RELOCATION))
+	if(section_data_length_from_rva(get_directory_rva(image_directory_entry_basereloc), get_directory_rva(image_directory_entry_basereloc), section_data_virtual, true) < sizeof(image_base_relocation))
 		throw pe_exception("Incorrect relocation directory", pe_exception::incorrect_relocation_directory);
 
-	unsigned long current_pos = get_directory_rva(IMAGE_DIRECTORY_ENTRY_BASERELOC);
+	unsigned long current_pos = get_directory_rva(image_directory_entry_basereloc);
 	//First IMAGE_BASE_RELOCATION table
-	IMAGE_BASE_RELOCATION reloc_table = section_data_from_rva<IMAGE_BASE_RELOCATION>(current_pos, section_data_virtual, true);
+	image_base_relocation reloc_table = section_data_from_rva<image_base_relocation>(current_pos, section_data_virtual, true);
 
 	if(reloc_table.SizeOfBlock % 2)
 		throw pe_exception("Incorrect relocation directory", pe_exception::incorrect_relocation_directory);
 
-	unsigned long reloc_size = get_directory_size(IMAGE_DIRECTORY_ENTRY_BASERELOC);
+	unsigned long reloc_size = get_directory_size(image_directory_entry_basereloc);
 	unsigned long read_size = 0;
 
 	//reloc_table.VirtualAddress is not checked (not so important)
@@ -2624,10 +2630,10 @@ const pe_base::relocation_table_list pe_base::get_relocations(bool list_absolute
 			throw pe_exception("Incorrect relocation directory", pe_exception::incorrect_relocation_directory);
 
 		//List all relocations
-		for(unsigned long i = sizeof(IMAGE_BASE_RELOCATION); i < reloc_table.SizeOfBlock; i += sizeof(WORD))
+		for(unsigned long i = sizeof(image_base_relocation); i < reloc_table.SizeOfBlock; i += sizeof(uint16_t))
 		{
-			relocation_entry entry(section_data_from_rva<WORD>(current_pos + i, section_data_virtual, true));
-			if(list_absolute_entries || entry.get_type() != IMAGE_REL_BASED_ABSOLUTE)
+			relocation_entry entry(section_data_from_rva<uint16_t>(current_pos + i, section_data_virtual, true));
+			if(list_absolute_entries || entry.get_type() != image_rel_based_absolute)
 				table.add_relocation(entry);
 		}
 
@@ -2640,7 +2646,7 @@ const pe_base::relocation_table_list pe_base::get_relocations(bool list_absolute
 
 		current_pos += reloc_table.SizeOfBlock;
 		read_size += reloc_table.SizeOfBlock;
-		reloc_table = section_data_from_rva<IMAGE_BASE_RELOCATION>(current_pos, section_data_virtual, true);
+		reloc_table = section_data_from_rva<image_base_relocation>(current_pos, section_data_virtual, true);
 	}
 
 	return ret;
@@ -2652,26 +2658,26 @@ const pe_base::relocation_table_list pe_base::get_relocations(bool list_absolute
 //auto_strip_last_section - if true and relocations are placed in the last section, it will be automatically stripped
 //offset_from_section_start - offset from the beginning of reloc_section, where relocations data will be situated
 //If save_to_pe_header is true, PE header will be modified automatically
-const pe_base::image_directory pe_base::rebuild_relocations(const relocation_table_list& relocs, section& reloc_section, DWORD offset_from_section_start, bool save_to_pe_header, bool auto_strip_last_section)
+const pe_base::image_directory pe_base::rebuild_relocations(const relocation_table_list& relocs, section& reloc_section, uint32_t offset_from_section_start, bool save_to_pe_header, bool auto_strip_last_section)
 {
 	//Check that reloc_section is attached to this PE image
 	if(!section_attached(reloc_section))
 		throw pe_exception("Relocations section must be attached to PE file", pe_exception::section_is_not_attached);
 	
-	DWORD current_reloc_data_pos = align_up(offset_from_section_start, sizeof(DWORD));
+	uint32_t current_reloc_data_pos = align_up(offset_from_section_start, sizeof(uint32_t));
 
-	DWORD needed_size = current_reloc_data_pos - offset_from_section_start; //Calculate needed size for relocation tables
-	DWORD size_delta = needed_size;
+	uint32_t needed_size = current_reloc_data_pos - offset_from_section_start; //Calculate needed size for relocation tables
+	uint32_t size_delta = needed_size;
 
-	DWORD start_reloc_pos = current_reloc_data_pos;
+	uint32_t start_reloc_pos = current_reloc_data_pos;
 
 	//Enumerate relocation tables
 	for(relocation_table_list::const_iterator it = relocs.begin(); it != relocs.end(); ++it)
 	{
-		needed_size += static_cast<DWORD>((*it).get_relocations().size() * sizeof(WORD) /* relocations */ + sizeof(IMAGE_BASE_RELOCATION) /* table header */);
+		needed_size += static_cast<uint32_t>((*it).get_relocations().size() * sizeof(uint16_t) /* relocations */ + sizeof(image_base_relocation) /* table header */);
 		//End of each table will be DWORD-aligned
-		if((start_reloc_pos + needed_size - size_delta) % sizeof(DWORD))
-			needed_size += sizeof(WORD); //Align it with IMAGE_REL_BASED_ABSOLUTE relocation
+		if((start_reloc_pos + needed_size - size_delta) % sizeof(uint32_t))
+			needed_size += sizeof(uint16_t); //Align it with IMAGE_REL_BASED_ABSOLUTE relocation
 	}
 
 	//Check if reloc_section is last one. If it's not, check if there's enough place for relocations data
@@ -2689,12 +2695,12 @@ const pe_base::image_directory pe_base::rebuild_relocations(const relocation_tab
 	for(relocation_table_list::const_iterator it = relocs.begin(); it != relocs.end(); ++it)
 	{
 		//Create relocation table header
-		IMAGE_BASE_RELOCATION reloc;
+		image_base_relocation reloc;
 		reloc.VirtualAddress = (*it).get_rva();
 		const relocation_table::relocation_list& reloc_list = (*it).get_relocations();
-		reloc.SizeOfBlock = static_cast<DWORD>(sizeof(IMAGE_BASE_RELOCATION) + sizeof(WORD) * reloc_list.size());
-		if((reloc_list.size() * sizeof(WORD)) % sizeof(DWORD)) //If we must align end of relocation table
-			reloc.SizeOfBlock += sizeof(WORD);
+		reloc.SizeOfBlock = static_cast<uint32_t>(sizeof(image_base_relocation) + sizeof(uint16_t) * reloc_list.size());
+		if((reloc_list.size() * sizeof(uint16_t)) % sizeof(uint32_t)) //If we must align end of relocation table
+			reloc.SizeOfBlock += sizeof(uint16_t);
 
 		memcpy(&raw_data[current_reloc_data_pos], &reloc, sizeof(reloc));
 		current_reloc_data_pos += sizeof(reloc);
@@ -2703,15 +2709,15 @@ const pe_base::image_directory pe_base::rebuild_relocations(const relocation_tab
 		for(relocation_table::relocation_list::const_iterator r = reloc_list.begin(); r != reloc_list.end(); ++r)
 		{
 			//Save relocations
-			WORD reloc_value = (*r).get_item();
+			uint16_t reloc_value = (*r).get_item();
 			memcpy(&raw_data[current_reloc_data_pos], &reloc_value, sizeof(reloc_value));
 			current_reloc_data_pos += sizeof(reloc_value);
 		}
 
-		if(current_reloc_data_pos % sizeof(DWORD)) //If end of table is not DWORD-aligned
+		if(current_reloc_data_pos % sizeof(uint32_t)) //If end of table is not DWORD-aligned
 		{
-			memset(&raw_data[current_reloc_data_pos], 0, sizeof(WORD)); //Align it with IMAGE_REL_BASED_ABSOLUTE relocation
-			current_reloc_data_pos += sizeof(WORD);
+			memset(&raw_data[current_reloc_data_pos], 0, sizeof(uint16_t)); //Align it with IMAGE_REL_BASED_ABSOLUTE relocation
+			current_reloc_data_pos += sizeof(uint16_t);
 		}
 	}
 
@@ -2723,11 +2729,11 @@ const pe_base::image_directory pe_base::rebuild_relocations(const relocation_tab
 	//If auto-rewrite of PE headers is required
 	if(save_to_pe_header)
 	{
-		set_directory_rva(IMAGE_DIRECTORY_ENTRY_BASERELOC, ret.get_rva());
-		set_directory_size(IMAGE_DIRECTORY_ENTRY_BASERELOC, ret.get_size());
+		set_directory_rva(image_directory_entry_basereloc, ret.get_rva());
+		set_directory_size(image_directory_entry_basereloc, ret.get_size());
 
-		clear_characteristics_flags(IMAGE_FILE_RELOCS_STRIPPED);
-		set_dll_characteristics(get_dll_characteristics() | IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE);
+		clear_characteristics_flags(image_file_relocs_stripped);
+		set_dll_characteristics(get_dll_characteristics() | image_dllcharacteristics_dynamic_base);
 	}
 
 	return ret;
@@ -2742,37 +2748,37 @@ pe_base::tls_info::tls_info()
 {}
 
 //Returns start RVA of TLS raw data
-DWORD pe_base::tls_info::get_raw_data_start_rva() const
+uint32_t pe_base::tls_info::get_raw_data_start_rva() const
 {
 	return start_rva_;
 }
 
 //Returns end RVA of TLS raw data
-DWORD pe_base::tls_info::get_raw_data_end_rva() const
+uint32_t pe_base::tls_info::get_raw_data_end_rva() const
 {
 	return end_rva_;
 }
 
 //Returns TLS index RVA
-DWORD pe_base::tls_info::get_index_rva() const
+uint32_t pe_base::tls_info::get_index_rva() const
 {
 	return index_rva_;
 }
 
 //Returns TLS callbacks RVA
-DWORD pe_base::tls_info::get_callbacks_rva() const
+uint32_t pe_base::tls_info::get_callbacks_rva() const
 {
 	return callbacks_rva_;
 }
 
 //Returns size of zero fill
-DWORD pe_base::tls_info::get_size_of_zero_fill() const
+uint32_t pe_base::tls_info::get_size_of_zero_fill() const
 {
 	return size_of_zero_fill_;
 }
 
 //Returns characteristics
-DWORD pe_base::tls_info::get_characteristics() const
+uint32_t pe_base::tls_info::get_characteristics() const
 {
 	return characteristics_;
 }
@@ -2796,7 +2802,7 @@ pe_base::tls_info::tls_callback_list& pe_base::tls_info::get_tls_callbacks()
 }
 
 //Adds TLS callback
-void pe_base::tls_info::add_tls_callback(DWORD rva)
+void pe_base::tls_info::add_tls_callback(uint32_t rva)
 {
 	callbacks_.push_back(rva);
 }
@@ -2810,41 +2816,41 @@ void pe_base::tls_info::clear_tls_callbacks()
 //Recalculates end address of raw TLS data
 void pe_base::tls_info::recalc_raw_data_end_rva()
 {
-	end_rva_ = static_cast<DWORD>(start_rva_ + raw_data_.length());
+	end_rva_ = static_cast<uint32_t>(start_rva_ + raw_data_.length());
 }
 
 //Sets start RVA of TLS raw data
-void pe_base::tls_info::set_raw_data_start_rva(DWORD rva)
+void pe_base::tls_info::set_raw_data_start_rva(uint32_t rva)
 {
 	start_rva_ = rva;
 }
 
 //Sets end RVA of TLS raw data
-void pe_base::tls_info::set_raw_data_end_rva(DWORD rva)
+void pe_base::tls_info::set_raw_data_end_rva(uint32_t rva)
 {
 	end_rva_ = rva;
 }
 
 //Sets TLS index RVA
-void pe_base::tls_info::set_index_rva(DWORD rva)
+void pe_base::tls_info::set_index_rva(uint32_t rva)
 {
 	index_rva_ = rva;
 }
 
 //Sets TLS callbacks RVA
-void pe_base::tls_info::set_callbacks_rva(DWORD rva)
+void pe_base::tls_info::set_callbacks_rva(uint32_t rva)
 {
 	callbacks_rva_ = rva;
 }
 
 //Sets size of zero fill
-void pe_base::tls_info::set_size_of_zero_fill(DWORD size)
+void pe_base::tls_info::set_size_of_zero_fill(uint32_t size)
 {
 	size_of_zero_fill_ = size;
 }
 
 //Sets characteristics
-void pe_base::tls_info::set_characteristics(DWORD characteristics)
+void pe_base::tls_info::set_characteristics(uint32_t characteristics)
 {
 	characteristics_ = characteristics;
 }
@@ -2896,115 +2902,115 @@ pe_base::image_config_info::image_config_info(const ConfigStructure& info)
 {}
 
 //Instantiate template constructor with needed structures
-template pe_base::image_config_info::image_config_info(const IMAGE_LOAD_CONFIG_DIRECTORY32& info);
-template pe_base::image_config_info::image_config_info(const IMAGE_LOAD_CONFIG_DIRECTORY64& info);
+template pe_base::image_config_info::image_config_info(const image_load_config_directory32& info);
+template pe_base::image_config_info::image_config_info(const image_load_config_directory64& info);
 
 //Returns the date and time stamp value
-DWORD pe_base::image_config_info::get_time_stamp() const
+uint32_t pe_base::image_config_info::get_time_stamp() const
 {
 	return time_stamp_;
 }
 
 //Returns major version number
-WORD pe_base::image_config_info::get_major_version() const
+uint16_t pe_base::image_config_info::get_major_version() const
 {
 	return major_version_;
 }
 
 //Returns minor version number
-WORD pe_base::image_config_info::get_minor_version() const
+uint16_t pe_base::image_config_info::get_minor_version() const
 {
 	return minor_version_;
 }
 
 //Returns clear global flags
-DWORD pe_base::image_config_info::get_global_flags_clear() const
+uint32_t pe_base::image_config_info::get_global_flags_clear() const
 {
 	return global_flags_clear_;
 }
 
 //Returns set global flags
-DWORD pe_base::image_config_info::get_global_flags_set() const
+uint32_t pe_base::image_config_info::get_global_flags_set() const
 {
 	return global_flags_set_;
 }
 
 //Returns critical section default timeout
-DWORD pe_base::image_config_info::get_critical_section_default_timeout() const
+uint32_t pe_base::image_config_info::get_critical_section_default_timeout() const
 {
 	return critical_section_default_timeout_;
 }
 
 //Get the size of the minimum block that
 //must be freed before it is freed (de-committed), in bytes
-ULONGLONG pe_base::image_config_info::get_decommit_free_block_threshold() const
+uint64_t pe_base::image_config_info::get_decommit_free_block_threshold() const
 {
 	return decommit_free_block_threshold_;
 }
 
 //Returns the size of the minimum total memory
 //that must be freed in the process heap before it is freed (de-committed), in bytes
-ULONGLONG pe_base::image_config_info::get_decommit_total_free_threshold() const
+uint64_t pe_base::image_config_info::get_decommit_total_free_threshold() const
 {
 	return decommit_total_free_threshold_;
 }
 
 //Returns VA of a list of addresses where the LOCK prefix is used
-ULONGLONG pe_base::image_config_info::get_lock_prefix_table_va() const
+uint64_t pe_base::image_config_info::get_lock_prefix_table_va() const
 {
 	return lock_prefix_table_va_;
 }
 
 //Returns the maximum allocation size, in bytes
-ULONGLONG pe_base::image_config_info::get_max_allocation_size() const
+uint64_t pe_base::image_config_info::get_max_allocation_size() const
 {
 	return max_allocation_size_;
 }
 
 //Returns the maximum block size that can be allocated from heap segments, in bytes
-ULONGLONG pe_base::image_config_info::get_virtual_memory_threshold() const
+uint64_t pe_base::image_config_info::get_virtual_memory_threshold() const
 {
 	return virtual_memory_threshold_;
 }
 
 //Returns process affinity mask
-ULONGLONG pe_base::image_config_info::get_process_affinity_mask() const
+uint64_t pe_base::image_config_info::get_process_affinity_mask() const
 {
 	return process_affinity_mask_;
 }
 
 //Returns process heap flags
-DWORD pe_base::image_config_info::get_process_heap_flags() const
+uint32_t pe_base::image_config_info::get_process_heap_flags() const
 {
 	return process_heap_flags_;
 }
 
 //Returns service pack version (CSDVersion)
-WORD pe_base::image_config_info::get_service_pack_version() const
+uint16_t pe_base::image_config_info::get_service_pack_version() const
 {
 	return service_pack_version_;
 }
 
 //Returns VA of edit list (reserved by system)
-ULONGLONG pe_base::image_config_info::get_edit_list_va() const
+uint64_t pe_base::image_config_info::get_edit_list_va() const
 {
 	return edit_list_va_;
 }
 
 //Returns a pointer to a cookie that is used by Visual C++ or GS implementation
-ULONGLONG pe_base::image_config_info::get_security_cookie_va() const
+uint64_t pe_base::image_config_info::get_security_cookie_va() const
 {
 	return security_cookie_va_;
 }
 
 //Returns VA of the sorted table of RVAs of each valid, unique handler in the image
-ULONGLONG pe_base::image_config_info::get_se_handler_table_va() const
+uint64_t pe_base::image_config_info::get_se_handler_table_va() const
 {
 	return se_handler_table_va_;
 }
 
 //Returns the count of unique handlers in the table
-ULONGLONG pe_base::image_config_info::get_se_handler_count() const
+uint64_t pe_base::image_config_info::get_se_handler_count() const
 {
 	return se_handler_count_;
 }
@@ -3022,7 +3028,7 @@ const pe_base::image_config_info::lock_prefix_rva_list& pe_base::image_config_in
 }
 
 //Adds SE Handler RVA to list
-void pe_base::image_config_info::add_se_handler_rva(DWORD rva)
+void pe_base::image_config_info::add_se_handler_rva(uint32_t rva)
 {
 	se_handlers_.push_back(rva);
 }
@@ -3034,7 +3040,7 @@ void pe_base::image_config_info::clear_se_handler_list()
 }
 
 //Adds Lock Prefix RVA to list
-void pe_base::image_config_info::add_lock_prefix_rva(DWORD rva)
+void pe_base::image_config_info::add_lock_prefix_rva(uint32_t rva)
 {
 	lock_prefixes_.push_back(rva);
 }
@@ -3046,107 +3052,107 @@ void pe_base::image_config_info::clear_lock_prefix_list()
 }
 
 //Sets the date and time stamp value
-void pe_base::image_config_info::set_time_stamp(DWORD time_stamp)
+void pe_base::image_config_info::set_time_stamp(uint32_t time_stamp)
 {
 	time_stamp_ = time_stamp;
 }
 
 //Sets major version number
-void pe_base::image_config_info::set_major_version(WORD major_version)
+void pe_base::image_config_info::set_major_version(uint16_t major_version)
 {
 	major_version_ = major_version;
 }
 
 //Sets minor version number
-void pe_base::image_config_info::set_minor_version(WORD minor_version)
+void pe_base::image_config_info::set_minor_version(uint16_t minor_version)
 {
 	minor_version_ = minor_version;
 }
 
 //Sets clear global flags
-void pe_base::image_config_info::set_global_flags_clear(DWORD global_flags_clear)
+void pe_base::image_config_info::set_global_flags_clear(uint32_t global_flags_clear)
 {
 	global_flags_clear_ = global_flags_clear;
 }
 
 //Sets set global flags
-void pe_base::image_config_info::set_global_flags_set(DWORD global_flags_set)
+void pe_base::image_config_info::set_global_flags_set(uint32_t global_flags_set)
 {
 	global_flags_set_ = global_flags_set;
 }
 
 //Sets critical section default timeout
-void pe_base::image_config_info::set_critical_section_default_timeout(DWORD critical_section_default_timeout)
+void pe_base::image_config_info::set_critical_section_default_timeout(uint32_t critical_section_default_timeout)
 {
 	critical_section_default_timeout_ = critical_section_default_timeout;
 }
 
 //Sets the size of the minimum block that
 //must be freed before it is freed (de-committed), in bytes
-void pe_base::image_config_info::set_decommit_free_block_threshold(ULONGLONG decommit_free_block_threshold)
+void pe_base::image_config_info::set_decommit_free_block_threshold(uint64_t decommit_free_block_threshold)
 {
 	decommit_free_block_threshold_ = decommit_free_block_threshold;
 }
 
 //Sets the size of the minimum total memory
 //that must be freed in the process heap before it is freed (de-committed), in bytes
-void pe_base::image_config_info::set_decommit_total_free_threshold(ULONGLONG decommit_total_free_threshold)
+void pe_base::image_config_info::set_decommit_total_free_threshold(uint64_t decommit_total_free_threshold)
 {
 	decommit_total_free_threshold_ = decommit_total_free_threshold;
 }
 
 //Sets VA of a list of addresses where the LOCK prefix is used
 //If you rebuild this list, VA will be re-assigned automatically
-void pe_base::image_config_info::set_lock_prefix_table_va(ULONGLONG lock_prefix_table_va)
+void pe_base::image_config_info::set_lock_prefix_table_va(uint64_t lock_prefix_table_va)
 {
 	lock_prefix_table_va_ = lock_prefix_table_va;
 }
 
 //Sets the maximum allocation size, in bytes
-void pe_base::image_config_info::set_max_allocation_size(ULONGLONG max_allocation_size)
+void pe_base::image_config_info::set_max_allocation_size(uint64_t max_allocation_size)
 {
 	max_allocation_size_ = max_allocation_size;
 }
 
 //Sets the maximum block size that can be allocated from heap segments, in bytes
-void pe_base::image_config_info::set_virtual_memory_threshold(ULONGLONG virtual_memory_threshold)
+void pe_base::image_config_info::set_virtual_memory_threshold(uint64_t virtual_memory_threshold)
 {
 	virtual_memory_threshold_ = virtual_memory_threshold;
 }
 
 //Sets process affinity mask
-void pe_base::image_config_info::set_process_affinity_mask(ULONGLONG process_affinity_mask)
+void pe_base::image_config_info::set_process_affinity_mask(uint64_t process_affinity_mask)
 {
 	process_affinity_mask_ = process_affinity_mask;
 }
 
 //Sets process heap flags
-void pe_base::image_config_info::set_process_heap_flags(DWORD process_heap_flags)
+void pe_base::image_config_info::set_process_heap_flags(uint32_t process_heap_flags)
 {
 	process_heap_flags_ = process_heap_flags;
 }
 
 //Sets service pack version (CSDVersion)
-void pe_base::image_config_info::set_service_pack_version(WORD service_pack_version)
+void pe_base::image_config_info::set_service_pack_version(uint16_t service_pack_version)
 {
 	service_pack_version_ = service_pack_version;
 }
 
 //Sets VA of edit list (reserved by system)
-void pe_base::image_config_info::set_edit_list_va(ULONGLONG edit_list_va)
+void pe_base::image_config_info::set_edit_list_va(uint64_t edit_list_va)
 {
 	edit_list_va_ = edit_list_va;
 }
 
 //Sets a pointer to a cookie that is used by Visual C++ or GS implementation
-void pe_base::image_config_info::set_security_cookie_va(ULONGLONG security_cookie_va)
+void pe_base::image_config_info::set_security_cookie_va(uint64_t security_cookie_va)
 {
 	security_cookie_va_ = security_cookie_va;
 }
 
 //Sets VA of the sorted table of RVAs of each valid, unique handler in the image
 //If you rebuild this list, VA will be re-assigned automatically
-void pe_base::image_config_info::set_se_handler_table_va(ULONGLONG se_handler_table_va)
+void pe_base::image_config_info::set_se_handler_table_va(uint64_t se_handler_table_va)
 {
 	se_handler_table_va_ = se_handler_table_va;
 }
@@ -3170,7 +3176,7 @@ pe_base::bound_import_ref::bound_import_ref()
 {}
 
 //Constructor from data
-pe_base::bound_import_ref::bound_import_ref(const std::string& module_name, DWORD timestamp)
+pe_base::bound_import_ref::bound_import_ref(const std::string& module_name, uint32_t timestamp)
 	:module_name_(module_name), timestamp_(timestamp)
 {}
 
@@ -3181,7 +3187,7 @@ const std::string& pe_base::bound_import_ref::get_module_name() const
 }
 
 //Returns bound import date and time stamp
-DWORD pe_base::bound_import_ref::get_timestamp() const
+uint32_t pe_base::bound_import_ref::get_timestamp() const
 {
 	return timestamp_;
 }
@@ -3192,7 +3198,7 @@ pe_base::bound_import::bound_import()
 {}
 
 //Constructor from data
-pe_base::bound_import::bound_import(const std::string& module_name, DWORD timestamp)
+pe_base::bound_import::bound_import(const std::string& module_name, uint32_t timestamp)
 	:module_name_(module_name), timestamp_(timestamp)
 {}
 
@@ -3203,7 +3209,7 @@ const std::string& pe_base::bound_import::get_module_name() const
 }
 
 //Returns bound import date and time stamp
-DWORD pe_base::bound_import::get_timestamp() const
+uint32_t pe_base::bound_import::get_timestamp() const
 {
 	return timestamp_;
 }
@@ -3248,14 +3254,14 @@ const pe_base::bound_import_module_list pe_base::get_bound_import_module_list() 
 		return ret;
 
 	//Check read in "read_pe" function raw bound import data size
-	if(bound_import_data_.size() < sizeof(IMAGE_BOUND_IMPORT_DESCRIPTOR))
+	if(bound_import_data_.size() < sizeof(image_bound_import_descriptor))
 		throw pe_exception("Incorrect bound import directory", pe_exception::incorrect_bound_import_directory);
 
 	//current bound_import_data_ in-string position
 	unsigned long current_pos = 0;
 	//first bound import descriptor
 	//so, we're working with raw data here, no section helpers available
-	const IMAGE_BOUND_IMPORT_DESCRIPTOR* descriptor = reinterpret_cast<const IMAGE_BOUND_IMPORT_DESCRIPTOR*>(&bound_import_data_[current_pos]);
+	const image_bound_import_descriptor* descriptor = reinterpret_cast<const image_bound_import_descriptor*>(&bound_import_data_[current_pos]);
 
 	//Enumerate until zero
 	while(descriptor->OffsetModuleName)
@@ -3272,23 +3278,23 @@ const pe_base::bound_import_module_list pe_base::get_bound_import_module_list() 
 		bound_import elem(&bound_import_data_[descriptor->OffsetModuleName], descriptor->TimeDateStamp);
 
 		//Check DWORDs
-		if(descriptor->NumberOfModuleForwarderRefs >= max_dword / sizeof(IMAGE_BOUND_FORWARDER_REF)
-			|| !is_sum_safe(current_pos, 2 /* this descriptor and the next one */ * sizeof(IMAGE_BOUND_IMPORT_DESCRIPTOR) + descriptor->NumberOfModuleForwarderRefs * sizeof(IMAGE_BOUND_FORWARDER_REF)))
+		if(descriptor->NumberOfModuleForwarderRefs >= max_dword / sizeof(image_bound_forwarder_ref)
+			|| !is_sum_safe(current_pos, 2 /* this descriptor and the next one */ * sizeof(image_bound_import_descriptor) + descriptor->NumberOfModuleForwarderRefs * sizeof(image_bound_forwarder_ref)))
 			throw pe_exception("Incorrect bound import directory", pe_exception::incorrect_bound_import_directory);
 
 		//Move after current descriptor
-		current_pos += sizeof(IMAGE_BOUND_IMPORT_DESCRIPTOR);
+		current_pos += sizeof(image_bound_import_descriptor);
 
 		//Enumerate referenced bound import descriptors
 		for(unsigned long i = 0; i != descriptor->NumberOfModuleForwarderRefs; ++i)
 		{
 			//They're just after parent descriptor
 			//Check size of structure
-			if(current_pos + sizeof(IMAGE_BOUND_FORWARDER_REF) > bound_import_data_.size())
+			if(current_pos + sizeof(image_bound_forwarder_ref) > bound_import_data_.size())
 				throw pe_exception("Incorrect bound import directory", pe_exception::incorrect_bound_import_directory);
 
 			//Get IMAGE_BOUND_FORWARDER_REF pointer
-			const IMAGE_BOUND_FORWARDER_REF* ref_descriptor = reinterpret_cast<const IMAGE_BOUND_FORWARDER_REF*>(&bound_import_data_[current_pos]);
+			const image_bound_forwarder_ref* ref_descriptor = reinterpret_cast<const image_bound_forwarder_ref*>(&bound_import_data_[current_pos]);
 
 			//Check referenced module name
 			if(ref_descriptor->OffsetModuleName >= bound_import_data_.size())
@@ -3302,15 +3308,15 @@ const pe_base::bound_import_module_list pe_base::get_bound_import_module_list() 
 			elem.add_module_ref(bound_import_ref(&bound_import_data_[ref_descriptor->OffsetModuleName], ref_descriptor->TimeDateStamp));
 
 			//Move after referenced bound import descriptor
-			current_pos += sizeof(IMAGE_BOUND_FORWARDER_REF);
+			current_pos += sizeof(image_bound_forwarder_ref);
 		}
 
 		//Check structure size
-		if(current_pos + sizeof(IMAGE_BOUND_IMPORT_DESCRIPTOR) > bound_import_data_.size())
+		if(current_pos + sizeof(image_bound_import_descriptor) > bound_import_data_.size())
 			throw pe_exception("Incorrect bound import directory", pe_exception::incorrect_bound_import_directory);
 
 		//Move to next bound import descriptor
-		descriptor = reinterpret_cast<const IMAGE_BOUND_IMPORT_DESCRIPTOR*>(&bound_import_data_[current_pos]);
+		descriptor = reinterpret_cast<const image_bound_import_descriptor*>(&bound_import_data_[current_pos]);
 
 		//Save created descriptor structure and references
 		ret.push_back(elem);
@@ -3327,12 +3333,12 @@ pe_base::resource_data_entry::resource_data_entry()
 {}
 
 //Constructor from data
-pe_base::resource_data_entry::resource_data_entry(const std::string& data, DWORD codepage)
+pe_base::resource_data_entry::resource_data_entry(const std::string& data, uint32_t codepage)
 	:codepage_(codepage), data_(data)
 {}
 
 //Returns resource data codepage
-DWORD pe_base::resource_data_entry::get_codepage() const
+uint32_t pe_base::resource_data_entry::get_codepage() const
 {
 	return codepage_;
 }
@@ -3344,7 +3350,7 @@ const std::string& pe_base::resource_data_entry::get_data() const
 }
 
 //Sets resource data codepage
-void pe_base::resource_data_entry::set_codepage(DWORD codepage)
+void pe_base::resource_data_entry::set_codepage(uint32_t codepage)
 {
 	codepage_ = codepage;
 }
@@ -3423,7 +3429,7 @@ pe_base::resource_directory_entry::~resource_directory_entry()
 }
 
 //Returns entry ID
-DWORD pe_base::resource_directory_entry::get_id() const
+uint32_t pe_base::resource_directory_entry::get_id() const
 {
 	return id_;
 }
@@ -3493,7 +3499,7 @@ void pe_base::resource_directory_entry::set_name(const std::wstring& name)
 }
 
 //Sets entry ID
-void pe_base::resource_directory_entry::set_id(DWORD id)
+void pe_base::resource_directory_entry::set_id(uint32_t id)
 {
 	id_ = id;
 	named_ = false;
@@ -3525,7 +3531,7 @@ pe_base::resource_directory::resource_directory()
 {}
 
 //Constructor from data
-pe_base::resource_directory::resource_directory(const IMAGE_RESOURCE_DIRECTORY& dir)
+pe_base::resource_directory::resource_directory(const image_resource_directory& dir)
 	:characteristics_(dir.Characteristics),
 	timestamp_(dir.TimeDateStamp),
 	major_version_(dir.MajorVersion), minor_version_(dir.MinorVersion),
@@ -3533,37 +3539,37 @@ pe_base::resource_directory::resource_directory(const IMAGE_RESOURCE_DIRECTORY& 
 {}
 
 //Returns characteristics of directory
-DWORD pe_base::resource_directory::get_characteristics() const
+uint32_t pe_base::resource_directory::get_characteristics() const
 {
 	return characteristics_;
 }
 
 //Returns date and time stamp of directory
-DWORD pe_base::resource_directory::get_timestamp() const
+uint32_t pe_base::resource_directory::get_timestamp() const
 {
 	return timestamp_;
 }
 
 //Returns major version of directory
-WORD pe_base::resource_directory::get_major_version() const
+uint16_t pe_base::resource_directory::get_major_version() const
 {
 	return major_version_;
 }
 
 //Returns minor version of directory
-WORD pe_base::resource_directory::get_minor_version() const
+uint16_t pe_base::resource_directory::get_minor_version() const
 {
 	return minor_version_;
 }
 
 //Returns number of named entries
-DWORD pe_base::resource_directory::get_number_of_named_entries() const
+uint32_t pe_base::resource_directory::get_number_of_named_entries() const
 {
 	return number_of_named_entries_;
 }
 
 //Returns number of ID entries
-DWORD pe_base::resource_directory::get_number_of_id_entries() const
+uint32_t pe_base::resource_directory::get_number_of_id_entries() const
 {
 	return number_of_id_entries_;
 }
@@ -3599,43 +3605,43 @@ void pe_base::resource_directory::clear_resource_directory_entry_list()
 }
 
 //Sets characteristics of directory
-void pe_base::resource_directory::set_characteristics(DWORD characteristics)
+void pe_base::resource_directory::set_characteristics(uint32_t characteristics)
 {
 	characteristics_ = characteristics;
 }
 
 //Sets date and time stamp of directory
-void pe_base::resource_directory::set_timestamp(DWORD timestamp)
+void pe_base::resource_directory::set_timestamp(uint32_t timestamp)
 {
 	timestamp_ = timestamp;
 }
 
 //Sets number of named entries
-void pe_base::resource_directory::set_number_of_named_entries(DWORD number)
+void pe_base::resource_directory::set_number_of_named_entries(uint32_t number)
 {
 	number_of_named_entries_ = number;
 }
 
 //Sets number of ID entries
-void pe_base::resource_directory::set_number_of_id_entries(DWORD number)
+void pe_base::resource_directory::set_number_of_id_entries(uint32_t number)
 {
 	number_of_id_entries_ = number;
 }
 
 //Sets major version of directory
-void pe_base::resource_directory::set_major_version(WORD major_version)
+void pe_base::resource_directory::set_major_version(uint16_t major_version)
 {
 	major_version_ = major_version;
 }
 
 //Sets minor version of directory
-void pe_base::resource_directory::get_minor_version(WORD minor_version)
+void pe_base::resource_directory::get_minor_version(uint16_t minor_version)
 {
 	minor_version_ = minor_version;
 }
 
 //Processes resource directory
-const pe_base::resource_directory pe_base::process_resource_directory(DWORD res_rva, DWORD offset_to_directory, std::set<DWORD>& processed) const
+const pe_base::resource_directory pe_base::process_resource_directory(uint32_t res_rva, uint32_t offset_to_directory, std::set<uint32_t>& processed) const
 {
 	resource_directory ret;
 	
@@ -3647,24 +3653,24 @@ const pe_base::resource_directory pe_base::process_resource_directory(DWORD res_
 		throw pe_exception("Incorrect resource directory", pe_exception::incorrect_resource_directory);
 
 	//Get root IMAGE_RESOURCE_DIRECTORY
-	IMAGE_RESOURCE_DIRECTORY directory = section_data_from_rva<IMAGE_RESOURCE_DIRECTORY>(res_rva + offset_to_directory, section_data_virtual, true);
+	image_resource_directory directory = section_data_from_rva<image_resource_directory>(res_rva + offset_to_directory, section_data_virtual, true);
 
 	ret = resource_directory(directory);
 
 	//Check DWORDs for possible overflows
 	if(!is_sum_safe(directory.NumberOfIdEntries, directory.NumberOfNamedEntries)
-		|| directory.NumberOfIdEntries + directory.NumberOfNamedEntries >= max_dword / sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY) + sizeof(IMAGE_RESOURCE_DIRECTORY))
+		|| directory.NumberOfIdEntries + directory.NumberOfNamedEntries >= max_dword / sizeof(image_resource_directory_entry) + sizeof(image_resource_directory))
 		throw pe_exception("Incorrect resource directory", pe_exception::incorrect_resource_directory);
 
-	if(!is_sum_safe(offset_to_directory, sizeof(IMAGE_RESOURCE_DIRECTORY) + (directory.NumberOfIdEntries + directory.NumberOfNamedEntries) * sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY))
-		|| !is_sum_safe(res_rva, offset_to_directory + sizeof(IMAGE_RESOURCE_DIRECTORY) + (directory.NumberOfIdEntries + directory.NumberOfNamedEntries) * sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY)))
+	if(!is_sum_safe(offset_to_directory, sizeof(image_resource_directory) + (directory.NumberOfIdEntries + directory.NumberOfNamedEntries) * sizeof(image_resource_directory_entry))
+		|| !is_sum_safe(res_rva, offset_to_directory + sizeof(image_resource_directory) + (directory.NumberOfIdEntries + directory.NumberOfNamedEntries) * sizeof(image_resource_directory_entry)))
 		throw pe_exception("Incorrect resource directory", pe_exception::incorrect_resource_directory);
 
 	for(unsigned long i = 0; i != static_cast<unsigned long>(directory.NumberOfIdEntries) + directory.NumberOfNamedEntries; ++i)
 	{
 		//Read directory entries one by one
-		IMAGE_RESOURCE_DIRECTORY_ENTRY dir_entry = section_data_from_rva<IMAGE_RESOURCE_DIRECTORY_ENTRY>(
-			res_rva + sizeof(IMAGE_RESOURCE_DIRECTORY) + i * sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY) + offset_to_directory, section_data_virtual, true);
+		image_resource_directory_entry dir_entry = section_data_from_rva<image_resource_directory_entry>(
+			res_rva + sizeof(image_resource_directory) + i * sizeof(image_resource_directory_entry) + offset_to_directory, section_data_virtual, true);
 
 		//Create directory entry structure
 		resource_directory_entry entry;
@@ -3672,20 +3678,27 @@ const pe_base::resource_directory pe_base::process_resource_directory(DWORD res_
 		//If directory is named
 		if(dir_entry.NameIsString)
 		{
-			if(!is_sum_safe(res_rva + sizeof(WORD) /* safe */, dir_entry.NameOffset))
+			if(!is_sum_safe(res_rva + sizeof(uint16_t) /* safe */, dir_entry.NameOffset))
 				throw pe_exception("Incorrect resource directory", pe_exception::incorrect_resource_directory);
 
 			//get directory name length
-			WORD directory_name_length = section_data_from_rva<WORD>(res_rva + dir_entry.NameOffset, section_data_virtual, true);
+			uint16_t directory_name_length = section_data_from_rva<uint16_t>(res_rva + dir_entry.NameOffset, section_data_virtual, true);
 
 			//Check name length
-			if(section_data_length_from_rva(res_rva + dir_entry.NameOffset + sizeof(WORD), res_rva + dir_entry.NameOffset + sizeof(WORD), section_data_virtual, true) < directory_name_length)
+			if(section_data_length_from_rva(res_rva + dir_entry.NameOffset + sizeof(uint16_t), res_rva + dir_entry.NameOffset + sizeof(uint16_t), section_data_virtual, true) < directory_name_length)
 				throw pe_exception("Incorrect resource directory", pe_exception::incorrect_resource_directory);
 
+#ifdef PELIB_ON_WINDOWS
 			//Set entry UNICODE name
 			entry.set_name(std::wstring(
-				reinterpret_cast<const wchar_t*>(section_data_from_rva(res_rva + dir_entry.NameOffset + sizeof(WORD), section_data_virtual, true)),
+				reinterpret_cast<const wchar_t*>(section_data_from_rva(res_rva + dir_entry.NameOffset + sizeof(uint16_t), section_data_virtual, true)),
 				directory_name_length));
+#else
+			//Set entry UNICODE name
+			entry.set_name(from_ucs2(u16string(
+				reinterpret_cast<const unicode16_t*>(section_data_from_rva(res_rva + dir_entry.NameOffset + sizeof(uint16_t), section_data_virtual, true)),
+				directory_name_length)));
+#endif
 		}
 		else
 		{
@@ -3701,7 +3714,7 @@ const pe_base::resource_directory pe_base::process_resource_directory(DWORD res_
 		else
 		{
 			//If directory entry has data
-			IMAGE_RESOURCE_DATA_ENTRY data_entry = section_data_from_rva<IMAGE_RESOURCE_DATA_ENTRY>(
+			image_resource_data_entry data_entry = section_data_from_rva<image_resource_data_entry>(
 				res_rva + dir_entry.OffsetToData, section_data_virtual, true);
 
 			//Check byte count that stated by data entry
@@ -3723,18 +3736,18 @@ const pe_base::resource_directory pe_base::process_resource_directory(DWORD res_
 }
 
 //Helper function to calculate needed space for resource data
-void pe_base::calculate_resource_data_space(const resource_directory& root, DWORD& needed_size_for_structures, DWORD& needed_size_for_strings, DWORD& needed_size_for_data)
+void pe_base::calculate_resource_data_space(const resource_directory& root, uint32_t& needed_size_for_structures, uint32_t& needed_size_for_strings, uint32_t& needed_size_for_data)
 {
-	needed_size_for_structures += sizeof(IMAGE_RESOURCE_DIRECTORY);
+	needed_size_for_structures += sizeof(image_resource_directory);
 	for(resource_directory::entry_list::const_iterator it = root.get_entry_list().begin(); it != root.get_entry_list().end(); ++it)
 	{
-		needed_size_for_structures += sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY);
+		needed_size_for_structures += sizeof(image_resource_directory_entry);
 
 		if((*it).is_named())
-			needed_size_for_strings += static_cast<DWORD>(((*it).get_name().length() + 1) * 2 /* unicode */ + sizeof(WORD) /* for string length */);
+			needed_size_for_strings += static_cast<uint32_t>(((*it).get_name().length() + 1) * 2 /* unicode */ + sizeof(uint16_t) /* for string length */);
 
 		if((*it).includes_data())
-			needed_size_for_data += static_cast<DWORD>((*it).get_data_entry().get_data().length() + sizeof(IMAGE_RESOURCE_DATA_ENTRY) + sizeof(DWORD) /* overhead for alignment */);
+			needed_size_for_data += static_cast<uint32_t>((*it).get_data_entry().get_data().length() + sizeof(image_resource_data_entry) + sizeof(uint32_t) /* overhead for alignment */);
 		else
 			calculate_resource_data_space((*it).get_resource_directory(), needed_size_for_structures, needed_size_for_strings, needed_size_for_data);
 	}
@@ -3744,7 +3757,7 @@ void pe_base::calculate_resource_data_space(const resource_directory& root, DWOR
 void pe_base::rebuild_resource_directory(section& resource_section, resource_directory& root, unsigned long& current_structures_pos, unsigned long& current_data_pos, unsigned long& current_strings_pos, unsigned long offset_from_section_start)
 {
 	//Create resource directory
-	IMAGE_RESOURCE_DIRECTORY dir = {0};
+	image_resource_directory dir = {0};
 	dir.Characteristics = root.get_characteristics();
 	dir.MajorVersion = root.get_major_version();
 	dir.MinorVersion = root.get_minor_version();
@@ -3770,23 +3783,31 @@ void pe_base::rebuild_resource_directory(section& resource_section, resource_dir
 	memcpy(&raw_data[current_structures_pos], &dir, sizeof(dir));
 	current_structures_pos += sizeof(dir);
 
-	DWORD this_current_structures_pos = current_structures_pos;
+	uint32_t this_current_structures_pos = current_structures_pos;
 
-	current_structures_pos += sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY) * (dir.NumberOfNamedEntries + dir.NumberOfIdEntries);
+	current_structures_pos += sizeof(image_resource_directory_entry) * (dir.NumberOfNamedEntries + dir.NumberOfIdEntries);
 
 	//Create all resource directory entries
 	for(resource_directory::entry_list::iterator it = root.get_entry_list().begin(); it != root.get_entry_list().end(); ++it)
 	{
-		IMAGE_RESOURCE_DIRECTORY_ENTRY entry;
+		image_resource_directory_entry entry;
 		if((*it).is_named())
 		{
 			entry.Name = 0x80000000 | (current_strings_pos - offset_from_section_start);
-			WORD unicode_length = static_cast<WORD>((*it).get_name().length());
+			uint16_t unicode_length = static_cast<uint16_t>((*it).get_name().length());
 			memcpy(&raw_data[current_strings_pos], &unicode_length, sizeof(unicode_length));
 			current_strings_pos += sizeof(unicode_length);
 
-			memcpy(&raw_data[current_strings_pos], (*it).get_name().c_str(), (*it).get_name().length() * 2 + 2 /* unicode */);
-			current_strings_pos += static_cast<unsigned long>((*it).get_name().length() * 2 + 2 /* unicode */);
+#ifdef PELIB_ON_WINDOWS
+			memcpy(&raw_data[current_strings_pos], (*it).get_name().c_str(), (*it).get_name().length() * sizeof(uint16_t) + sizeof(uint16_t) /* unicode */);
+#else
+			{
+				u16string str(to_ucs2((*it).get_name()));
+				memcpy(&raw_data[current_strings_pos], str.c_str(), (*it).get_name().length() * sizeof(uint16_t) + sizeof(uint16_t) /* unicode */);
+			}
+#endif
+
+			current_strings_pos += static_cast<unsigned long>((*it).get_name().length() * sizeof(uint16_t) + sizeof(uint16_t) /* unicode */);
 		}
 		else
 		{
@@ -3795,10 +3816,10 @@ void pe_base::rebuild_resource_directory(section& resource_section, resource_dir
 
 		if((*it).includes_data())
 		{
-			current_data_pos = align_up(current_data_pos, sizeof(DWORD));
-			IMAGE_RESOURCE_DATA_ENTRY data_entry = {0};
+			current_data_pos = align_up(current_data_pos, sizeof(uint32_t));
+			image_resource_data_entry data_entry = {0};
 			data_entry.CodePage = (*it).get_data_entry().get_codepage();
-			data_entry.Size = static_cast<DWORD>((*it).get_data_entry().get_data().length());
+			data_entry.Size = static_cast<uint32_t>((*it).get_data_entry().get_data().length());
 			data_entry.OffsetToData = rva_from_section_offset(resource_section, current_data_pos + sizeof(data_entry));
 			
 			entry.OffsetToData = current_data_pos - offset_from_section_start;
@@ -3843,7 +3864,7 @@ bool pe_base::entry_sorter::operator()(const resource_directory_entry& entry1, c
 //save_to_pe_headers - if true, new resource directory information will be saved to PE image headers
 //auto_strip_last_section - if true and resources are placed in the last section, it will be automatically stripped
 //number_of_id_entries and number_of_named_entries for resource directories are recalculated and not used
-const pe_base::image_directory pe_base::rebuild_resources(resource_directory& info, section& resources_section, DWORD offset_from_section_start, bool save_to_pe_header, bool auto_strip_last_section)
+const pe_base::image_directory pe_base::rebuild_resources(resource_directory& info, section& resources_section, uint32_t offset_from_section_start, bool save_to_pe_header, bool auto_strip_last_section)
 {
 	//Check that resources_section is attached to this PE image
 	if(!section_attached(resources_section))
@@ -3853,14 +3874,14 @@ const pe_base::image_directory pe_base::rebuild_resources(resource_directory& in
 	if(info.get_entry_list().empty())
 		throw pe_exception("Empty resource directory", pe_exception::incorrect_resource_directory);
 
-	DWORD needed_size_for_structures = sizeof(DWORD); //Calculate needed size for resource tables and data
-	DWORD needed_size_for_strings = 0;
-	DWORD needed_size_for_data = 0;
-	//sizeof(DWORD) - for DWORD alignment
+	uint32_t needed_size_for_structures = sizeof(uint32_t); //Calculate needed size for resource tables and data
+	uint32_t needed_size_for_strings = 0;
+	uint32_t needed_size_for_data = 0;
+	//sizeof(uint32_t) - for DWORD alignment
 	calculate_resource_data_space(info, needed_size_for_structures, needed_size_for_strings, needed_size_for_data);
 
-	DWORD needed_size = needed_size_for_structures + needed_size_for_strings + needed_size_for_data;
-	DWORD aligned_offset_from_section_start = align_up(offset_from_section_start, sizeof(DWORD));
+	uint32_t needed_size = needed_size_for_structures + needed_size_for_strings + needed_size_for_data;
+	uint32_t aligned_offset_from_section_start = align_up(offset_from_section_start, sizeof(uint32_t));
 
 	//Check if exports_section is last one. If it's not, check if there's enough place for resource data
 	if(&resources_section != &*(sections_.end() - 1) && 
@@ -3887,8 +3908,8 @@ const pe_base::image_directory pe_base::rebuild_resources(resource_directory& in
 	//If auto-rewrite of PE headers is required
 	if(save_to_pe_header)
 	{
-		set_directory_rva(IMAGE_DIRECTORY_ENTRY_RESOURCE, ret.get_rva());
-		set_directory_size(IMAGE_DIRECTORY_ENTRY_RESOURCE, ret.get_size());
+		set_directory_rva(image_directory_entry_resource, ret.get_rva());
+		set_directory_size(image_directory_entry_resource, ret.get_size());
 	}
 
 	return ret;
@@ -3903,10 +3924,10 @@ const pe_base::resource_directory pe_base::get_resources() const
 		return ret;
 
 	//Get resource directory RVA
-	DWORD res_rva = get_directory_rva(IMAGE_DIRECTORY_ENTRY_RESOURCE);
+	uint32_t res_rva = get_directory_rva(image_directory_entry_resource);
 	
 	//Store already processed directories to avoid resource loops
-	std::set<DWORD> processed;
+	std::set<uint32_t> processed;
 	
 	//Process all directories (recursion)
 	ret = process_resource_directory(res_rva, 0, processed);
@@ -3915,7 +3936,7 @@ const pe_base::resource_directory pe_base::get_resources() const
 }
 
 //Finds resource_directory_entry by ID
-pe_base::resource_directory::id_entry_finder::id_entry_finder(DWORD id)
+pe_base::resource_directory::id_entry_finder::id_entry_finder(uint32_t id)
 	:id_(id)
 {}
 
@@ -3939,7 +3960,7 @@ pe_base::resource_directory::entry_finder::entry_finder(const std::wstring& name
 	:name_(name), named_(true)
 {}
 
-pe_base::resource_directory::entry_finder::entry_finder(DWORD id)
+pe_base::resource_directory::entry_finder::entry_finder(uint32_t id)
 	:id_(id), named_(false)
 {}
 
@@ -3952,7 +3973,7 @@ bool pe_base::resource_directory::entry_finder::operator()(const resource_direct
 }
 
 //Returns resource_directory_entry by ID. If not found - throws an exception
-const pe_base::resource_directory_entry& pe_base::resource_directory::entry_by_id(DWORD id) const
+const pe_base::resource_directory_entry& pe_base::resource_directory::entry_by_id(uint32_t id) const
 {
 	entry_list::const_iterator i = std::find_if(entries_.begin(), entries_.end(), id_entry_finder(id));
 	if(i == entries_.end())
@@ -3985,7 +4006,7 @@ pe_base::exception_entry::exception_entry()
 {}
 
 //Constructor from data
-pe_base::exception_entry::exception_entry(const IMAGE_RUNTIME_FUNCTION_ENTRY& entry, const UNWIND_INFO& unwind_info)
+pe_base::exception_entry::exception_entry(const image_runtime_function_entry& entry, const unwind_info& unwind_info)
 	:begin_address_(entry.BeginAddress), end_address_(entry.EndAddress), unwind_info_address_(entry.UnwindInfoAddress),
 	unwind_info_version_(unwind_info.Version),
 	flags_(unwind_info.Flags),
@@ -3996,31 +4017,31 @@ pe_base::exception_entry::exception_entry(const IMAGE_RUNTIME_FUNCTION_ENTRY& en
 {}
 
 //Returns starting address of function, affected by exception unwinding
-DWORD pe_base::exception_entry::get_begin_address() const
+uint32_t pe_base::exception_entry::get_begin_address() const
 {
 	return begin_address_;
 }
 
 //Returns ending address of function, affected by exception unwinding
-DWORD pe_base::exception_entry::get_end_address() const
+uint32_t pe_base::exception_entry::get_end_address() const
 {
 	return end_address_;
 }
 
 //Returns unwind info address
-DWORD pe_base::exception_entry::get_unwind_info_address() const
+uint32_t pe_base::exception_entry::get_unwind_info_address() const
 {
 	return unwind_info_address_;
 }
 
 //Returns UNWIND_INFO structure version
-BYTE pe_base::exception_entry::get_unwind_info_version() const
+uint8_t pe_base::exception_entry::get_unwind_info_version() const
 {
 	return unwind_info_version_;
 }
 
 //Returns unwind info flags
-BYTE pe_base::exception_entry::get_flags() const
+uint8_t pe_base::exception_entry::get_flags() const
 {
 	return flags_;
 }
@@ -4029,30 +4050,30 @@ BYTE pe_base::exception_entry::get_flags() const
 //when looking for functions that need to examine exceptions
 bool pe_base::exception_entry::has_exception_handler() const
 {
-	return (flags_ & UNW_FLAG_EHANDLER) ? true : false;
+	return (flags_ & unw_flag_ehandler) ? true : false;
 }
 
 //The function has a termination handler that should be called
 //when unwinding an exception
 bool pe_base::exception_entry::has_termination_handler() const
 {
-	return (flags_ & UNW_FLAG_UHANDLER) ? true : false;
+	return (flags_ & unw_flag_uhandler) ? true : false;
 }
 
 //The unwind info structure is not the primary one for the procedure
 bool pe_base::exception_entry::is_chaininfo() const
 {
-	return (flags_ & UNW_FLAG_CHAININFO) ? true : false;
+	return (flags_ & unw_flag_chaininfo) ? true : false;
 }
 
 //Returns size of function prolog
-BYTE pe_base::exception_entry::get_size_of_prolog() const
+uint8_t pe_base::exception_entry::get_size_of_prolog() const
 {
 	return size_of_prolog_;
 }
 
 //Returns number of unwind slots
-BYTE pe_base::exception_entry::get_number_of_unwind_slots() const
+uint8_t pe_base::exception_entry::get_number_of_unwind_slots() const
 {
 	return count_of_codes_;
 }
@@ -4065,14 +4086,14 @@ bool pe_base::exception_entry::uses_frame_pointer() const
 
 //Number of the nonvolatile register used as the frame pointer,
 //using the same encoding for the operation info field of UNWIND_CODE nodes
-BYTE pe_base::exception_entry::get_frame_pointer_register_number() const
+uint8_t pe_base::exception_entry::get_frame_pointer_register_number() const
 {
 	return frame_register_;
 }
 
 //The scaled offset from RSP that is applied to the FP reg when it is established.
 //The actual FP reg is set to RSP + 16 * this number, allowing offsets from 0 to 240
-BYTE pe_base::exception_entry::get_scaled_rsp_offset() const
+uint8_t pe_base::exception_entry::get_scaled_rsp_offset() const
 {
 	return frame_offset_;
 }
@@ -4088,17 +4109,17 @@ const pe_base::exception_entry_list pe_base::get_exception_directory_data() cons
 		return ret;
 
 	//Check the length in bytes of the section containing exception directory
-	if(section_data_length_from_rva(get_directory_rva(IMAGE_DIRECTORY_ENTRY_EXCEPTION), get_directory_rva(IMAGE_DIRECTORY_ENTRY_EXCEPTION), section_data_virtual, true) < sizeof(IMAGE_RUNTIME_FUNCTION_ENTRY))
+	if(section_data_length_from_rva(get_directory_rva(image_directory_entry_exception), get_directory_rva(image_directory_entry_exception), section_data_virtual, true) < sizeof(image_runtime_function_entry))
 		throw pe_exception("Incorrect exception directory", pe_exception::incorrect_exception_directory);
 
-	unsigned long current_pos = get_directory_rva(IMAGE_DIRECTORY_ENTRY_EXCEPTION);
+	unsigned long current_pos = get_directory_rva(image_directory_entry_exception);
 
 	//Check if structures are DWORD-aligned
-	if(current_pos % sizeof(DWORD))
+	if(current_pos % sizeof(uint32_t))
 		throw pe_exception("Incorrect exception directory", pe_exception::incorrect_exception_directory);
 
 	//First IMAGE_RUNTIME_FUNCTION_ENTRY table
-	IMAGE_RUNTIME_FUNCTION_ENTRY exception_table = section_data_from_rva<IMAGE_RUNTIME_FUNCTION_ENTRY>(current_pos, section_data_virtual, true);
+	image_runtime_function_entry exception_table = section_data_from_rva<image_runtime_function_entry>(current_pos, section_data_virtual, true);
 
 	//todo: virtual addresses BeginAddress and EndAddress are not checked to be inside image
 	while(exception_table.BeginAddress)
@@ -4108,14 +4129,14 @@ const pe_base::exception_entry_list pe_base::get_exception_directory_data() cons
 			throw pe_exception("Incorrect exception directory", pe_exception::incorrect_exception_directory);
 
 		//Get unwind information
-		UNWIND_INFO info = section_data_from_rva<UNWIND_INFO>(exception_table.UnwindInfoAddress, section_data_virtual, true);
+		unwind_info info = section_data_from_rva<unwind_info>(exception_table.UnwindInfoAddress, section_data_virtual, true);
 
 		//Create exception entry and save it
 		ret.push_back(exception_entry(exception_table, info));
 
 		//Go to next exception entry
-		current_pos += sizeof(IMAGE_RUNTIME_FUNCTION_ENTRY);
-		exception_table = section_data_from_rva<IMAGE_RUNTIME_FUNCTION_ENTRY>(current_pos, section_data_virtual, true);
+		current_pos += sizeof(image_runtime_function_entry);
+		exception_table = section_data_from_rva<image_runtime_function_entry>(current_pos, section_data_virtual, true);
 	}
 
 	return ret;
@@ -4136,7 +4157,7 @@ pe_base::debug_info::debug_info()
 {}
 
 //Constructor from data
-pe_base::debug_info::debug_info(const IMAGE_DEBUG_DIRECTORY& debug)
+pe_base::debug_info::debug_info(const image_debug_directory& debug)
 	:characteristics_(debug.Characteristics),
 	time_stamp_(debug.TimeDateStamp),
 	major_version_(debug.MajorVersion), minor_version_(debug.MinorVersion),
@@ -4148,31 +4169,31 @@ pe_base::debug_info::debug_info(const IMAGE_DEBUG_DIRECTORY& debug)
 {}
 
 //Returns debug characteristics
-DWORD pe_base::debug_info::get_characteristics() const
+uint32_t pe_base::debug_info::get_characteristics() const
 {
 	return characteristics_;
 }
 
 //Returns debug datetimestamp
-DWORD pe_base::debug_info::get_time_stamp() const
+uint32_t pe_base::debug_info::get_time_stamp() const
 {
 	return time_stamp_;
 }
 
 //Returns major version
-DWORD pe_base::debug_info::get_major_version() const
+uint32_t pe_base::debug_info::get_major_version() const
 {
 	return major_version_;
 }
 
 //Returns minor version
-DWORD pe_base::debug_info::get_minor_version() const
+uint32_t pe_base::debug_info::get_minor_version() const
 {
 	return minor_version_;
 }
 
 //Returns type of debug info (unchecked)
-DWORD pe_base::debug_info::get_type_raw() const
+uint32_t pe_base::debug_info::get_type_raw() const
 {
 	return type_;
 }
@@ -4183,37 +4204,37 @@ pe_base::debug_info::debug_info_type pe_base::debug_info::get_type() const
 	//Determine debug type
 	switch(type_)
 	{
-	case IMAGE_DEBUG_TYPE_COFF:
+	case image_debug_type_coff:
 		return debug_type_coff;
 
-	case IMAGE_DEBUG_TYPE_CODEVIEW:
+	case image_debug_type_codeview:
 		return debug_type_codeview;
 
-	case IMAGE_DEBUG_TYPE_FPO:
+	case image_debug_type_fpo:
 		return debug_type_fpo;
 
-	case IMAGE_DEBUG_TYPE_MISC:
+	case image_debug_type_misc:
 		return debug_type_misc;
 
-	case IMAGE_DEBUG_TYPE_EXCEPTION:
+	case image_debug_type_exception:
 		return debug_type_exception;
 
-	case IMAGE_DEBUG_TYPE_FIXUP:
+	case image_debug_type_fixup:
 		return debug_type_fixup;
 
-	case IMAGE_DEBUG_TYPE_OMAP_TO_SRC:
+	case image_debug_type_omap_to_src:
 		return debug_type_omap_to_src;
 
-	case IMAGE_DEBUG_TYPE_OMAP_FROM_SRC:
+	case image_debug_type_omap_from_src:
 		return debug_type_omap_from_src;
 
-	case IMAGE_DEBUG_TYPE_BORLAND:
+	case image_debug_type_borland:
 		return debug_type_borland;
 
-	case IMAGE_DEBUG_TYPE_CLSID:
+	case image_debug_type_clsid:
 		return debug_type_clsid;
 
-	case IMAGE_DEBUG_TYPE_RESERVED10:
+	case image_debug_type_reserved10:
 		return debug_type_reserved10;
 	}
 
@@ -4221,19 +4242,19 @@ pe_base::debug_info::debug_info_type pe_base::debug_info::get_type() const
 }
 
 //Returns size of debug data (internal, .pdb or other file doesn't count)
-DWORD pe_base::debug_info::get_size_of_data() const
+uint32_t pe_base::debug_info::get_size_of_data() const
 {
 	return size_of_data_;
 }
 
 //Returns RVA of debug info when mapped to memory or zero, if info is not mapped
-DWORD pe_base::debug_info::get_rva_of_raw_data() const
+uint32_t pe_base::debug_info::get_rva_of_raw_data() const
 {
 	return address_of_raw_data_;
 }
 
 //Returns raw file pointer to raw data
-DWORD pe_base::debug_info::get_pointer_to_raw_data() const
+uint32_t pe_base::debug_info::get_pointer_to_raw_data() const
 {
 	return pointer_to_raw_data_;
 }
@@ -4300,6 +4321,8 @@ void pe_base::debug_info::copy_advanced_info(const debug_info& info)
 	case advanced_info_coff:
 		advanced_debug_info_.adv_coff_info = new coff_debug_info(*info.advanced_debug_info_.adv_coff_info);
 		break;
+	default:
+		break;
 	}
 
 	advanced_info_type_ = info.advanced_info_type_;
@@ -4321,6 +4344,8 @@ void pe_base::debug_info::free_present_advanced_info()
 		break;
 	case advanced_info_coff:
 		delete advanced_debug_info_.adv_coff_info;
+		break;
+	default:
 		break;
 	}
 
@@ -4429,13 +4454,13 @@ pe_base::pdb_7_0_info::pdb_7_0_info(const CV_INFO_PDB70* info)
 {}
 
 //Returns debug PDB 7.0 structure GUID
-const GUID pe_base::pdb_7_0_info::get_guid() const
+const guid pe_base::pdb_7_0_info::get_guid() const
 {
 	return guid_;
 }
 
 //Returns age of build
-DWORD pe_base::pdb_7_0_info::get_age() const
+uint32_t pe_base::pdb_7_0_info::get_age() const
 {
 	return age_;
 }
@@ -4458,13 +4483,13 @@ pe_base::pdb_2_0_info::pdb_2_0_info(const CV_INFO_PDB20* info)
 {}
 
 //Returns debug PDB 2.0 structure signature
-DWORD pe_base::pdb_2_0_info::get_signature() const
+uint32_t pe_base::pdb_2_0_info::get_signature() const
 {
 	return signature_;
 }
 
 //Returns age of build
-DWORD pe_base::pdb_2_0_info::get_age() const
+uint32_t pe_base::pdb_2_0_info::get_age() const
 {
 	return age_;
 }
@@ -4481,24 +4506,29 @@ pe_base::misc_debug_info::misc_debug_info()
 {}
 
 //Constructor from data
-pe_base::misc_debug_info::misc_debug_info(const IMAGE_DEBUG_MISC* info)
+pe_base::misc_debug_info::misc_debug_info(const image_debug_misc* info)
 	:data_type_(info->DataType), unicode_(info->Unicode ? true : false)
 {
 	//IMAGE_DEBUG_MISC::Data must be checked before!
 	if(info->Unicode)
 	{
-		debug_data_unicode_ = std::wstring(reinterpret_cast<const wchar_t*>(info->Data), (info->Length - sizeof(IMAGE_DEBUG_MISC) + 1 /* BYTE[1] in the end of structure */) / 2);
+#ifdef PELIB_ON_WINDOWS
+		debug_data_unicode_ = std::wstring(reinterpret_cast<const wchar_t*>(info->Data), (info->Length - sizeof(image_debug_misc) + 1 /* BYTE[1] in the end of structure */) / 2);
+#else
+		debug_data_unicode_ = from_ucs2(u16string(reinterpret_cast<const unicode16_t*>(info->Data), (info->Length - sizeof(image_debug_misc) + 1 /* BYTE[1] in the end of structure */) / 2));
+#endif
+
 		strip_nullbytes(debug_data_unicode_); //Strip nullbytes in the end of string
 	}
 	else
 	{
-		debug_data_ansi_ = std::string(reinterpret_cast<const char*>(info->Data), info->Length - sizeof(IMAGE_DEBUG_MISC) + 1 /* BYTE[1] in the end of structure */);
+		debug_data_ansi_ = std::string(reinterpret_cast<const char*>(info->Data), info->Length - sizeof(image_debug_misc) + 1 /* BYTE[1] in the end of structure */);
 		strip_nullbytes(debug_data_ansi_); //Strip nullbytes in the end of string
 	}
 }
 
 //Returns debug data type
-DWORD pe_base::misc_debug_info::get_data_type() const
+uint32_t pe_base::misc_debug_info::get_data_type() const
 {
 	return data_type_;
 }
@@ -4506,7 +4536,7 @@ DWORD pe_base::misc_debug_info::get_data_type() const
 //Returns true if data type is exe name
 bool pe_base::misc_debug_info::is_exe_name() const
 {
-	return data_type_ == IMAGE_DEBUG_MISC_EXENAME;
+	return data_type_ == image_debug_misc_exename;
 }
 
 //Returns true if debug data is UNICODE
@@ -4540,7 +4570,7 @@ pe_base::coff_debug_info::coff_debug_info()
 {}
 
 //Constructor from data
-pe_base::coff_debug_info::coff_debug_info(const IMAGE_COFF_SYMBOLS_HEADER* info)
+pe_base::coff_debug_info::coff_debug_info(const image_coff_symbols_header* info)
 	:number_of_symbols_(info->NumberOfSymbols),
 	lva_to_first_symbol_(info->LvaToFirstSymbol),
 	number_of_line_numbers_(info->NumberOfLinenumbers),
@@ -4552,49 +4582,49 @@ pe_base::coff_debug_info::coff_debug_info(const IMAGE_COFF_SYMBOLS_HEADER* info)
 {}
 
 //Returns number of symbols
-DWORD pe_base::coff_debug_info::get_number_of_symbols() const
+uint32_t pe_base::coff_debug_info::get_number_of_symbols() const
 {
 	return number_of_symbols_;
 }
 
 //Returns virtual address of the first symbol
-DWORD pe_base::coff_debug_info::get_lva_to_first_symbol() const
+uint32_t pe_base::coff_debug_info::get_lva_to_first_symbol() const
 {
 	return lva_to_first_symbol_;
 }
 
 //Returns number of line-number entries
-DWORD pe_base::coff_debug_info::get_number_of_line_numbers() const
+uint32_t pe_base::coff_debug_info::get_number_of_line_numbers() const
 {
 	return number_of_line_numbers_;
 }
 
 //Returns virtual address of the first line-number entry
-DWORD pe_base::coff_debug_info::get_lva_to_first_line_number() const
+uint32_t pe_base::coff_debug_info::get_lva_to_first_line_number() const
 {
 	return lva_to_first_line_number_;
 }
 
 //Returns relative virtual address of the first byte of code
-DWORD pe_base::coff_debug_info::get_rva_to_first_byte_of_code() const
+uint32_t pe_base::coff_debug_info::get_rva_to_first_byte_of_code() const
 {
 	return rva_to_first_byte_of_code_;
 }
 
 //Returns relative virtual address of the last byte of code
-DWORD pe_base::coff_debug_info::get_rva_to_last_byte_of_code() const
+uint32_t pe_base::coff_debug_info::get_rva_to_last_byte_of_code() const
 {
 	return rva_to_last_byte_of_code_;
 }
 
 //Returns relative virtual address of the first byte of data
-DWORD pe_base::coff_debug_info::get_rva_to_first_byte_of_data() const
+uint32_t pe_base::coff_debug_info::get_rva_to_first_byte_of_data() const
 {
 	return rva_to_first_byte_of_data_;
 }
 
 //Returns relative virtual address of the last byte of data
-DWORD pe_base::coff_debug_info::get_rva_to_last_byte_of_data() const
+uint32_t pe_base::coff_debug_info::get_rva_to_last_byte_of_data() const
 {
 	return rva_to_last_byte_of_data_;
 }
@@ -4621,25 +4651,25 @@ pe_base::coff_debug_info::coff_symbol::coff_symbol()
 {}
 
 //Returns storage class
-DWORD pe_base::coff_debug_info::coff_symbol::get_storage_class() const
+uint32_t pe_base::coff_debug_info::coff_symbol::get_storage_class() const
 {
 	return storage_class_;
 }
 
 //Returns symbol index
-DWORD pe_base::coff_debug_info::coff_symbol::get_index() const
+uint32_t pe_base::coff_debug_info::coff_symbol::get_index() const
 {
 	return index_;
 }
 
 //Returns section number
-DWORD pe_base::coff_debug_info::coff_symbol::get_section_number() const
+uint32_t pe_base::coff_debug_info::coff_symbol::get_section_number() const
 {
 	return section_number_;
 }
 
 //Returns RVA
-DWORD pe_base::coff_debug_info::coff_symbol::get_rva() const
+uint32_t pe_base::coff_debug_info::coff_symbol::get_rva() const
 {
 	return rva_;
 }
@@ -4657,25 +4687,25 @@ const std::string& pe_base::coff_debug_info::coff_symbol::get_symbol() const
 }
 
 //Sets storage class
-void pe_base::coff_debug_info::coff_symbol::set_storage_class(DWORD storage_class)
+void pe_base::coff_debug_info::coff_symbol::set_storage_class(uint32_t storage_class)
 {
 	storage_class_ = storage_class;
 }
 
 //Sets symbol index
-void pe_base::coff_debug_info::coff_symbol::set_index(DWORD index)
+void pe_base::coff_debug_info::coff_symbol::set_index(uint32_t index)
 {
 	index_ = index;
 }
 
 //Sets section number
-void pe_base::coff_debug_info::coff_symbol::set_section_number(DWORD section_number)
+void pe_base::coff_debug_info::coff_symbol::set_section_number(uint32_t section_number)
 {
 	section_number_ = section_number;
 }
 
 //Sets RVA
-void pe_base::coff_debug_info::coff_symbol::set_rva(DWORD rva)
+void pe_base::coff_debug_info::coff_symbol::set_rva(uint32_t rva)
 {
 	rva_ = rva;
 }
@@ -4695,13 +4725,13 @@ void pe_base::coff_debug_info::coff_symbol::set_symbol_name(const std::string& s
 }
 
 //Returns type
-WORD pe_base::coff_debug_info::coff_symbol::get_type() const
+uint16_t pe_base::coff_debug_info::coff_symbol::get_type() const
 {
 	return type_;
 }
 
 //Sets type
-void pe_base::coff_debug_info::coff_symbol::set_type(WORD type)
+void pe_base::coff_debug_info::coff_symbol::set_type(uint16_t type)
 {
 	type_ = type;
 }
@@ -4716,20 +4746,20 @@ const pe_base::debug_info_list pe_base::get_debug_information() const
 		return ret;
 
 	//Check the length in bytes of the section containing debug directory
-	if(section_data_length_from_rva(get_directory_rva(IMAGE_DIRECTORY_ENTRY_DEBUG), get_directory_rva(IMAGE_DIRECTORY_ENTRY_DEBUG), section_data_virtual, true) < sizeof(IMAGE_DEBUG_DIRECTORY))
+	if(section_data_length_from_rva(get_directory_rva(image_directory_entry_debug), get_directory_rva(image_directory_entry_debug), section_data_virtual, true) < sizeof(image_debug_directory))
 		throw pe_exception("Incorrect debug directory", pe_exception::incorrect_debug_directory);
 
-	unsigned long current_pos = get_directory_rva(IMAGE_DIRECTORY_ENTRY_DEBUG);
+	unsigned long current_pos = get_directory_rva(image_directory_entry_debug);
 
 	//First IMAGE_DEBUG_DIRECTORY table
-	IMAGE_DEBUG_DIRECTORY directory = section_data_from_rva<IMAGE_DEBUG_DIRECTORY>(current_pos, section_data_virtual, true);
+	image_debug_directory directory = section_data_from_rva<image_debug_directory>(current_pos, section_data_virtual, true);
 
-	if(!is_sum_safe(get_directory_rva(IMAGE_DIRECTORY_ENTRY_DEBUG), get_directory_size(IMAGE_DIRECTORY_ENTRY_DEBUG)))
+	if(!is_sum_safe(get_directory_rva(image_directory_entry_debug), get_directory_size(image_directory_entry_debug)))
 		throw pe_exception("Incorrect debug directory", pe_exception::incorrect_debug_directory);
 
 	//Iterate over all IMAGE_DEBUG_DIRECTORY directories
 	while(directory.PointerToRawData
-		&& current_pos < get_directory_rva(IMAGE_DIRECTORY_ENTRY_DEBUG) + get_directory_size(IMAGE_DIRECTORY_ENTRY_DEBUG))
+		&& current_pos < get_directory_rva(image_directory_entry_debug) + get_directory_size(image_directory_entry_debug))
 	{
 		//Create debug information structure
 		debug_info info(directory);
@@ -4741,32 +4771,32 @@ const pe_base::debug_info_list pe_base::get_debug_information() const
 			const std::string& debug_data = (*it).second;
 			switch(directory.Type)
 			{
-			case IMAGE_DEBUG_TYPE_COFF:
+			case image_debug_type_coff:
 				{
 					//Check data length
-					if(debug_data.length() < sizeof(IMAGE_COFF_SYMBOLS_HEADER))
+					if(debug_data.length() < sizeof(image_coff_symbols_header))
 						throw pe_exception("Incorrect debug directory", pe_exception::incorrect_debug_directory);
 
 					//Get coff header structure pointer
-					const IMAGE_COFF_SYMBOLS_HEADER* coff = reinterpret_cast<const IMAGE_COFF_SYMBOLS_HEADER*>(debug_data.data());
+					const image_coff_symbols_header* coff = reinterpret_cast<const image_coff_symbols_header*>(debug_data.data());
 
 					//Check possible overflows
-					if(coff->NumberOfSymbols >= max_dword / sizeof(IMAGE_SYMBOL)
-						|| !is_sum_safe(coff->NumberOfSymbols * sizeof(IMAGE_SYMBOL), coff->LvaToFirstSymbol))
+					if(coff->NumberOfSymbols >= max_dword / sizeof(image_symbol)
+						|| !is_sum_safe(coff->NumberOfSymbols * sizeof(image_symbol), coff->LvaToFirstSymbol))
 						throw pe_exception("Incorrect debug directory", pe_exception::incorrect_debug_directory);
 
 					//Check data length again
-					if(debug_data.length() < coff->NumberOfSymbols * sizeof(IMAGE_SYMBOL) + coff->LvaToFirstSymbol)
+					if(debug_data.length() < coff->NumberOfSymbols * sizeof(image_symbol) + coff->LvaToFirstSymbol)
 						throw pe_exception("Incorrect debug directory", pe_exception::incorrect_debug_directory);
 
 					//Create COFF debug info structure
 					coff_debug_info coff_info(coff);
 
 					//Enumerate debug symbols data
-					for(DWORD i = 0; i < coff->NumberOfSymbols; ++i)
+					for(uint32_t i = 0; i < coff->NumberOfSymbols; ++i)
 					{
 						//Safe sum (checked above)
-						const IMAGE_SYMBOL* sym = reinterpret_cast<const IMAGE_SYMBOL*>(debug_data.data() + i * sizeof(IMAGE_SYMBOL) + coff->LvaToFirstSymbol);
+						const image_symbol* sym = reinterpret_cast<const image_symbol*>(debug_data.data() + i * sizeof(image_symbol) + coff->LvaToFirstSymbol);
 
 						coff_debug_info::coff_symbol symbol;
 						symbol.set_index(i); //Save symbol index
@@ -4776,14 +4806,14 @@ const pe_base::debug_info_list pe_base::get_debug_information() const
 						//Check data length again
 						if(!is_sum_safe(i, sym->NumberOfAuxSymbols)
 							|| (i + sym->NumberOfAuxSymbols) > coff->NumberOfSymbols
-							|| debug_data.length() < (i + 1) * sizeof(IMAGE_SYMBOL) + coff->LvaToFirstSymbol + sym->NumberOfAuxSymbols * sizeof(IMAGE_SYMBOL))
+							|| debug_data.length() < (i + 1) * sizeof(image_symbol) + coff->LvaToFirstSymbol + sym->NumberOfAuxSymbols * sizeof(image_symbol))
 							throw pe_exception("Incorrect debug directory", pe_exception::incorrect_debug_directory);
 
 						//If symbol is filename
-						if(sym->StorageClass == IMAGE_SYM_CLASS_FILE)
+						if(sym->StorageClass == image_sym_class_file)
 						{
 							//Save file name, it is situated just after this IMAGE_SYMBOL structure
-							std::string file_name(reinterpret_cast<const char*>(debug_data.data() + (i + 1) * sizeof(IMAGE_SYMBOL)), sym->NumberOfAuxSymbols * sizeof(IMAGE_SYMBOL));
+							std::string file_name(reinterpret_cast<const char*>(debug_data.data() + (i + 1) * sizeof(image_symbol)), sym->NumberOfAuxSymbols * sizeof(image_symbol));
 							strip_nullbytes(file_name);
 							symbol.set_file_name(file_name);
 
@@ -4796,11 +4826,11 @@ const pe_base::debug_info_list pe_base::get_debug_information() const
 						}
 
 						//Dump some other symbols
-						if(((sym->StorageClass == IMAGE_SYM_CLASS_STATIC)
+						if(((sym->StorageClass == image_sym_class_static)
 							&& (sym->NumberOfAuxSymbols == 0)
 							&& (sym->SectionNumber == 1))
 							||
-							((sym->StorageClass == IMAGE_SYM_CLASS_EXTERNAL)
+							((sym->StorageClass == image_sym_class_external)
 							&& ISFCN(sym->Type)
 							&& (sym->SectionNumber > 0))
 							)
@@ -4823,11 +4853,11 @@ const pe_base::debug_info_list pe_base::get_debug_information() const
 								//Symbol has long name
 
 								//Check possible overflows
-								if(!is_sum_safe(coff->LvaToFirstSymbol + coff->NumberOfSymbols * sizeof(IMAGE_SYMBOL), sym->N.Name.Long))
+								if(!is_sum_safe(coff->LvaToFirstSymbol + coff->NumberOfSymbols * sizeof(image_symbol), sym->N.Name.Long))
 									throw pe_exception("Incorrect debug directory", pe_exception::incorrect_debug_directory);
 
 								//Here we have an offset to the string table
-								DWORD symbol_offset = coff->LvaToFirstSymbol + coff->NumberOfSymbols * sizeof(IMAGE_SYMBOL) + sym->N.Name.Long;
+								uint32_t symbol_offset = coff->LvaToFirstSymbol + coff->NumberOfSymbols * sizeof(image_symbol) + sym->N.Name.Long;
 
 								//Check data length
 								if(debug_data.length() < symbol_offset)
@@ -4854,10 +4884,10 @@ const pe_base::debug_info_list pe_base::get_debug_information() const
 				}
 				break;
 
-			case IMAGE_DEBUG_TYPE_CODEVIEW:
+			case image_debug_type_codeview:
 				{
 					//Check data length
-					if(debug_data.length() < sizeof(POMFSignature))
+					if(debug_data.length() < sizeof(OMFSignature*))
 						throw pe_exception("Incorrect debug directory", pe_exception::incorrect_debug_directory);
 
 					//Get POMFSignature structure pointer from the very beginning of debug data
@@ -4913,14 +4943,14 @@ const pe_base::debug_info_list pe_base::get_debug_information() const
 
 				break;
 
-			case IMAGE_DEBUG_TYPE_MISC:
+			case image_debug_type_misc:
 				{
 					//Check data length
-					if(debug_data.length() < sizeof(IMAGE_DEBUG_MISC))
+					if(debug_data.length() < sizeof(image_debug_misc))
 						throw pe_exception("Incorrect debug directory", pe_exception::incorrect_debug_directory);
 
 					//Get misc structure pointer
-					const IMAGE_DEBUG_MISC* misc_data = reinterpret_cast<const IMAGE_DEBUG_MISC*>(debug_data.data());
+					const image_debug_misc* misc_data = reinterpret_cast<const image_debug_misc*>(debug_data.data());
 
 					//Check misc data length
 					if(debug_data.length() < misc_data->Length /* Total length of record */)
@@ -4937,12 +4967,12 @@ const pe_base::debug_info_list pe_base::get_debug_information() const
 		ret.push_back(info);
 
 		//Check possible overflow
-		if(!is_sum_safe(current_pos, sizeof(IMAGE_DEBUG_DIRECTORY)))
+		if(!is_sum_safe(current_pos, sizeof(image_debug_directory)))
 			throw pe_exception("Incorrect debug directory", pe_exception::incorrect_debug_directory);
 
 		//Go to next debug entry
-		current_pos += sizeof(IMAGE_DEBUG_DIRECTORY);
-		directory = section_data_from_rva<IMAGE_DEBUG_DIRECTORY>(current_pos, section_data_virtual, true);
+		current_pos += sizeof(image_debug_directory);
+		directory = section_data_from_rva<image_debug_directory>(current_pos, section_data_virtual, true);
 	}
 
 	return ret;
@@ -4956,36 +4986,36 @@ pe_base::basic_dotnet_info::basic_dotnet_info()
 }
 
 //Constructor from data
-pe_base::basic_dotnet_info::basic_dotnet_info(const IMAGE_COR20_HEADER& header)
+pe_base::basic_dotnet_info::basic_dotnet_info(const image_cor20_header& header)
 	:header_(header)
 {}
 
 //Returns major runtime version
-WORD pe_base::basic_dotnet_info::get_major_runtime_version() const
+uint16_t pe_base::basic_dotnet_info::get_major_runtime_version() const
 {
 	return header_.MajorRuntimeVersion;
 }
 
 //Returns minor runtime version
-WORD pe_base::basic_dotnet_info::get_minor_runtime_version() const
+uint16_t pe_base::basic_dotnet_info::get_minor_runtime_version() const
 {
 	return header_.MinorRuntimeVersion;
 }
 
 //Returns RVA of metadata (symbol table and startup information)
-DWORD pe_base::basic_dotnet_info::get_rva_of_metadata() const
+uint32_t pe_base::basic_dotnet_info::get_rva_of_metadata() const
 {
 	return header_.MetaData.VirtualAddress;
 }
 
 //Returns size of metadata (symbol table and startup information)
-DWORD pe_base::basic_dotnet_info::get_size_of_metadata() const
+uint32_t pe_base::basic_dotnet_info::get_size_of_metadata() const
 {
 	return header_.MetaData.Size;
 }
 
 //Returns flags
-DWORD pe_base::basic_dotnet_info::get_flags() const
+uint32_t pe_base::basic_dotnet_info::get_flags() const
 {
 	return header_.Flags;
 }
@@ -4993,110 +5023,104 @@ DWORD pe_base::basic_dotnet_info::get_flags() const
 //Returns true if entry point is native
 bool pe_base::basic_dotnet_info::is_native_entry_point() const
 {
-#ifdef _MSC_VER
-#if _MSC_VER < 1600
-	//Not defined for VS 9
-#define COMIMAGE_FLAGS_NATIVE_ENTRYPOINT 16
-#endif
-#endif
-	return (header_.Flags & COMIMAGE_FLAGS_NATIVE_ENTRYPOINT) ? true : false;
+	return (header_.Flags & comimage_flags_native_entrypoint) ? true : false;
 }
 
 //Returns true if 32 bit required
 bool pe_base::basic_dotnet_info::is_32bit_required() const
 {
-	return (header_.Flags & COMIMAGE_FLAGS_32BITREQUIRED) ? true : false;
+	return (header_.Flags & comimage_flags_32bitrequired) ? true : false;
 }
 
 //Returns true if image is IL library
 bool pe_base::basic_dotnet_info::is_il_library() const
 {
-	return (header_.Flags & COMIMAGE_FLAGS_IL_LIBRARY) ? true : false;
+	return (header_.Flags & comimage_flags_il_library) ? true : false;
 }
 
 //Returns true if image uses IL only
 bool pe_base::basic_dotnet_info::is_il_only() const
 {
-	return (header_.Flags & COMIMAGE_FLAGS_ILONLY) ? true : false;
+	return (header_.Flags & comimage_flags_ilonly) ? true : false;
 }
 
 //Returns entry point RVA (if entry point is native)
 //Returns entry point managed token (if entry point is managed)
-DWORD pe_base::basic_dotnet_info::get_entry_point_rva_or_token() const
+uint32_t pe_base::basic_dotnet_info::get_entry_point_rva_or_token() const
 {
 	return header_.EntryPointToken;
 }
 
 //Returns RVA of managed resources
-DWORD pe_base::basic_dotnet_info::get_rva_of_resources() const
+uint32_t pe_base::basic_dotnet_info::get_rva_of_resources() const
 {
 	return header_.Resources.VirtualAddress;
 }
 
 //Returns size of managed resources
-DWORD pe_base::basic_dotnet_info::get_size_of_resources() const
+uint32_t pe_base::basic_dotnet_info::get_size_of_resources() const
 {
 	return header_.Resources.Size;
 }
 
 //Returns RVA of strong name signature
-DWORD pe_base::basic_dotnet_info::get_rva_of_strong_name_signature() const
+uint32_t pe_base::basic_dotnet_info::get_rva_of_strong_name_signature() const
 {
 	return header_.StrongNameSignature.VirtualAddress;
 }
 
 //Returns size of strong name signature
-DWORD pe_base::basic_dotnet_info::get_size_of_strong_name_signature() const
+uint32_t pe_base::basic_dotnet_info::get_size_of_strong_name_signature() const
 {
 	return header_.StrongNameSignature.Size;
 }
 
 //Returns RVA of code manager table
-DWORD pe_base::basic_dotnet_info::get_rva_of_code_manager_table() const
+uint32_t pe_base::basic_dotnet_info::get_rva_of_code_manager_table() const
 {
 	return header_.CodeManagerTable.VirtualAddress;
 }
 
 //Returns size of code manager table
-DWORD pe_base::basic_dotnet_info::get_size_of_code_manager_table() const
+uint32_t pe_base::basic_dotnet_info::get_size_of_code_manager_table() const
 {
 	return header_.CodeManagerTable.Size;
 }
 
 //Returns RVA of VTable fixups
-DWORD pe_base::basic_dotnet_info::get_rva_of_vtable_fixups() const
+uint32_t pe_base::basic_dotnet_info::get_rva_of_vtable_fixups() const
 {
 	return header_.VTableFixups.VirtualAddress;
 }
 
 //Returns size of VTable fixups
-DWORD pe_base::basic_dotnet_info::get_size_of_vtable_fixups() const
+uint32_t pe_base::basic_dotnet_info::get_size_of_vtable_fixups() const
 {
 	return header_.VTableFixups.Size;
 }
 
 //Returns RVA of export address table jumps
-DWORD pe_base::basic_dotnet_info::get_rva_of_export_address_table_jumps() const
+uint32_t pe_base::basic_dotnet_info::get_rva_of_export_address_table_jumps() const
 {
 	return header_.ExportAddressTableJumps.VirtualAddress;
 }
 
 //Returns size of export address table jumps
-DWORD pe_base::basic_dotnet_info::get_size_of_export_address_table_jumps() const
+uint32_t pe_base::basic_dotnet_info::get_size_of_export_address_table_jumps() const
 {
 	return header_.ExportAddressTableJumps.Size;
 }
 
 //Returns RVA of managed native header
 //(precompiled header info, usually set to zero, for internal use)
-DWORD pe_base::basic_dotnet_info::get_rva_of_managed_native_header() const
+uint32_t pe_base::basic_dotnet_info::get_rva_of_managed_native_header() const
 {
 	return header_.ManagedNativeHeader.VirtualAddress;
 }
 
 //Returns size of managed native header
 //(precompiled header info, usually set to zero, for internal use)
-DWORD pe_base::basic_dotnet_info::get_size_of_managed_native_header() const
+uint32_t pe_base::basic_dotnet_info::get_size_of_managed_native_header() const
 {
 	return header_.ManagedNativeHeader.Size;
 }
@@ -5110,7 +5134,7 @@ const pe_base::basic_dotnet_info pe_base::get_basic_dotnet_info() const
 		throw pe_exception("Image does not have managed code", pe_exception::image_does_not_have_managed_code);
 
 	//Return basic .NET information
-	return basic_dotnet_info(section_data_from_rva<IMAGE_COR20_HEADER>(get_directory_rva(IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR), section_data_virtual, true));
+	return basic_dotnet_info(section_data_from_rva<image_cor20_header>(get_directory_rva(image_directory_entry_com_descriptor), section_data_virtual, true));
 }
 
 
@@ -5125,15 +5149,15 @@ double pe_base::calculate_entropy(const section& s)
 }
 
 //Calculates entropy from bytes count
-double pe_base::calculate_entropy(const DWORD byte_count[256], std::streamoff total_length)
+double pe_base::calculate_entropy(const uint32_t byte_count[256], std::streamoff total_length)
 {
 	double entropy = 0.; //Entropy result value
 	//Calculate entropy
-	for(DWORD i = 0; i < 256; ++i)
+	for(uint32_t i = 0; i < 256; ++i)
 	{
 		double temp = static_cast<double>(byte_count[i]) / total_length;
 		if(temp > 0.)
-			entropy += abs(temp * (log(temp) * log_2));
+			entropy += std::abs(temp * (std::log(temp) * log_2));
 	}
 
 	return entropy;
@@ -5142,7 +5166,7 @@ double pe_base::calculate_entropy(const DWORD byte_count[256], std::streamoff to
 //Calculates entropy for istream (from current position of stream)
 double pe_base::calculate_entropy(std::istream& file)
 {
-	DWORD byte_count[256] = {0}; //Byte count for each of 255 bytes
+	uint32_t byte_count[256] = {0}; //Byte count for each of 255 bytes
 
 	if(file.bad())
 		throw pe_exception("Stream is bad", pe_exception::stream_is_bad);
@@ -5167,7 +5191,7 @@ double pe_base::calculate_entropy(std::istream& file)
 //Calculates entropy for data block
 double pe_base::calculate_entropy(const char* data, size_t length)
 {
-	DWORD byte_count[256] = {0}; //Byte count for each of 255 bytes
+	uint32_t byte_count[256] = {0}; //Byte count for each of 255 bytes
 
 	if(!length) //Don't calculate entropy for empty buffers
 		throw pe_exception("Data length is zero", pe_exception::data_is_empty);
@@ -5182,7 +5206,7 @@ double pe_base::calculate_entropy(const char* data, size_t length)
 //Calculates entropy for this PE file (only section data)
 double pe_base::calculate_entropy() const
 {
-	DWORD byte_count[256] = {0}; //Byte count for each of 255 bytes
+	uint32_t byte_count[256] = {0}; //Byte count for each of 255 bytes
 
 	size_t total_data_length = 0;
 
@@ -5214,30 +5238,30 @@ pe_base::image_directory::image_directory()
 {}
 
 //Constructor from data
-pe_base::image_directory::image_directory(DWORD rva, DWORD size)
+pe_base::image_directory::image_directory(uint32_t rva, uint32_t size)
 	:rva_(rva), size_(size)
 {}
 
 //Returns RVA
-DWORD pe_base::image_directory::get_rva() const
+uint32_t pe_base::image_directory::get_rva() const
 {
 	return rva_;
 }
 
 //Returns size
-DWORD pe_base::image_directory::get_size() const
+uint32_t pe_base::image_directory::get_size() const
 {
 	return size_;
 }
 
 //Sets RVA
-void pe_base::image_directory::set_rva(DWORD rva)
+void pe_base::image_directory::set_rva(uint32_t rva)
 {
 	rva_ = rva;
 }
 
 //Sets size
-void pe_base::image_directory::set_size(DWORD size)
+void pe_base::image_directory::set_size(uint32_t size)
 {
 	size_ = size;
 }
@@ -5273,7 +5297,7 @@ void pe_base::recalculate_section_sizes(section& s, bool auto_strip)
 			raw_data.resize(i);
 		}
 
-		s.set_size_of_raw_data(static_cast<DWORD>(raw_data.length()));
+		s.set_size_of_raw_data(static_cast<uint32_t>(raw_data.length()));
 	}
 
 	//Can occur only for last section
@@ -5286,4 +5310,49 @@ void pe_base::recalculate_section_sizes(section& s, bool auto_strip)
 const std::string& pe_base::get_full_headers_data() const
 {
 	return full_headers_data_;
+}
+
+#ifndef PELIB_ON_WINDOWS
+const u16string pe_base::to_ucs2(const std::wstring& str)
+{
+	u16string ret;
+	if(str.empty())
+		return ret;
+
+	ret.resize(str.length());
+
+	//Check for -1
+    iconv_t conv = iconv_open("UCS-2", "WCHAR_T");
+    size_t inbytesleft = str.length() * sizeof(wchar_t);
+    size_t outbytesleft = ret.length() * sizeof(unicode16_t);
+    const wchar_t* in_pos = str.c_str();
+    unicode16_t* out_pos = &ret[0];
+	//Check for -1
+    iconv(conv, const_cast<char**>(reinterpret_cast<const char**>(&in_pos)), &inbytesleft, reinterpret_cast<char**>(&out_pos), &outbytesleft);
+    iconv_close(conv);
+
+	return ret;
+}
+
+const std::wstring pe_base::from_ucs2(const u16string& str)
+{
+	std::wstring ret;
+	if(str.empty())
+		return ret;
+	
+	ret.resize(str.length());
+
+	//Check for -1
+    iconv_t conv = iconv_open("WCHAR_T", "UCS-2");
+    size_t inbytesleft = str.length() * sizeof(unicode16_t);
+    size_t outbytesleft = ret.length() * sizeof(wchar_t);
+    const unicode16_t* in_pos = str.c_str();
+    wchar_t* out_pos = &ret[0];
+	//Check for -1
+    iconv(conv, const_cast<char**>(reinterpret_cast<const char**>(&in_pos)), &inbytesleft, reinterpret_cast<char**>(&out_pos), &outbytesleft);
+    iconv_close(conv);
+
+	return ret;
+}
+#endif
 }

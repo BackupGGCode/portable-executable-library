@@ -1,7 +1,12 @@
 ﻿#include <iostream>
 #include <fstream>
 #include <pe_factory.h>
+#include <stdint_defs.h>
+#ifdef PELIB_ON_WINDOWS
 #include "lib.h"
+#endif
+
+using namespace pe_bliss;
 
 //Пример, показывающий, как изменить базовый адрес загрузки PE-файла при условии наличия релокаций
 int main(int argc, char* argv[])
@@ -33,7 +38,7 @@ int main(int argc, char* argv[])
 		}
 
 		//Получим значение базового адреса загрузки образа (64-бита, универсально для PE и PE+)
-		ULONGLONG base = image->get_image_base_64();
+		uint64_t base = image->get_image_base_64();
 		base += 0x100000; //Изменим базовый адрес загрузки
 		
 		//Произведем пересчет необходимых байтов

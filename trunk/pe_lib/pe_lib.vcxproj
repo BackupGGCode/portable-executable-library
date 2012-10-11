@@ -32,6 +32,7 @@
     <ClInclude Include="pe_factory.h" />
     <ClInclude Include="pe_resource_manager.h" />
     <ClInclude Include="pe_structures.h" />
+    <ClInclude Include="stdint_defs.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="readme.txt" />
@@ -39,7 +40,8 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{1461F543-D1FA-4E4C-B6D7-0F879F566035}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>pe_lib</RootNamespace>
+    <RootNamespace>pe_bliss</RootNamespace>
+    <ProjectName>pe_bliss</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

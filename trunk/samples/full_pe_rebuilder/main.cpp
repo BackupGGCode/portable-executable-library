@@ -3,7 +3,11 @@
 #include <sstream>
 #include <pe_factory.h>
 #include <pe_32_64.h>
+#ifdef PELIB_ON_WINDOWS
 #include "lib.h"
+#endif
+
+using namespace pe_bliss;
 
 //Пример, показывающий, как с нуля создать PE-файл
 int main(int argc, char* argv[])

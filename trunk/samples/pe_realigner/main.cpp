@@ -1,7 +1,11 @@
 ﻿#include <iostream>
 #include <fstream>
 #include <pe_factory.h>
+#ifdef PELIB_ON_WINDOWS
 #include "lib.h"
+#endif
+
+using namespace pe_bliss;
 
 //Пример, показывающий, как изменить файловое выравнивание PE-файлов
 int main(int argc, char* argv[])
@@ -29,7 +33,7 @@ int main(int argc, char* argv[])
 		std::cout << "File alignment: " << image->get_file_alignment() << std::endl;
 		
 		//Предложим выбрать новое выравнивание
-		DWORD new_alignment_index = static_cast<DWORD>(-1);
+		unsigned int new_alignment_index = static_cast<unsigned int>(-1);
 
 		while(new_alignment_index > 3)
 		{
@@ -44,8 +48,8 @@ int main(int argc, char* argv[])
 			std::cout << "(0 = 512, 1 = 1024, 2 = 2048, 3 = 4096): ";
 			std::cin >> new_alignment_index;
 		}
-
-		DWORD available_aligns[] = {512, 1024, 2048, 4096};
+		
+		unsigned int available_aligns[] = {512, 1024, 2048, 4096};
 
 		//Изменим выравнивание на то, которое указал пользователь
 		image->realign_file(available_aligns[new_alignment_index]);

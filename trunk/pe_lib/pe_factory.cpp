@@ -1,6 +1,8 @@
 #include "pe_factory.h"
 #include "pe_32_64.h"
 
+namespace pe_bliss
+{
 std::auto_ptr<pe_base> pe_factory::create_pe(std::istream& file, bool read_bound_import_raw_data, bool read_debug_raw_data)
 {
 	std::auto_ptr<pe_base> ret;
@@ -12,4 +14,5 @@ std::auto_ptr<pe_base> pe_factory::create_pe(std::istream& file, bool read_bound
 		);
 
 	return ret;
+}
 }

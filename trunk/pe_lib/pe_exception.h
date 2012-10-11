@@ -2,6 +2,8 @@
 #include <exception>
 #include <stdexcept>
 
+namespace pe_bliss
+{
 //PE exception class
 class pe_exception : public std::runtime_error
 {
@@ -96,3 +98,4 @@ public:
 private:
 	exception_id id_;
 };
+}

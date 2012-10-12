@@ -3,13 +3,13 @@
 #include <sstream>
 #include <pe_factory.h>
 #include <pe_32_64.h>
-#ifdef PELIB_ON_WINDOWS
+#ifdef PE_BLISS_WINDOWS
 #include "lib.h"
 #endif
 
 using namespace pe_bliss;
 
-//Пример, показывающий, как с нуля создать PE-файл
+//РџСЂРёРјРµСЂ, РїРѕРєР°Р·С‹РІР°СЋС‰РёР№, РєР°Рє СЃ РЅСѓР»СЏ СЃРѕР·РґР°С‚СЊ PE-С„Р°Р№Р»
 int main(int argc, char* argv[])
 {
 	if(argc != 2)
@@ -18,7 +18,7 @@ int main(int argc, char* argv[])
 		return 0;
 	}
 
-	//Открываем файл
+	//РћС‚РєСЂС‹РІР°РµРј С„Р°Р№Р»
 	std::ifstream pe_file(argv[1], std::ios::in | std::ios::binary);
 	if(!pe_file)
 	{
@@ -28,19 +28,19 @@ int main(int argc, char* argv[])
 
 	try
 	{
-		//Новый образ, который мы создадим из открытого с нуля
+		//РќРѕРІС‹Р№ РѕР±СЂР°Р·, РєРѕС‚РѕСЂС‹Р№ РјС‹ СЃРѕР·РґР°РґРёРј РёР· РѕС‚РєСЂС‹С‚РѕРіРѕ СЃ РЅСѓР»СЏ
 		std::auto_ptr<pe_base> new_image;
 
 		{
-			//Создаем экземпляр PE или PE+ класса с помощью фабрики
+			//РЎРѕР·РґР°РµРј СЌРєР·РµРјРїР»СЏСЂ PE РёР»Рё PE+ РєР»Р°СЃСЃР° СЃ РїРѕРјРѕС‰СЊСЋ С„Р°Р±СЂРёРєРё
 			std::auto_ptr<pe_base> image = pe_factory::create_pe(pe_file);
 
-			//Создаем новый пустой образ
+			//РЎРѕР·РґР°РµРј РЅРѕРІС‹Р№ РїСѓСЃС‚РѕР№ РѕР±СЂР°Р·
 			new_image.reset(image->get_pe_type() == pe_base::pe_type_32
 				? static_cast<pe_base*>(new pe32(image->get_section_alignment()))
 				: static_cast<pe_base*>(new pe64(image->get_section_alignment())));
 
-			//Копируем важные параметры старого образа в новый
+			//РљРѕРїРёСЂСѓРµРј РІР°Р¶РЅС‹Рµ РїР°СЂР°РјРµС‚СЂС‹ СЃС‚Р°СЂРѕРіРѕ РѕР±СЂР°Р·Р° РІ РЅРѕРІС‹Р№
 			new_image->set_characteristics(image->get_characteristics());
 			new_image->set_dll_characteristics(image->get_dll_characteristics());
 			new_image->set_file_alignment(image->get_file_alignment());
@@ -53,14 +53,14 @@ int main(int argc, char* argv[])
 			new_image->set_number_of_rvas_and_sizes(new_image->get_number_of_rvas_and_sizes());
 			new_image->set_subsystem(image->get_subsystem());
 
-			//Копируем все существующие директории
+			//РљРѕРїРёСЂСѓРµРј РІСЃРµ СЃСѓС‰РµСЃС‚РІСѓСЋС‰РёРµ РґРёСЂРµРєС‚РѕСЂРёРё
 			for(unsigned long i = 0; i < image->get_number_of_rvas_and_sizes(); ++i)
 			{
 				new_image->set_directory_rva(i, image->get_directory_rva(i));
 				new_image->set_directory_size(i, image->get_directory_size(i));
 			}
 
-			//Копируем данные секций
+			//РљРѕРїРёСЂСѓРµРј РґР°РЅРЅС‹Рµ СЃРµРєС†РёР№
 			{
 				const pe_base::section_list& pe_sections = image->get_image_sections();
 				for(pe_base::section_list::const_iterator it = pe_sections.begin(); it != pe_sections.end(); ++it)
@@ -69,8 +69,8 @@ int main(int argc, char* argv[])
 		}
 
 
-		//Просчитаем контрольную сумму нового PE-файла
-		//и сохраним ее (для примера)
+		//РџСЂРѕСЃС‡РёС‚Р°РµРј РєРѕРЅС‚СЂРѕР»СЊРЅСѓСЋ СЃСѓРјРјСѓ РЅРѕРІРѕРіРѕ PE-С„Р°Р№Р»Р°
+		//Рё СЃРѕС…СЂР°РЅРёРј РµРµ (РґР»СЏ РїСЂРёРјРµСЂР°)
 		{
 			std::stringstream temp_pe(std::ios::out | std::ios::in | std::ios::binary);
 			new_image->rebuild_pe(temp_pe);
@@ -78,7 +78,7 @@ int main(int argc, char* argv[])
 		}
 
 
-		//Создаем новый PE-файл
+		//РЎРѕР·РґР°РµРј РЅРѕРІС‹Р№ PE-С„Р°Р№Р»
 		std::string base_file_name(argv[1]);
 		std::string::size_type slash_pos;
 		if((slash_pos = base_file_name.find_last_of("/\\")) != std::string::npos)
@@ -92,14 +92,14 @@ int main(int argc, char* argv[])
 			return -1;
 		}
 
-		//Пересобираем PE-файл из нового обраща
+		//РџРµСЂРµСЃРѕР±РёСЂР°РµРј PE-С„Р°Р№Р» РёР· РЅРѕРІРѕРіРѕ РѕР±СЂР°С‰Р°
 		new_image->rebuild_pe(new_pe_file);
 
 		std::cout << "PE was rebuilt and saved to " << base_file_name << std::endl;
 	}
 	catch(const pe_exception& e)
 	{
-		//Если возникла ошибка
+		//Р•СЃР»Рё РІРѕР·РЅРёРєР»Р° РѕС€РёР±РєР°
 		std::cout << "Error: " << e.what() << std::endl;
 		return -1;
 	}

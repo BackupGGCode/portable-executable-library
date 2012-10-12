@@ -3,7 +3,7 @@
 #include <sstream>
 #include "stdint_defs.h"
 #if defined(_MSC_VER)
-#define PELIB_ON_WINDOWS
+#define PE_BLISS_WINDOWS
 #endif
 
 namespace pe_bliss
@@ -975,7 +975,7 @@ struct image_load_config_directory64
 #pragma pack(pop)
 
 
-#ifdef PELIB_ON_WINDOWS
+#ifdef PE_BLISS_WINDOWS
 typedef wchar_t unicode16_t;
 typedef std::basic_string<unicode16_t> u16string;
 #else

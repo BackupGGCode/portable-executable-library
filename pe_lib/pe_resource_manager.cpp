@@ -719,7 +719,7 @@ const pe_resource_viewer::string_list pe_resource_viewer::parse_string_list(uint
 		if(string_length)
 		{
 			//Create and save string (UNICODE)
-#ifdef PELIB_ON_WINDOWS
+#ifdef PE_BLISS_WINDOWS
 			ret.insert(
 				std::make_pair(static_cast<uint16_t>(((id - 1) << 4) + i), //ID of string is calculated in such way
 				std::wstring(reinterpret_cast<const wchar_t*>(resource_data.data() + passed_bytes), string_length)));
@@ -873,7 +873,7 @@ const pe_resource_viewer::message_list pe_resource_viewer::parse_message_list(co
 					throw pe_exception("Incorrect resource message table", pe_exception::resource_incorrect_message_table);
 
 				//Add ID and string to message table
-#ifdef PELIB_ON_WINDOWS
+#ifdef PE_BLISS_WINDOWS
 				ret.insert(std::make_pair(curr_id, message_table_item(
 					std::wstring(reinterpret_cast<const wchar_t*>(resource_data.data() + block->OffsetToEntries + current_pos + size_of_entry_headers),
 					(entry->Length - size_of_entry_headers) / 2)
@@ -1074,7 +1074,7 @@ const pe_resource_viewer::file_version_info pe_resource_viewer::get_version_info
 					}
 
 					//Save name-value pair
-#ifdef PELIB_ON_WINDOWS
+#ifdef PE_BLISS_WINDOWS
 					new_values.insert(std::make_pair(reinterpret_cast<const unicode16_t*>(string_block->Key), data));
 #else
 					new_values.insert(std::make_pair(pe_base::from_ucs2(reinterpret_cast<const unicode16_t*>(string_block->Key)),
@@ -1085,7 +1085,7 @@ const pe_resource_viewer::file_version_info pe_resource_viewer::get_version_info
 					string_pos += pe_base::align_up(string_block->Length, sizeof(uint32_t));
 				}
 
-#ifdef PELIB_ON_WINDOWS
+#ifdef PE_BLISS_WINDOWS
 				string_values.insert(std::make_pair(reinterpret_cast<const unicode16_t*>(string_table->Key), new_values));
 #else
 				string_values.insert(std::make_pair(pe_base::from_ucs2(reinterpret_cast<const unicode16_t*>(string_table->Key)), new_values));
@@ -2435,7 +2435,7 @@ void pe_resource_manager::set_version_info(const file_version_info& file_info, c
 			uint32_t old_ptr2 = data_ptr; //Used to calculate string table block length later
 			uint32_t lang_key_length = static_cast<uint32_t>(((*table_it).first.length() + 1) * sizeof(uint16_t));
 
-#ifdef PELIB_ON_WINDOWS
+#ifdef PE_BLISS_WINDOWS
 			memcpy(&version_data[data_ptr], (*table_it).first.c_str(), lang_key_length); //Write block key
 #else
 			{
@@ -2467,7 +2467,7 @@ void pe_resource_manager::set_version_info(const file_version_info& file_info, c
 				memcpy(&version_data[data_ptr], &string_block, sizeof(version_info_block) - sizeof(uint16_t));
 				data_ptr += sizeof(version_info_block) - sizeof(uint16_t);
 
-#ifdef PELIB_ON_WINDOWS
+#ifdef PE_BLISS_WINDOWS
 				memcpy(&version_data[data_ptr], (*it).first.c_str(), key_length); //Write block key
 #else
 				{
@@ -2485,7 +2485,7 @@ void pe_resource_manager::set_version_info(const file_version_info& file_info, c
 				}
 
 				//Write block data (value)
-#ifdef PELIB_ON_WINDOWS
+#ifdef PE_BLISS_WINDOWS
 				memcpy(&version_data[data_ptr], (*it).second.c_str(), string_block.ValueLength * sizeof(uint16_t));
 #else
 				{

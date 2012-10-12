@@ -2,7 +2,7 @@
 #include <fstream>
 #include <pe_factory.h>
 #include <pe_resource_manager.h>
-#ifdef PELIB_ON_WINDOWS
+#ifdef PE_BLISS_WINDOWS
 #include "resource.h"
 #include "lib.h"
 #else
@@ -18,7 +18,7 @@ int main(int argc, char* argv[])
 {
 	std::string pe_filename;
 
-#ifdef PELIB_ON_WINDOWS
+#ifdef PE_BLISS_WINDOWS
 	//Открываем файл (сами себя)
 	pe_filename = argv[0];
 #else

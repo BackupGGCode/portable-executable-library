@@ -11,7 +11,7 @@
 #include "pe_structures.h"
 
 //Please don't remove this information from header
-//PEBliss 0.2
+//PEBliss 0.2.1
 //(c) DX 2011 - 2012, http://kaimi.ru
 //Free to use, modify and distribute
 
@@ -2167,7 +2167,7 @@ private:
 	//Calculates entropy from bytes count
 	static double calculate_entropy(const uint32_t byte_count[256], std::streamoff total_length);
 
-#ifndef PELIB_ON_WINDOWS
+#ifndef PE_BLISS_WINDOWS
 public:
 	static const u16string to_ucs2(const std::wstring& str);
 	static const std::wstring from_ucs2(const u16string& str);

@@ -80,7 +80,9 @@ public:
 
 		version_info_string_does_not_exist,
 
-		no_more_sections_can_be_added
+		no_more_sections_can_be_added,
+
+		encoding_convertion_error
 	};
 
 public:

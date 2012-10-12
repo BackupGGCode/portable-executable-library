@@ -1,7 +1,7 @@
 ﻿#include <iostream>
 #include <fstream>
 #include <pe_factory.h>
-#ifdef PELIB_ON_WINDOWS
+#ifdef PE_BLISS_WINDOWS
 #include "lib.h"
 #endif
 

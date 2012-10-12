@@ -9,7 +9,7 @@
 #include "pe_exception.h"
 #include "pe_base.h"
 
-#ifndef PELIB_ON_WINDOWS
+#ifndef PE_BLISS_WINDOWS
 #include <iconv.h>
 #endif
 
@@ -3688,7 +3688,7 @@ const pe_base::resource_directory pe_base::process_resource_directory(uint32_t r
 			if(section_data_length_from_rva(res_rva + dir_entry.NameOffset + sizeof(uint16_t), res_rva + dir_entry.NameOffset + sizeof(uint16_t), section_data_virtual, true) < directory_name_length)
 				throw pe_exception("Incorrect resource directory", pe_exception::incorrect_resource_directory);
 
-#ifdef PELIB_ON_WINDOWS
+#ifdef PE_BLISS_WINDOWS
 			//Set entry UNICODE name
 			entry.set_name(std::wstring(
 				reinterpret_cast<const wchar_t*>(section_data_from_rva(res_rva + dir_entry.NameOffset + sizeof(uint16_t), section_data_virtual, true)),
@@ -3798,7 +3798,7 @@ void pe_base::rebuild_resource_directory(section& resource_section, resource_dir
 			memcpy(&raw_data[current_strings_pos], &unicode_length, sizeof(unicode_length));
 			current_strings_pos += sizeof(unicode_length);
 
-#ifdef PELIB_ON_WINDOWS
+#ifdef PE_BLISS_WINDOWS
 			memcpy(&raw_data[current_strings_pos], (*it).get_name().c_str(), (*it).get_name().length() * sizeof(uint16_t) + sizeof(uint16_t) /* unicode */);
 #else
 			{
@@ -4512,7 +4512,7 @@ pe_base::misc_debug_info::misc_debug_info(const image_debug_misc* info)
 	//IMAGE_DEBUG_MISC::Data must be checked before!
 	if(info->Unicode)
 	{
-#ifdef PELIB_ON_WINDOWS
+#ifdef PE_BLISS_WINDOWS
 		debug_data_unicode_ = std::wstring(reinterpret_cast<const wchar_t*>(info->Data), (info->Length - sizeof(image_debug_misc) + 1 /* BYTE[1] in the end of structure */) / 2);
 #else
 		debug_data_unicode_ = from_ucs2(u16string(reinterpret_cast<const unicode16_t*>(info->Data), (info->Length - sizeof(image_debug_misc) + 1 /* BYTE[1] in the end of structure */) / 2));
@@ -5312,7 +5312,7 @@ const std::string& pe_base::get_full_headers_data() const
 	return full_headers_data_;
 }
 
-#ifndef PELIB_ON_WINDOWS
+#ifndef PE_BLISS_WINDOWS
 const u16string pe_base::to_ucs2(const std::wstring& str)
 {
 	u16string ret;
@@ -5321,15 +5321,20 @@ const u16string pe_base::to_ucs2(const std::wstring& str)
 
 	ret.resize(str.length());
 
-	//Check for -1
-    iconv_t conv = iconv_open("UCS-2", "WCHAR_T");
-    size_t inbytesleft = str.length() * sizeof(wchar_t);
-    size_t outbytesleft = ret.length() * sizeof(unicode16_t);
-    const wchar_t* in_pos = str.c_str();
-    unicode16_t* out_pos = &ret[0];
-	//Check for -1
-    iconv(conv, const_cast<char**>(reinterpret_cast<const char**>(&in_pos)), &inbytesleft, reinterpret_cast<char**>(&out_pos), &outbytesleft);
-    iconv_close(conv);
+	iconv_t conv = iconv_open("UCS-2", "WCHAR_T");
+	if(conv == reinterpret_cast<iconv_t>(-1))
+		throw pe_exception("Error opening iconv", pe_exception::encoding_convertion_error);
+
+	size_t inbytesleft = str.length() * sizeof(wchar_t);
+	size_t outbytesleft = ret.length() * sizeof(unicode16_t);
+	const wchar_t* in_pos = str.c_str();
+	unicode16_t* out_pos = &ret[0];
+
+	size_t result = iconv(conv, const_cast<char**>(reinterpret_cast<const char**>(&in_pos)), &inbytesleft, reinterpret_cast<char**>(&out_pos), &outbytesleft);
+	iconv_close(conv);
+	
+	if(result == static_cast<size_t>(-1))
+		throw pe_exception("Iconv error", pe_exception::encoding_convertion_error);
 
 	return ret;
 }
@@ -5339,18 +5344,23 @@ const std::wstring pe_base::from_ucs2(const u16string& str)
 	std::wstring ret;
 	if(str.empty())
 		return ret;
-	
+
 	ret.resize(str.length());
 
-	//Check for -1
-    iconv_t conv = iconv_open("WCHAR_T", "UCS-2");
-    size_t inbytesleft = str.length() * sizeof(unicode16_t);
-    size_t outbytesleft = ret.length() * sizeof(wchar_t);
-    const unicode16_t* in_pos = str.c_str();
-    wchar_t* out_pos = &ret[0];
-	//Check for -1
-    iconv(conv, const_cast<char**>(reinterpret_cast<const char**>(&in_pos)), &inbytesleft, reinterpret_cast<char**>(&out_pos), &outbytesleft);
-    iconv_close(conv);
+	iconv_t conv = iconv_open("WCHAR_T", "UCS-2");
+	if(conv == reinterpret_cast<iconv_t>(-1))
+		throw pe_exception("Error opening iconv", pe_exception::encoding_convertion_error);
+
+	size_t inbytesleft = str.length() * sizeof(unicode16_t);
+	size_t outbytesleft = ret.length() * sizeof(wchar_t);
+	const unicode16_t* in_pos = str.c_str();
+	wchar_t* out_pos = &ret[0];
+
+	size_t result = iconv(conv, const_cast<char**>(reinterpret_cast<const char**>(&in_pos)), &inbytesleft, reinterpret_cast<char**>(&out_pos), &outbytesleft);
+	iconv_close(conv);
+
+	if(result == static_cast<size_t>(-1))
+		throw pe_exception("Iconv error", pe_exception::encoding_convertion_error);
 
 	return ret;
 }

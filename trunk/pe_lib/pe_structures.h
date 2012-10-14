@@ -8,6 +8,8 @@
 
 namespace pe_bliss
 {
+namespace pe_win
+{
 const uint32_t image_numberof_directory_entries = 16;
 const uint32_t image_nt_optional_hdr32_magic = 0x10b;
 const uint32_t image_nt_optional_hdr64_magic = 0x20b;
@@ -973,7 +975,7 @@ struct image_load_config_directory64
 };
 
 #pragma pack(pop)
-
+} //namespace pe_win
 
 #ifdef PE_BLISS_WINDOWS
 typedef wchar_t unicode16_t;
@@ -983,4 +985,5 @@ typedef std::basic_string<unicode16_t> u16string;
 typedef unsigned short unicode16_t;
 typedef std::basic_string<unicode16_t> u16string;
 #endif
-}
+
+} //namespace pe_bliss

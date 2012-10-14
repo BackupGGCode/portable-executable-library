@@ -8,6 +8,8 @@
 
 namespace pe_bliss
 {
+using namespace pe_win;
+
 //Root version info block key value
 const u16string pe_resource_viewer::version_info_key(U16TEXT("V\0S\0_\0V\0E\0R\0S\0I\0O\0N\0_\0I\0N\0F\0O\0\0"));
 //Default process language, UNICODE

@@ -130,7 +130,7 @@ int main(int argc, char* argv[])
 		//Осталось переименовать старую секцию ресурсов
 		//Она называется .rsrc
 		//Переименование необходимо для того, чтобы Windows Explorer смог считать из новой секции иконку
-		image->section_from_directory(image_directory_entry_resource).set_name("oldres");
+		image->section_from_directory(pe_win::image_directory_entry_resource).set_name("oldres");
 
 		//Пересоберем ресурсы
 		//Они будет иметь больший размер, чем до нашего редактирования,

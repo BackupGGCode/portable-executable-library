@@ -11,7 +11,7 @@
 #include "pe_structures.h"
 
 //Please don't remove this information from header
-//PEBliss 0.2.1
+//PEBliss 0.2.2
 //(c) DX 2011 - 2012, http://kaimi.ru
 //Free to use, modify and distribute
 
@@ -45,7 +45,7 @@ public: //STUB OVERLAY
 		uint32_t get_version() const;
 		uint32_t get_times() const;
 
-	public: //Setters, user by PE library only
+	public: //Setters, used by PE library only
 		void set_number(uint32_t number);
 		void set_version(uint32_t version);
 		void set_times(uint32_t times);
@@ -133,7 +133,7 @@ public: //SECTIONS
 
 	private:
 		//Section header
-		image_section_header header_;
+		pe_win::image_section_header header_;
 
 		//Aligned sizes of section
 		uint32_t raw_size_aligned_;
@@ -260,8 +260,8 @@ public: //DIRECTORIES
 
 public: //PE HEADER
 	//Returns DOS header
-	const image_dos_header& get_dos_header() const;
-	image_dos_header& get_dos_header();
+	const pe_win::image_dos_header& get_dos_header() const;
+	pe_win::image_dos_header& get_dos_header();
 
 	//returns PE header start (e_lfanew)
 	int32_t get_pe_header_start() const;
@@ -1444,7 +1444,7 @@ public: //RESOURCES
 		//Default constructor
 		resource_directory();
 		//Constructor from data
-		explicit resource_directory(const image_resource_directory& dir);
+		explicit resource_directory(const pe_win::image_resource_directory& dir);
 
 		//Returns characteristics of directory
 		uint32_t get_characteristics() const;
@@ -1556,7 +1556,7 @@ public: //EXCEPTION DIRECTORY (exists on PE+ only)
 		//Default constructor
 		exception_entry();
 		//Constructor from data
-		exception_entry(const image_runtime_function_entry& entry, const unwind_info& unwind_info);
+		exception_entry(const pe_win::image_runtime_function_entry& entry, const pe_win::unwind_info& unwind_info);
 
 		//Returns starting address of function, affected by exception unwinding
 		uint32_t get_begin_address() const;
@@ -1618,10 +1618,10 @@ public: //DEBUG
 		//Default constructor
 		pdb_7_0_info();
 		//Constructor from data
-		explicit pdb_7_0_info(const CV_INFO_PDB70* info);
+		explicit pdb_7_0_info(const pe_win::CV_INFO_PDB70* info);
 
 		//Returns debug PDB 7.0 structure GUID
-		const guid get_guid() const;
+		const pe_win::guid get_guid() const;
 		//Returns age of build
 		uint32_t get_age() const;
 		//Returns PDB file name / path
@@ -1629,7 +1629,7 @@ public: //DEBUG
 
 	private:
 		uint32_t age_;
-		guid guid_;
+		pe_win::guid guid_;
 		std::string pdb_file_name_;
 	};
 
@@ -1640,7 +1640,7 @@ public: //DEBUG
 		//Default constructor
 		pdb_2_0_info();
 		//Constructor from data
-		explicit pdb_2_0_info(const CV_INFO_PDB20* info);
+		explicit pdb_2_0_info(const pe_win::CV_INFO_PDB20* info);
 
 		//Returns debug PDB 2.0 structure signature
 		uint32_t get_signature() const;
@@ -1662,7 +1662,7 @@ public: //DEBUG
 		//Default constructor
 		misc_debug_info();
 		//Constructor from data
-		explicit misc_debug_info(const image_debug_misc* info);
+		explicit misc_debug_info(const pe_win::image_debug_misc* info);
 
 		//Returns debug data type
 		uint32_t get_data_type() const;
@@ -1742,7 +1742,7 @@ public: //DEBUG
 		//Default constructor
 		coff_debug_info();
 		//Constructor from data
-		explicit coff_debug_info(const image_coff_symbols_header* info);
+		explicit coff_debug_info(const pe_win::image_coff_symbols_header* info);
 
 		//Returns number of symbols
 		uint32_t get_number_of_symbols() const;
@@ -1822,7 +1822,7 @@ public: //DEBUG
 		//Default constructor
 		debug_info();
 		//Constructor from data
-		explicit debug_info(const image_debug_directory& debug);
+		explicit debug_info(const pe_win::image_debug_directory& debug);
 		//Copy constructor
 		debug_info(const debug_info& info);
 		//Copy assignment operator
@@ -1916,7 +1916,7 @@ public: //.NET
 		//Default constructor
 		basic_dotnet_info();
 		//Constructor from data
-		explicit basic_dotnet_info(const image_cor20_header& header);
+		explicit basic_dotnet_info(const pe_win::image_cor20_header& header);
 
 		//Returns major runtime version
 		uint16_t get_major_runtime_version() const;
@@ -1972,7 +1972,7 @@ public: //.NET
 		uint32_t get_size_of_managed_native_header() const;
 
 	private:
-		image_cor20_header header_;
+		pe_win::image_cor20_header header_;
 	};
 
 	//Returns basic .NET information
@@ -2054,7 +2054,7 @@ public: //UTILS
 	// ========== END OF PUBLIC MEMBERS AND STRUCTURES ========== //
 protected:
 	//Image DOS header
-	image_dos_header dos_header_;
+	pe_win::image_dos_header dos_header_;
 	//Rich (stub) overlay data (for MSVS)
 	std::string rich_overlay_;
 	//List of image sections
@@ -2075,7 +2075,7 @@ protected:
 	//Reads and checks DOS header
 	void read_dos_header(std::istream& file);
 	//Reads and checks DOS header
-	static void read_dos_header(std::istream& file, image_dos_header& header);
+	static void read_dos_header(std::istream& file, pe_win::image_dos_header& header);
 	//Returns stream size
 	static std::streamoff get_file_size(std::istream& file);
 

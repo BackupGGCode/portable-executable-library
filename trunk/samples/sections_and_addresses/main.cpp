@@ -37,7 +37,7 @@ int main(int argc, char* argv[])
 
 		//Если у PE-файла есть импорты, выведем имя секции, в которой они находятся
 		if(image->has_imports())
-			std::cout << "Import section name: " << image->section_from_directory(image_directory_entry_import).get_name() << std::endl;
+			std::cout << "Import section name: " << image->section_from_directory(pe_win::image_directory_entry_import).get_name() << std::endl;
 	}
 	catch(const pe_exception& e)
 	{

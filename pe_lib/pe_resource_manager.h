@@ -251,7 +251,7 @@ public: //VERSION INFO
 		//Default constructor
 		file_version_info();
 		//Constructor from Windows fixed version info structure
-		explicit file_version_info(const vs_fixedfileinfo& info);
+		explicit file_version_info(const pe_win::vs_fixedfileinfo& info);
 
 	public: //Getters
 		//Returns true if file is debug-built

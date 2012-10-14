@@ -43,7 +43,7 @@ public:
 	explicit pe(std::istream& file, bool read_bound_import_raw_data = true, bool read_debug_raw_data = true);
 	
 	//Constructor of empty PE file
-	explicit pe(uint32_t section_alignment = 0x1000, bool dll = false, uint16_t subsystem = image_subsystem_windows_gui);
+	explicit pe(uint32_t section_alignment = 0x1000, bool dll = false, uint16_t subsystem = pe_win::image_subsystem_windows_gui);
 	
 	//Destructor
 	virtual ~pe();
@@ -286,6 +286,19 @@ protected:
 };
 
 //Two used typedefs for PE32 (PE) and PE64 (PE+)
-typedef pe<pe_class_type<image_nt_headers32, image_optional_header32, image_nt_optional_hdr32_magic, uint32_t, image_ordinal_flag32, image_tls_directory32, image_load_config_directory32> > pe32;
-typedef pe<pe_class_type<image_nt_headers64, image_optional_header64, image_nt_optional_hdr64_magic, uint64_t, image_ordinal_flag64, image_tls_directory64, image_load_config_directory64> > pe64;
+typedef pe<pe_class_type<pe_win::image_nt_headers32,
+	pe_win::image_optional_header32,
+	pe_win::image_nt_optional_hdr32_magic,
+	uint32_t,
+	pe_win::image_ordinal_flag32,
+	pe_win::image_tls_directory32,
+	pe_win::image_load_config_directory32> > pe32;
+
+typedef pe<pe_class_type<pe_win::image_nt_headers64,
+	pe_win::image_optional_header64,
+	pe_win::image_nt_optional_hdr64_magic,
+	uint64_t,
+	pe_win::image_ordinal_flag64,
+	pe_win::image_tls_directory64,
+	pe_win::image_load_config_directory64> > pe64;
 }

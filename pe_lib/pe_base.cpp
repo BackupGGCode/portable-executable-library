@@ -15,6 +15,8 @@
 
 namespace pe_bliss
 {
+using namespace pe_win;
+
 const double pe_base::log_2 = 1.44269504088896340736; //instead of using M_LOG2E
 
 //Destructor
@@ -5130,7 +5132,7 @@ uint32_t pe_base::basic_dotnet_info::get_size_of_managed_native_header() const
 const pe_base::basic_dotnet_info pe_base::get_basic_dotnet_info() const
 {
 	//If there's no debug directory, return empty list
-	if(!has_debug())
+	if(!is_dotnet())
 		throw pe_exception("Image does not have managed code", pe_exception::image_does_not_have_managed_code);
 
 	//Return basic .NET information

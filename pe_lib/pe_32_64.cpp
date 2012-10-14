@@ -4,6 +4,8 @@
 
 namespace pe_bliss
 {
+using namespace pe_win;
+
 //Constructor of empty PE file
 template<typename PEClassType>
 pe<PEClassType>::pe(uint32_t section_alignment, bool dll, uint16_t subsystem)

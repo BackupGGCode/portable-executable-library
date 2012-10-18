@@ -17,6 +17,13 @@ const uint32_t image_resource_name_is_string = 0x80000000;
 const uint32_t image_resource_data_is_directory = 0x80000000;
 
 const uint32_t image_dllcharacteristics_dynamic_base = 0x0040;     // DLL can move.
+const uint32_t image_dllcharacteristics_force_integrity = 0x0080;     // Code Integrity Image
+const uint32_t image_dllcharacteristics_nx_compat = 0x0100;     // Image is NX compatible
+const uint32_t image_dllcharacteristics_no_isolation = 0x0200;     // Image understands isolation and doesn't want it
+const uint32_t image_dllcharacteristics_no_seh = 0x0400;     // Image does not use SEH.  No SE handler may reside in this image
+const uint32_t image_dllcharacteristics_no_bind = 0x0800;     // Do not bind this image.
+const uint32_t image_dllcharacteristics_wdm_driver = 0x2000;     // Driver uses WDM model
+const uint32_t image_dllcharacteristics_terminal_server_aware = 0x8000;
 
 const uint32_t image_sizeof_file_header = 20;
 
@@ -44,6 +51,10 @@ const uint32_t image_scn_mem_shared = 0x10000000;  // Section is shareable.
 const uint32_t image_scn_mem_execute = 0x20000000;  // Section is executable.
 const uint32_t image_scn_mem_read = 0x40000000;  // Section is readable.
 const uint32_t image_scn_mem_write = 0x80000000;  // Section is writeable.
+
+const uint32_t image_scn_cnt_code = 0x00000020;  // Section contains code.
+const uint32_t image_scn_cnt_initialized_data = 0x00000040;  // Section contains initialized data.
+const uint32_t image_scn_cnt_uninitialized_data = 0x00000080;  // Section contains uninitialized data.
 
 //Directory Entries
 const uint32_t image_directory_entry_export = 0;   // Export Directory

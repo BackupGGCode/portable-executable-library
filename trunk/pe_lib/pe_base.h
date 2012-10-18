@@ -11,7 +11,7 @@
 #include "pe_structures.h"
 
 //Please don't remove this information from header
-//PEBliss 0.2.2
+//PEBliss 0.2.3
 //(c) DX 2011 - 2012, http://kaimi.ru
 //Free to use, modify and distribute
 
@@ -83,11 +83,15 @@ public: //SECTIONS
 		section& readable(bool readable);
 		section& writeable(bool writeable);
 		section& executable(bool executable);
+		section& shared(bool shared);
+		section& discardable(bool discardable);
 
 		//Returns attributes of section
 		bool readable() const;
 		bool writeable() const;
 		bool executable() const;
+		bool shared() const;
+		bool discardable() const;
 
 		//Returns true if section has no RAW data
 		bool empty() const;
@@ -144,6 +148,9 @@ public: //SECTIONS
 
 		//Unmaps virtual section data
 		void unmap_virtual() const;
+
+		//Set flag (attribute) of section
+		section& set_flag(uint32_t flag, bool setflag);
 
 		//Old size of section (stored after mapping of virtual section memory)
 		mutable std::size_t old_size_;

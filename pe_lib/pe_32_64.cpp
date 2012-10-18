@@ -1214,9 +1214,9 @@ const pe_base::image_directory pe<PEClassType>::rebuild_tls(const tls_info& info
 	//Check that tls_section is attached to this PE image
 	if(!section_attached(tls_section))
 		throw pe_exception("TLS section must be attached to PE file", pe_exception::section_is_not_attached);
-
-	uint32_t needed_size = sizeof(typename PEClassType::TLSStruct) + sizeof(typename PEClassType::BaseSize); //Calculate needed size for TLS table
-	//sizeof(typename PEClassType::BaseSize) = for DWORD/QWORD alignment
+	
+	uint32_t tls_data_pos = align_up(offset_from_section_start, sizeof(typename PEClassType::BaseSize));
+	uint32_t needed_size = sizeof(typename PEClassType::TLSStruct) + (tls_data_pos - offset_from_section_start); //Calculate needed size for TLS table
 	
 	//Check if tls_section is last one. If it's not, check if there's enough place for TLS data
 	if(&tls_section != &*(sections_.end() - 1) && 
@@ -1232,8 +1232,6 @@ const pe_base::image_directory pe<PEClassType>::rebuild_tls(const tls_info& info
 	//This will be done only is tls_section is the last section of image or for section with unaligned raw length of data
 	if(raw_data.length() < needed_size + offset_from_section_start)
 		raw_data.resize(needed_size + offset_from_section_start); //Expand section raw data
-
-	uint32_t tls_data_pos = align_up(offset_from_section_start, sizeof(typename PEClassType::BaseSize));
 
 	//Create and fill TLS structure
 	typename PEClassType::TLSStruct tls_struct = {0};

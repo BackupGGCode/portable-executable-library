@@ -45,37 +45,45 @@ const std::string pe_base::section::get_name() const
 	return std::string(buf);
 }
 
+//Set flag (attribute) of section
+pe_base::section& pe_base::section::set_flag(uint32_t flag, bool setflag)
+{
+	if(setflag)
+		header_.Characteristics |= flag;
+	else
+		header_.Characteristics &= ~flag;
+
+	return *this;
+}
+
 //Sets "readable" attribute of section
 pe_base::section& pe_base::section::readable(bool readable)
 {
-	if(readable)
-		header_.Characteristics |= image_scn_mem_read;
-	else
-		header_.Characteristics &= ~image_scn_mem_read;
-
-	return *this;
+	return set_flag(image_scn_mem_read, readable);
 }
 
 //Sets "writeable" attribute of section
 pe_base::section& pe_base::section::writeable(bool writeable)
 {
-	if(writeable)
-		header_.Characteristics |= image_scn_mem_write;
-	else
-		header_.Characteristics &= ~image_scn_mem_write;
-
-	return *this;
+	return set_flag(image_scn_mem_write, writeable);
 }
 
 //Sets "executable" attribute of section
 pe_base::section& pe_base::section::executable(bool executable)
 {
-	if(executable)
-		header_.Characteristics |= image_scn_mem_execute;
-	else
-		header_.Characteristics &= ~image_scn_mem_execute;
+	return set_flag(image_scn_mem_execute, executable);
+}
 
-	return *this;
+//Sets "shared" attribute of section
+pe_base::section& pe_base::section::shared(bool shared)
+{
+	return set_flag(image_scn_mem_shared, shared);
+}
+
+//Sets "discardable" attribute of section
+pe_base::section& pe_base::section::discardable(bool discardable)
+{
+	return set_flag(image_scn_mem_discardable, discardable);
 }
 
 //Returns true if section is readable
@@ -94,6 +102,16 @@ bool pe_base::section::writeable() const
 bool pe_base::section::executable() const
 {
 	return (header_.Characteristics & image_scn_mem_execute) != 0;
+}
+
+bool pe_base::section::shared() const
+{
+	return (header_.Characteristics & image_scn_mem_shared) != 0;
+}
+
+bool pe_base::section::discardable() const
+{
+	return (header_.Characteristics & image_scn_mem_discardable) != 0;
 }
 
 //Returns true if section has no RAW data
@@ -3875,15 +3893,15 @@ const pe_base::image_directory pe_base::rebuild_resources(resource_directory& in
 	//Check resource directory correctness
 	if(info.get_entry_list().empty())
 		throw pe_exception("Empty resource directory", pe_exception::incorrect_resource_directory);
-
-	uint32_t needed_size_for_structures = sizeof(uint32_t); //Calculate needed size for resource tables and data
+	
+	uint32_t aligned_offset_from_section_start = align_up(offset_from_section_start, sizeof(uint32_t));
+	uint32_t needed_size_for_structures = aligned_offset_from_section_start - offset_from_section_start; //Calculate needed size for resource tables and data
 	uint32_t needed_size_for_strings = 0;
 	uint32_t needed_size_for_data = 0;
-	//sizeof(uint32_t) - for DWORD alignment
+
 	calculate_resource_data_space(info, needed_size_for_structures, needed_size_for_strings, needed_size_for_data);
 
 	uint32_t needed_size = needed_size_for_structures + needed_size_for_strings + needed_size_for_data;
-	uint32_t aligned_offset_from_section_start = align_up(offset_from_section_start, sizeof(uint32_t));
 
 	//Check if exports_section is last one. If it's not, check if there's enough place for resource data
 	if(&resources_section != &*(sections_.end() - 1) && 
@@ -3894,7 +3912,7 @@ const pe_base::image_directory pe_base::rebuild_resources(resource_directory& in
 	std::string& raw_data = resources_section.get_raw_data();
 
 	//This will be done only is resources_section is the last section of image or for section with unaligned raw length of data
-	if(raw_data.length() < needed_size + needed_size + aligned_offset_from_section_start)
+	if(raw_data.length() < needed_size + aligned_offset_from_section_start)
 		raw_data.resize(needed_size + aligned_offset_from_section_start); //Expand section raw data
 
 	unsigned long current_structures_pos = aligned_offset_from_section_start;

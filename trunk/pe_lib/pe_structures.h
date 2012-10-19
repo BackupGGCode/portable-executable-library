@@ -933,7 +933,7 @@ enum replaces_cor_hdr_numeric_defines
 	// Max name lengths
 	//@todo: Change to unlimited name lengths.
 	max_class_name                      =1024,
-	max_package_name                    =1024,
+	max_package_name                    =1024
 };
 
 /// Load Configuration Directory Entry ///

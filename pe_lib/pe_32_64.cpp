@@ -87,7 +87,7 @@ pe<PEClassType>::~pe()
 
 //Returns true if directory exists
 template<typename PEClassType>
-bool pe<PEClassType>::directory_exists(unsigned long id) const
+bool pe<PEClassType>::directory_exists(uint32_t id) const
 {
 	return (nt_headers_.OptionalHeader.NumberOfRvaAndSizes - 1) >= id &&
 		nt_headers_.OptionalHeader.DataDirectory[id].VirtualAddress;
@@ -95,7 +95,7 @@ bool pe<PEClassType>::directory_exists(unsigned long id) const
 
 //Removes directory
 template<typename PEClassType>
-void pe<PEClassType>::remove_directory(unsigned long id)
+void pe<PEClassType>::remove_directory(uint32_t id)
 {
 	if(directory_exists(id))
 	{
@@ -116,7 +116,7 @@ void pe<PEClassType>::remove_directory(unsigned long id)
 
 //Returns directory RVA
 template<typename PEClassType>
-uint32_t pe<PEClassType>::get_directory_rva(unsigned long id) const
+uint32_t pe<PEClassType>::get_directory_rva(uint32_t id) const
 {
 	//Check if directory exists
 	if(nt_headers_.OptionalHeader.NumberOfRvaAndSizes <= id)
@@ -127,7 +127,7 @@ uint32_t pe<PEClassType>::get_directory_rva(unsigned long id) const
 
 //Returns directory size
 template<typename PEClassType>
-void pe<PEClassType>::set_directory_rva(unsigned long id, uint32_t va)
+void pe<PEClassType>::set_directory_rva(uint32_t id, uint32_t va)
 {
 	//Check if directory exists
 	if(nt_headers_.OptionalHeader.NumberOfRvaAndSizes <= id)
@@ -137,7 +137,7 @@ void pe<PEClassType>::set_directory_rva(unsigned long id, uint32_t va)
 }
 
 template<typename PEClassType>
-void pe<PEClassType>::set_directory_size(unsigned long id, uint32_t size)
+void pe<PEClassType>::set_directory_size(uint32_t id, uint32_t size)
 {
 	//Check if directory exists
 	if(nt_headers_.OptionalHeader.NumberOfRvaAndSizes <= id)
@@ -148,7 +148,7 @@ void pe<PEClassType>::set_directory_size(unsigned long id, uint32_t size)
 
 //Returns directory size
 template<typename PEClassType>
-uint32_t pe<PEClassType>::get_directory_size(unsigned long id) const
+uint32_t pe<PEClassType>::get_directory_size(uint32_t id) const
 {
 	//Check if directory exists
 	if(nt_headers_.OptionalHeader.NumberOfRvaAndSizes <= id)
@@ -159,19 +159,20 @@ uint32_t pe<PEClassType>::get_directory_size(unsigned long id) const
 
 //Strips only zero DATA_DIRECTORY entries to count = min_count
 //Returns resulting number of data directories
+//strip_iat_directory - if true, even not empty IAT directory will be stripped
 template<typename PEClassType>
-unsigned long pe<PEClassType>::strip_data_directories(uint32_t min_count)
+uint32_t pe<PEClassType>::strip_data_directories(uint32_t min_count, bool strip_iat_directory)
 {
-	uint32_t i = nt_headers_.OptionalHeader.NumberOfRvaAndSizes - 1;
+	int i = nt_headers_.OptionalHeader.NumberOfRvaAndSizes - 1;
 
 	//Enumerate all data directories from the end
 	for(; i >= 0; i--)
 	{
-		//If directory exists (and it is not IMAGE_DIRECTORY_ENTRY_IAT, we can strip it anyway), break
-		if(nt_headers_.OptionalHeader.DataDirectory[i].VirtualAddress && i != image_directory_entry_iat)
+		//If directory exists, break
+		if(nt_headers_.OptionalHeader.DataDirectory[i].VirtualAddress && (i != image_directory_entry_iat || !strip_iat_directory))
 			break;
 
-		if(i <= min_count - 2)
+		if(i <= static_cast<int>(min_count) - 2)
 			break;
 	}
 
@@ -609,14 +610,14 @@ char* pe<PEClassType>::get_nt_headers_ptr()
 
 //Returns size of NT header
 template<typename PEClassType>
-unsigned long pe<PEClassType>::get_sizeof_nt_header() const
+uint32_t pe<PEClassType>::get_sizeof_nt_header() const
 {
 	return sizeof(typename PEClassType::NtHeaders);
 }
 
 //Returns size of optional headers
 template<typename PEClassType>
-unsigned long pe<PEClassType>::get_sizeof_opt_headers() const
+uint32_t pe<PEClassType>::get_sizeof_opt_headers() const
 {
 	return sizeof(typename PEClassType::OptHeaders);
 }
@@ -1329,9 +1330,9 @@ const pe_base::image_directory pe<PEClassType>::rebuild_tls(const tls_info& info
 		//Convert TLS RVAs to VAs
 		for(tls_info::tls_callback_list::const_iterator it = info.get_tls_callbacks().begin(); it != info.get_tls_callbacks().end(); ++it)
 		{
-			typename PEClassType::BaseSize va = 0;
-			rva_to_va(*it, va);
-			callbacks_virtual_addresses.push_back(va);
+			typename PEClassType::BaseSize cb_va = 0;
+			rva_to_va(*it, cb_va);
+			callbacks_virtual_addresses.push_back(cb_va);
 		}
 
 		//Ending null element

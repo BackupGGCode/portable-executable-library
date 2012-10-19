@@ -51,24 +51,25 @@ public:
 
 public: //DIRECTORIES
 	//Returns true if directory exists
-	virtual bool directory_exists(unsigned long id) const;
+	virtual bool directory_exists(uint32_t id) const;
 
 	//Removes directory
-	virtual void remove_directory(unsigned long id);
+	virtual void remove_directory(uint32_t id);
 
 	//Returns directory RVA
-	virtual uint32_t get_directory_rva(unsigned long id) const;
+	virtual uint32_t get_directory_rva(uint32_t id) const;
 	//Returns directory size
-	virtual uint32_t get_directory_size(unsigned long id) const;
+	virtual uint32_t get_directory_size(uint32_t id) const;
 
 	//Sets directory RVA (just a value of PE header, no moving occurs)
-	virtual void set_directory_rva(unsigned long id, uint32_t rva);
+	virtual void set_directory_rva(uint32_t id, uint32_t rva);
 	//Sets directory size (just a value of PE header, no moving occurs)
-	virtual void set_directory_size(unsigned long id, uint32_t size);
+	virtual void set_directory_size(uint32_t id, uint32_t size);
 	
 	//Strips only zero DATA_DIRECTORY entries to count = min_count
 	//Returns resulting number of data directories
-	virtual unsigned long strip_data_directories(uint32_t min_count = 1);
+	//strip_iat_directory - if true, even not empty IAT directory will be stripped
+	virtual uint32_t strip_data_directories(uint32_t min_count = 1, bool strip_iat_directory = true);
 
 
 public: //IMAGE
@@ -274,9 +275,9 @@ protected:
 	//Returns nt headers data pointer
 	virtual char* get_nt_headers_ptr();
 	//Returns size of NT header
-	virtual unsigned long get_sizeof_nt_header() const;
+	virtual uint32_t get_sizeof_nt_header() const;
 	//Returns size of optional headers
-	virtual unsigned long get_sizeof_opt_headers() const;
+	virtual uint32_t get_sizeof_opt_headers() const;
 	//Sets file alignment (no checks)
 	virtual void set_file_alignment_unchecked(uint32_t alignment);
 	//Sets base of code

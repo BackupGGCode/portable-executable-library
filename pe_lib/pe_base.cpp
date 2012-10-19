@@ -295,7 +295,7 @@ const pe_base::section_list& pe_base::get_image_sections() const
 }
 
 //Realigns section by index
-void pe_base::realign_section(unsigned int index)
+void pe_base::realign_section(uint32_t index)
 {
 	//Check index
 	if(sections_.size() <= index)
@@ -377,13 +377,13 @@ const pe_base::section& pe_base::section_from_rva(uint32_t rva) const
 }
 
 //Returns section from directory ID
-pe_base::section& pe_base::section_from_directory(unsigned long directory_id)
+pe_base::section& pe_base::section_from_directory(uint32_t directory_id)
 {
 	return section_from_rva(get_directory_rva(directory_id));		
 }
 
 //Returns section from directory ID
-const pe_base::section& pe_base::section_from_directory(unsigned long directory_id) const
+const pe_base::section& pe_base::section_from_directory(uint32_t directory_id) const
 {
 	return section_from_rva(get_directory_rva(directory_id));	
 }
@@ -616,7 +616,7 @@ const char* pe_base::section_data_from_rva(const section& s, uint32_t rva, secti
 }
 
 //Returns section TOTAL RAW/VIRTUAL data length from RVA inside section
-unsigned long pe_base::section_data_length_from_rva(uint32_t rva, section_data_type datatype, bool include_headers) const
+uint32_t pe_base::section_data_length_from_rva(uint32_t rva, section_data_type datatype, bool include_headers) const
 {
 	//if RVA is inside of headers and we're searching them too...
 	if(include_headers && rva < full_headers_data_.length())
@@ -627,19 +627,19 @@ unsigned long pe_base::section_data_length_from_rva(uint32_t rva, section_data_t
 }
 
 //Returns section TOTAL RAW/VIRTUAL data length from VA inside section for PE32
-unsigned long pe_base::section_data_length_from_va(uint32_t va, section_data_type datatype, bool include_headers) const
+uint32_t pe_base::section_data_length_from_va(uint32_t va, section_data_type datatype, bool include_headers) const
 {
 	return section_data_length_from_rva(va_to_rva(va), datatype, include_headers);
 }
 
 //Returns section TOTAL RAW/VIRTUAL data length from VA inside section for PE32/PE64
-unsigned long pe_base::section_data_length_from_va(uint64_t va, section_data_type datatype, bool include_headers) const
+uint32_t pe_base::section_data_length_from_va(uint64_t va, section_data_type datatype, bool include_headers) const
 {
 	return section_data_length_from_rva(va_to_rva(va), datatype, include_headers);
 }
 
 //Returns section remaining RAW/VIRTUAL data length from RVA "rva_inside" to the end of section containing RVA "rva"
-unsigned long pe_base::section_data_length_from_rva(uint32_t rva, uint32_t rva_inside, section_data_type datatype, bool include_headers) const
+uint32_t pe_base::section_data_length_from_rva(uint32_t rva, uint32_t rva_inside, section_data_type datatype, bool include_headers) const
 {
 	//if RVAs are inside of headers and we're searching them too...
 	if(include_headers && rva < full_headers_data_.length() && rva_inside < full_headers_data_.length())
@@ -657,19 +657,19 @@ unsigned long pe_base::section_data_length_from_rva(uint32_t rva, uint32_t rva_i
 }
 
 //Returns section remaining RAW/VIRTUAL data length from VA "va_inside" to the end of section containing VA "va" for PE32
-unsigned long pe_base::section_data_length_from_va(uint32_t va, uint32_t va_inside, section_data_type datatype, bool include_headers) const
+uint32_t pe_base::section_data_length_from_va(uint32_t va, uint32_t va_inside, section_data_type datatype, bool include_headers) const
 {
 	return section_data_length_from_rva(va_to_rva(va), va_to_rva(va_inside), datatype, include_headers);
 }
 
 //Returns section remaining RAW/VIRTUAL data length from VA "va_inside" to the end of section containing VA "va" for PE32/PE64
-unsigned long pe_base::section_data_length_from_va(uint64_t va, uint64_t va_inside, section_data_type datatype, bool include_headers) const
+uint32_t pe_base::section_data_length_from_va(uint64_t va, uint64_t va_inside, section_data_type datatype, bool include_headers) const
 {
 	return section_data_length_from_rva(va_to_rva(va), va_to_rva(va_inside), datatype, include_headers);
 }
 
 //Returns section remaining RAW/VIRTUAL data length from RVA to the end of section "s" (checks bounds)
-unsigned long pe_base::section_data_length_from_rva(const section& s, uint32_t rva_inside, section_data_type datatype)
+uint32_t pe_base::section_data_length_from_rva(const section& s, uint32_t rva_inside, section_data_type datatype)
 {
 	//Check rva_inside
 	if(rva_inside >= s.header_.VirtualAddress && rva_inside < s.header_.VirtualAddress + s.virtual_size_aligned_)
@@ -688,13 +688,13 @@ unsigned long pe_base::section_data_length_from_rva(const section& s, uint32_t r
 }
 
 //Returns section remaining RAW/VIRTUAL data length from VA to the end of section "s" for PE32 (checks bounds)
-unsigned long pe_base::section_data_length_from_va(const section& s, uint32_t va_inside, section_data_type datatype) const
+uint32_t pe_base::section_data_length_from_va(const section& s, uint32_t va_inside, section_data_type datatype) const
 {
 	return section_data_length_from_rva(s, va_to_rva(va_inside), datatype);
 }
 
 //Returns section remaining RAW/VIRTUAL data length from VA to the end of section "s" for PE32/PE64 (checks bounds)
-unsigned long pe_base::section_data_length_from_va(const section& s, uint64_t va_inside, section_data_type datatype) const
+uint32_t pe_base::section_data_length_from_va(const section& s, uint64_t va_inside, section_data_type datatype) const
 {
 	return section_data_length_from_rva(s, va_to_rva(va_inside), datatype);
 }
@@ -1167,12 +1167,15 @@ void pe_base::read_pe(std::istream& file, bool read_bound_import_raw_data, bool 
 		}
 	}
 
-	//Additionally, read data from the beginning of istream to size of headers
-	file.seekg(0);
-	full_headers_data_.resize(get_size_of_headers());
-	file.read(&full_headers_data_[0], get_size_of_headers());
-	if(file.bad() || file.eof())
-		throw pe_exception("Error reading file", pe_exception::error_reading_file);
+	{
+		//Additionally, read data from the beginning of istream to size of headers
+		file.seekg(0);
+		uint32_t size_of_headers = std::min<uint32_t>(get_size_of_headers(), static_cast<uint32_t>(filesize));
+		full_headers_data_.resize(size_of_headers);
+		file.read(&full_headers_data_[0], size_of_headers);
+		if(file.bad() || file.eof())
+			throw pe_exception("Error reading file", pe_exception::error_reading_file);
+	}
 
 	//Moreover, if there's debug directory, read its raw data for some debug info types
 	while(read_debug_raw_data && has_debug())
@@ -3756,7 +3759,7 @@ const pe_base::resource_directory pe_base::process_resource_directory(uint32_t r
 }
 
 //Helper function to calculate needed space for resource data
-void pe_base::calculate_resource_data_space(const resource_directory& root, uint32_t& needed_size_for_structures, uint32_t& needed_size_for_strings, uint32_t& needed_size_for_data)
+void pe_base::calculate_resource_data_space(const resource_directory& root, uint32_t aligned_offset_from_section_start, uint32_t& needed_size_for_structures, uint32_t& needed_size_for_strings)
 {
 	needed_size_for_structures += sizeof(image_resource_directory);
 	for(resource_directory::entry_list::const_iterator it = root.get_entry_list().begin(); it != root.get_entry_list().end(); ++it)
@@ -3766,15 +3769,31 @@ void pe_base::calculate_resource_data_space(const resource_directory& root, uint
 		if((*it).is_named())
 			needed_size_for_strings += static_cast<uint32_t>(((*it).get_name().length() + 1) * 2 /* unicode */ + sizeof(uint16_t) /* for string length */);
 
+		if(!(*it).includes_data())
+			calculate_resource_data_space((*it).get_resource_directory(), aligned_offset_from_section_start, needed_size_for_structures, needed_size_for_strings);
+	}
+}
+
+//Helper function to calculate needed space for resource data
+void pe_base::calculate_resource_data_space(const resource_directory& root, uint32_t needed_size_for_structures, uint32_t needed_size_for_strings, uint32_t& needed_size_for_data, uint32_t& current_data_pos)
+{
+	for(resource_directory::entry_list::const_iterator it = root.get_entry_list().begin(); it != root.get_entry_list().end(); ++it)
+	{
 		if((*it).includes_data())
-			needed_size_for_data += static_cast<uint32_t>((*it).get_data_entry().get_data().length() + sizeof(image_resource_data_entry) + sizeof(uint32_t) /* overhead for alignment */);
+		{
+			uint32_t data_size = static_cast<uint32_t>((*it).get_data_entry().get_data().length() + sizeof(image_resource_data_entry) + (align_up(current_data_pos, sizeof(uint32_t)) - current_data_pos) /* alignment */);
+			needed_size_for_data += data_size;
+			current_data_pos += data_size;
+		}
 		else
-			calculate_resource_data_space((*it).get_resource_directory(), needed_size_for_structures, needed_size_for_strings, needed_size_for_data);
+		{
+			calculate_resource_data_space((*it).get_resource_directory(), needed_size_for_structures, needed_size_for_strings, needed_size_for_data, current_data_pos);
+		}
 	}
 }
 
 //Helper function to rebuild resource directory
-void pe_base::rebuild_resource_directory(section& resource_section, resource_directory& root, unsigned long& current_structures_pos, unsigned long& current_data_pos, unsigned long& current_strings_pos, unsigned long offset_from_section_start)
+void pe_base::rebuild_resource_directory(section& resource_section, resource_directory& root, uint32_t& current_structures_pos, uint32_t& current_data_pos, uint32_t& current_strings_pos, uint32_t offset_from_section_start)
 {
 	//Create resource directory
 	image_resource_directory dir = {0};
@@ -3899,7 +3918,12 @@ const pe_base::image_directory pe_base::rebuild_resources(resource_directory& in
 	uint32_t needed_size_for_strings = 0;
 	uint32_t needed_size_for_data = 0;
 
-	calculate_resource_data_space(info, needed_size_for_structures, needed_size_for_strings, needed_size_for_data);
+	calculate_resource_data_space(info, aligned_offset_from_section_start, needed_size_for_structures, needed_size_for_strings);
+
+	{
+		uint32_t current_data_pos = aligned_offset_from_section_start + needed_size_for_structures + needed_size_for_strings;
+		calculate_resource_data_space(info, needed_size_for_structures, needed_size_for_strings, needed_size_for_data, current_data_pos);
+	}
 
 	uint32_t needed_size = needed_size_for_structures + needed_size_for_strings + needed_size_for_data;
 
@@ -3915,9 +3939,9 @@ const pe_base::image_directory pe_base::rebuild_resources(resource_directory& in
 	if(raw_data.length() < needed_size + aligned_offset_from_section_start)
 		raw_data.resize(needed_size + aligned_offset_from_section_start); //Expand section raw data
 
-	unsigned long current_structures_pos = aligned_offset_from_section_start;
-	unsigned long current_strings_pos = current_structures_pos + needed_size_for_structures;
-	unsigned long current_data_pos = current_strings_pos + needed_size_for_strings;
+	uint32_t current_structures_pos = aligned_offset_from_section_start;
+	uint32_t current_strings_pos = current_structures_pos + needed_size_for_structures;
+	uint32_t current_data_pos = current_strings_pos + needed_size_for_strings;
 	rebuild_resource_directory(resources_section, info, current_structures_pos, current_data_pos, current_strings_pos, aligned_offset_from_section_start);
 	
 	//Adjust section raw and virtual sizes
@@ -5287,7 +5311,7 @@ void pe_base::image_directory::set_size(uint32_t size)
 }
 
 //Realigns file (changes file alignment)
-void pe_base::realign_file(unsigned long new_file_alignment)
+void pe_base::realign_file(uint32_t new_file_alignment)
 {
 	//Checks alignment for correctness
 	set_file_alignment(new_file_alignment);

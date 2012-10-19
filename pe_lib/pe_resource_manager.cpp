@@ -393,7 +393,7 @@ const std::string pe_resource_viewer::create_bitmap(const std::string& resource_
 const std::string pe_resource_viewer::get_bitmap_by_name(const std::wstring& name, uint32_t index) const
 {
 	return create_bitmap(get_resource_data_by_name(resource_bitmap, name, index).get_data());
-};
+}
 
 //Returns bitmap data by name and language (minimum checks of format correctness)
 const std::string pe_resource_viewer::get_bitmap_by_name(uint32_t language, const std::wstring& name) const
@@ -405,7 +405,7 @@ const std::string pe_resource_viewer::get_bitmap_by_name(uint32_t language, cons
 const std::string pe_resource_viewer::get_bitmap_by_id_lang(uint32_t language, uint32_t id) const
 {
 	return create_bitmap(get_resource_data_by_id(language, resource_bitmap, id).get_data());
-};
+}
 
 //Returns bitmap data by ID and index in language directory (instead of language) (minimum checks of format correctness)
 const std::string pe_resource_viewer::get_bitmap_by_id(uint32_t id, uint32_t index) const

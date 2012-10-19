@@ -11,9 +11,9 @@
 #include "pe_structures.h"
 
 //Please don't remove this information from header
-//PEBliss 0.2.3
+//PEBliss 0.2.4
 //(c) DX 2011 - 2012, http://kaimi.ru
-//Free to use, modify and distribute
+//Free to use for commertial and non-commertial purposes, modify and distribute
 
 // == more important ==
 //TODO: create sample-based tests
@@ -199,23 +199,24 @@ public: //DIRECTORIES
 	};
 
 	//Returns true if directory exists
-	virtual bool directory_exists(unsigned long id) const = 0;
+	virtual bool directory_exists(uint32_t id) const = 0;
 	//Removes directory
-	virtual void remove_directory(unsigned long id) = 0;
+	virtual void remove_directory(uint32_t id) = 0;
 
 	//Returns directory RVA
-	virtual uint32_t get_directory_rva(unsigned long id) const = 0;
+	virtual uint32_t get_directory_rva(uint32_t id) const = 0;
 	//Returns directory size
-	virtual uint32_t get_directory_size(unsigned long id) const = 0;
+	virtual uint32_t get_directory_size(uint32_t id) const = 0;
 
 	//Sets directory RVA (just a value of PE header, no moving occurs)
-	virtual void set_directory_rva(unsigned long id, uint32_t rva) = 0;
+	virtual void set_directory_rva(uint32_t id, uint32_t rva) = 0;
 	//Sets directory size (just a value of PE header, no moving occurs)
-	virtual void set_directory_size(unsigned long id, uint32_t size) = 0;
+	virtual void set_directory_size(uint32_t id, uint32_t size) = 0;
 
 	//Strips only zero DATA_DIRECTORY entries to count = min_count
 	//Returns resulting number of data directories
-	virtual unsigned long strip_data_directories(uint32_t min_count = 1) = 0;
+	//strip_iat_directory - if true, even not empty IAT directory will be stripped
+	virtual uint32_t strip_data_directories(uint32_t min_count = 1, bool strip_iat_directory = true) = 0;
 
 	//Returns true if image has import directory
 	bool has_imports() const;
@@ -431,14 +432,14 @@ public: //IMAGE SECTIONS
 	//Realigns all sections, if you made any changes to sections or alignments
 	void realign_all_sections();
 	//Resligns section with specified index
-	void realign_section(unsigned int index);
+	void realign_section(uint32_t index);
 
 	//Returns section from RVA inside it
 	section& section_from_rva(uint32_t rva);
 	const section& section_from_rva(uint32_t rva) const;
 	//Returns section from directory ID
-	section& section_from_directory(unsigned long directory_id);
-	const section& section_from_directory(unsigned long directory_id) const;
+	section& section_from_directory(uint32_t directory_id);
+	const section& section_from_directory(uint32_t directory_id) const;
 	//Returns section from VA inside it for PE32 and PE64 respectively
 	section& section_from_va(uint32_t va);
 	const section& section_from_va(uint32_t va) const;
@@ -450,25 +451,25 @@ public: //IMAGE SECTIONS
 
 	//Returns section TOTAL RAW/VIRTUAL data length from RVA inside section
 	//If include_headers = true, data from the beginning of PE file to SizeOfHeaders will be searched, too
-	unsigned long section_data_length_from_rva(uint32_t rva, section_data_type datatype = section_data_raw, bool include_headers = false) const;
+	uint32_t section_data_length_from_rva(uint32_t rva, section_data_type datatype = section_data_raw, bool include_headers = false) const;
 	//Returns section TOTAL RAW/VIRTUAL data length from VA inside section for PE32 and PE64 respectively
 	//If include_headers = true, data from the beginning of PE file to SizeOfHeaders will be searched, too
-	unsigned long section_data_length_from_va(uint32_t va, section_data_type datatype = section_data_raw, bool include_headers = false) const;
-	unsigned long section_data_length_from_va(uint64_t va, section_data_type datatype = section_data_raw, bool include_headers = false) const;
+	uint32_t section_data_length_from_va(uint32_t va, section_data_type datatype = section_data_raw, bool include_headers = false) const;
+	uint32_t section_data_length_from_va(uint64_t va, section_data_type datatype = section_data_raw, bool include_headers = false) const;
 
 	//Returns section remaining RAW/VIRTUAL data length from RVA to the end of section "s" (checks bounds)
-	static unsigned long section_data_length_from_rva(const section& s, uint32_t rva_inside, section_data_type datatype = section_data_raw);
+	static uint32_t section_data_length_from_rva(const section& s, uint32_t rva_inside, section_data_type datatype = section_data_raw);
 	//Returns section remaining RAW/VIRTUAL data length from VA to the end of section "s" for PE32 and PE64 respectively (checks bounds)
-	unsigned long section_data_length_from_va(const section& s, uint64_t va_inside, section_data_type datatype = section_data_raw) const;
-	unsigned long section_data_length_from_va(const section& s, uint32_t va_inside, section_data_type datatype = section_data_raw) const;
+	uint32_t section_data_length_from_va(const section& s, uint64_t va_inside, section_data_type datatype = section_data_raw) const;
+	uint32_t section_data_length_from_va(const section& s, uint32_t va_inside, section_data_type datatype = section_data_raw) const;
 
 	//Returns section remaining RAW/VIRTUAL data length from RVA "rva_inside" to the end of section containing RVA "rva"
 	//If include_headers = true, data from the beginning of PE file to SizeOfHeaders will be searched, too
-	unsigned long section_data_length_from_rva(uint32_t rva, uint32_t rva_inside, section_data_type datatype = section_data_raw, bool include_headers = false) const;
+	uint32_t section_data_length_from_rva(uint32_t rva, uint32_t rva_inside, section_data_type datatype = section_data_raw, bool include_headers = false) const;
 	//Returns section remaining RAW/VIRTUAL data length from VA "va_inside" to the end of section containing VA "va" for PE32 and PE64 respectively
 	//If include_headers = true, data from the beginning of PE file to SizeOfHeaders will be searched, too
-	unsigned long section_data_length_from_va(uint32_t va, uint32_t va_inside, section_data_type datatype = section_data_raw, bool include_headers = false) const;
-	unsigned long section_data_length_from_va(uint64_t va, uint64_t va_inside, section_data_type datatype = section_data_raw, bool include_headers = false) const;
+	uint32_t section_data_length_from_va(uint32_t va, uint32_t va_inside, section_data_type datatype = section_data_raw, bool include_headers = false) const;
+	uint32_t section_data_length_from_va(uint64_t va, uint64_t va_inside, section_data_type datatype = section_data_raw, bool include_headers = false) const;
 	
 	//If include_headers = true, data from the beginning of PE file to SizeOfHeaders will be searched, too
 	//Returns corresponding section data pointer from RVA inside section
@@ -612,7 +613,7 @@ public: //IMAGE
 	void rebuild_pe(std::ostream& out, bool strip_dos_header = false, bool change_size_of_headers = true);
 
 	//Realigns file (changes file alignment)
-	void realign_file(unsigned long new_file_alignment);
+	void realign_file(uint32_t new_file_alignment);
 
 public: //EXPORTS
 	//Structure representing exported function
@@ -2100,9 +2101,9 @@ protected:
 	//Returns nt headers data pointer
 	virtual char* get_nt_headers_ptr() = 0;
 	//Returns sizeof() nt headers
-	virtual unsigned long get_sizeof_nt_header() const = 0;
+	virtual uint32_t get_sizeof_nt_header() const = 0;
 	//Returns sizeof() optional headers
-	virtual unsigned long get_sizeof_opt_headers() const = 0;
+	virtual uint32_t get_sizeof_opt_headers() const = 0;
 	//Sets file alignment (no checks)
 	virtual void set_file_alignment_unchecked(uint32_t alignment) = 0;
 	//Sets base of code
@@ -2166,10 +2167,13 @@ private:
 	};
 
 	//Helper function to calculate needed space for resource data
-	void calculate_resource_data_space(const resource_directory& root, uint32_t& needed_size_for_structures, uint32_t& needed_size_for_strings, uint32_t& needed_size_for_data);
+	void calculate_resource_data_space(const resource_directory& root, uint32_t aligned_offset_from_section_start, uint32_t& needed_size_for_structures, uint32_t& needed_size_for_strings);
+	
+	//Helper function to calculate needed space for resource data
+	void calculate_resource_data_space(const resource_directory& root, uint32_t needed_size_for_structures, uint32_t needed_size_for_strings, uint32_t& needed_size_for_data, uint32_t& current_data_pos);
 
 	//Helper function to rebuild resource directory
-	void rebuild_resource_directory(section& resource_section, resource_directory& root, unsigned long& current_structures_pos, unsigned long& current_data_pos, unsigned long& current_strings_pos, unsigned long offset_from_section_start);
+	void rebuild_resource_directory(section& resource_section, resource_directory& root, uint32_t& current_structures_pos, uint32_t& current_data_pos, uint32_t& current_strings_pos, uint32_t offset_from_section_start);
 
 	//Calculates entropy from bytes count
 	static double calculate_entropy(const uint32_t byte_count[256], std::streamoff total_length);

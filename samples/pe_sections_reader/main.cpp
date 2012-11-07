@@ -1,6 +1,6 @@
 ﻿#include <iostream>
 #include <fstream>
-#include <pe_factory.h>
+#include <pe_bliss.h>
 #ifdef PE_BLISS_WINDOWS
 #include "lib.h"
 #endif
@@ -27,16 +27,16 @@ int main(int argc, char* argv[])
 	try
 	{
 		//Создаем экземпляр PE или PE+ класса с помощью фабрики
-		std::auto_ptr<pe_base> image = pe_factory::create_pe(pe_file);
+		pe_base image(pe_factory::create_pe(pe_file));
 
 		//Получаем список секций
 		std::cout << "Reading PE sections..." << std::hex << std::showbase << std::endl << std::endl;
-		const pe_base::section_list sections = image->get_image_sections();
+		const section_list sections(image.get_image_sections());
 
 		//Перечисляем секции и выводим информацию о них
-		for(pe_base::section_list::const_iterator it = sections.begin(); it != sections.end(); ++it)
+		for(section_list::const_iterator it = sections.begin(); it != sections.end(); ++it)
 		{
-			const pe_base::section& s = *it; //Секция
+			const section& s = *it; //Секция
 			std::cout << "Section [" << s.get_name() << "]" << std::endl //Имя секции
 				<< "Characteristics: " << s.get_characteristics() << std::endl //Характеристики
 				<< "Size of raw data: " << s.get_size_of_raw_data() << std::endl //Размер данных в файле

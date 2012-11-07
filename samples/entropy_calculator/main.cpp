@@ -1,6 +1,6 @@
 ﻿#include <iostream>
 #include <fstream>
-#include <pe_factory.h>
+#include <pe_bliss.h>
 #ifdef PE_BLISS_WINDOWS
 #include "lib.h"
 #endif
@@ -28,19 +28,19 @@ int main(int argc, char* argv[])
 	try
 	{
 		//Считаем энтропию файла
-		std::cout << "File entropy: " << pe_base::calculate_entropy(pe_file) << std::endl;
+		std::cout << "File entropy: " << entropy_calculator::calculate_entropy(pe_file) << std::endl;
 
 		//Создаем экземпляр PE или PE+ класса с помощью фабрики
-		std::auto_ptr<pe_base> image = pe_factory::create_pe(pe_file);
+		pe_base image(pe_factory::create_pe(pe_file));
 
-		std::cout << "Sections entropy: " << image->calculate_entropy() << std::endl; //Считаем энтропию всех секций
+		std::cout << "Sections entropy: " << entropy_calculator::calculate_entropy(image) << std::endl; //Считаем энтропию всех секций
 
 		//Перечисляем секции и считаем их энтропию по отдельности
-		const pe_base::section_list sections = image->get_image_sections();
-		for(pe_base::section_list::const_iterator it = sections.begin(); it != sections.end(); ++it)
+		const section_list sections = image.get_image_sections();
+		for(section_list::const_iterator it = sections.begin(); it != sections.end(); ++it)
 		{
 			if(!(*it).empty()) //Если секция не пуста - посчитаем ее энтропию
-				std::cout << "Section [" << (*it).get_name() << "] entropy: " << pe_base::calculate_entropy(*it) << std::endl;
+				std::cout << "Section [" << (*it).get_name() << "] entropy: " << entropy_calculator::calculate_entropy(*it) << std::endl;
 		}
 	}
 	catch(const pe_exception& e)

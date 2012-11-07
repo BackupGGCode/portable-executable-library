@@ -1,7 +1,7 @@
 ﻿#include <iostream>
 #include <fstream>
-#include <pe_factory.h>
-#include <pe_resource_manager.h>
+#include <pe_bliss.h>
+#include <pe_bliss_resources.h>
 #ifdef PE_BLISS_WINDOWS
 #include "lib.h"
 #endif
@@ -28,10 +28,10 @@ int main(int argc, char* argv[])
 	try
 	{
 		//Создаем экземпляр PE или PE+ класса с помощью фабрики
-		std::auto_ptr<pe_base> image = pe_factory::create_pe(pe_file);
+		pe_base image(pe_factory::create_pe(pe_file));
 
 		//Проверим, есть ли ресурсы у файла
-		if(!image->has_resources())
+		if(!image.has_resources())
 		{
 			std::cout << "Image has no resources" << std::endl;
 			return 0;
@@ -39,7 +39,7 @@ int main(int argc, char* argv[])
 
 		//Получаем корневую директорию ресурсов
 		std::cout << "Reading PE resources..." << std::hex << std::showbase << std::endl << std::endl;
-		const pe_base::resource_directory root = image->get_resources();
+		const resource_directory root(get_resources(image));
 
 		//Для облегчения работы с директориями и записями ресурсов созданы вспомогательные классы
 		//Этот класс позволяет извлекать из PE-файлов любые ресурсы
@@ -57,10 +57,10 @@ int main(int argc, char* argv[])
 		//Выведем иофнрмацию о версии, если она существует
 		if(res.resource_exists(pe_resource_viewer::resource_version))
 		{
-			pe_resource_viewer::lang_string_values_map strings;
-			pe_resource_viewer::translation_values_map translations;
+			lang_string_values_map strings;
+			translation_values_map translations;
 			//Получаем список строк, переводов и базовую информацию о файле
-			pe_resource_viewer::file_version_info file_info(res.get_version_info(strings, translations));
+			file_version_info file_info(resource_version_info_reader(res).get_version_info(strings, translations));
 
 			//Выводить информацию будем в юникодный поток
 			std::wstringstream version_info;
@@ -71,20 +71,20 @@ int main(int argc, char* argv[])
 			version_info << std::endl;
 
 			//Выведем строки для разных трансляций:
-			for(pe_resource_viewer::lang_string_values_map::const_iterator it = strings.begin(); it != strings.end(); ++it)
+			for(lang_string_values_map::const_iterator it = strings.begin(); it != strings.end(); ++it)
 			{
 				version_info << L"Translation ID: " << (*it).first << std::endl;
 
 				//Перечислим записи в таблице строк для текущей трансляции (перевода)
-				const pe_resource_viewer::string_values_map& string_table = (*it).second;
-				for(pe_resource_viewer::string_values_map::const_iterator str_it = string_table.begin(); str_it != string_table.end(); ++str_it)
+				const string_values_map& string_table = (*it).second;
+				for(string_values_map::const_iterator str_it = string_table.begin(); str_it != string_table.end(); ++str_it)
 					version_info << (*str_it).first << L": " << (*str_it).second << std::endl;
 
 				version_info << std::endl;
 			}
 			
 			//Выведем доступные переводы (трансляции):
-			for(pe_resource_viewer::translation_values_map::const_iterator it = translations.begin(); it != translations.end(); ++it)
+			for(translation_values_map::const_iterator it = translations.begin(); it != translations.end(); ++it)
 				version_info << L"Translation: language: " << (*it).first << ", codepage: " << (*it).second << std::endl;
 
 			{
@@ -140,14 +140,14 @@ int main(int argc, char* argv[])
 				//Получим самую первую иконку для самого первого языка (по индексу 0)
 				//Если надо было бы перечислить языки для заданной иконки, можно было вызвать list_resource_languages
 				//Если надо было бы получить иконку для конкретного языка, можно было вызвать get_icon_by_name (перегрузка с указанием языка)
-				main_icon = res.get_icon_by_name(icon_name_list[0]);
+				main_icon = resource_cursor_icon_reader(res).get_icon_by_name(icon_name_list[0]);
 			}
 			else if(!icon_id_list.empty()) //Если нет именованных групп иконок, но есть группы с ID
 			{
 				//Получим самую первую иконку для самого первого языка (по индексу 0)
 				//Если надо было бы перечислить языки для заданной иконки, можно было вызвать list_resource_languages
 				//Если надо было бы получить иконку для конкретного языка, можно было вызвать get_icon_by_id_lang
-				main_icon = res.get_icon_by_id(icon_id_list[0]);
+				main_icon = resource_cursor_icon_reader(res).get_icon_by_id(icon_id_list[0]);
 			}
 
 			//Если есть иконка...
@@ -189,10 +189,10 @@ int main(int argc, char* argv[])
 					{
 						string_data << L" -> Language = " << *lang_it << std::endl; //Запишем язык
 						//Таблица строк
-						pe_resource_viewer::string_list strings(res.get_string_table_by_id_lang(*lang_it, *it));
+						resource_string_list strings(resource_string_table_reader(res).get_string_table_by_id_lang(*lang_it, *it));
 
 						//Наконец, запишем все строки в поток
-						for(pe_resource_viewer::string_list::const_iterator str_it = strings.begin(); str_it != strings.end(); ++str_it)
+						for(resource_string_list::const_iterator str_it = strings.begin(); str_it != strings.end(); ++str_it)
 							string_data << L" --> #" << (*str_it).first << L": " << (*str_it).second << std::endl; //ID строки: ее значение
 					}
 

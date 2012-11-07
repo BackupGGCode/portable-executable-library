@@ -1,6 +1,6 @@
 ﻿#include <iostream>
 #include <fstream>
-#include <pe_factory.h>
+#include <pe_bliss.h>
 #ifdef PE_BLISS_WINDOWS
 #include "lib.h"
 #endif
@@ -28,10 +28,10 @@ int main(int argc, char* argv[])
 	try
 	{
 		//Создаем экземпляр PE или PE+ класса с помощью фабрики
-		std::auto_ptr<pe_base> image = pe_factory::create_pe(pe_file);
+		pe_base image(pe_factory::create_pe(pe_file));
 		
 		//Проверим, есть ли директория информации об исключениях у PE-файла
-		if(!image->has_exception_directory())
+		if(!image.has_exception_directory())
 		{
 			std::cout << "Image has no exception directory" << std::endl;
 			return 0;
@@ -40,13 +40,13 @@ int main(int argc, char* argv[])
 		std::cout << "Reading exception directory..." << std::hex << std::showbase << std::endl << std::endl;
 		
 		//Получаем информацию из exception directory
-		const pe_base::exception_entry_list info = image->get_exception_directory_data();
+		const exception_entry_list info(get_exception_directory_data(image));
 
 		//Выведем записи из exception directory
 		//Подробное описание всех этих структур есть в MSDN
-		for(pe_base::exception_entry_list::const_iterator it = info.begin(); it != info.end(); ++it)
+		for(exception_entry_list::const_iterator it = info.begin(); it != info.end(); ++it)
 		{
-			const pe_base::exception_entry& entry = *it; //Запись из таблицы
+			const exception_entry& entry = *it; //Запись из таблицы
 
 			//Выведем информацию
 			std::cout << "Addresses: [" << entry.get_begin_address() << ":" << entry.get_end_address() << "]:" << std::endl

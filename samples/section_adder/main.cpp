@@ -1,6 +1,6 @@
 ﻿#include <iostream>
 #include <fstream>
-#include <pe_factory.h>
+#include <pe_bliss.h>
 #ifdef PE_BLISS_WINDOWS
 #include "lib.h"
 #endif
@@ -27,11 +27,11 @@ int main(int argc, char* argv[])
 	try
 	{
 		//Создаем экземпляр PE или PE+ класса с помощью фабрики
-		std::auto_ptr<pe_base> image = pe_factory::create_pe(pe_file);
+		pe_base image(pe_factory::create_pe(pe_file));
 		
 		//Секцию можно добавить только после всех существующих, чтобы PE-файл не испортился
 		//Создаем новую секцию
-		pe_base::section new_section;
+		section new_section;
 		new_section.readable(true).writeable(true); //Делаем секцию доступной для чтения и записи
 		new_section.set_name("kaimi.ru"); //Ставим имя секции - максимум 8 символов
 		new_section.set_raw_data("Tralala"); //Устанавливаем данные секции
@@ -39,10 +39,10 @@ int main(int argc, char* argv[])
 		//Добавляем секцию. Все адреса пересчитаются автоматически
 		//Вызов вернет ссылку на уже добавленную секцию с пересчитанными адресами
 		//Совсем пустую секцию к образу добавить нельзя, у нее должен быть ненулевой размер данных или виртуальный размер
-		pe_base::section& added_section = image->add_section(new_section);
+		section& added_section = image.add_section(new_section);
 
 		//Если нужно изменить виртуальный размер секции, то делается это так:
-		image->set_section_virtual_size(added_section, 0x1000);
+		image.set_section_virtual_size(added_section, 0x1000);
 		
 		//Создаем новый PE-файл
 		std::string base_file_name(argv[1]);
@@ -59,7 +59,7 @@ int main(int argc, char* argv[])
 		}
 
 		//Пересобираем PE-файл
-		image->rebuild_pe(new_pe_file);
+		rebuild_pe(image, new_pe_file);
 
 		std::cout << "PE was rebuilt and saved to " << base_file_name << std::endl;
 	}

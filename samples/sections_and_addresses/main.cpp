@@ -1,6 +1,6 @@
 ﻿#include <iostream>
 #include <fstream>
-#include <pe_factory.h>
+#include <pe_bliss.h>
 #ifdef PE_BLISS_WINDOWS
 #include "lib.h"
 #endif
@@ -27,17 +27,17 @@ int main(int argc, char* argv[])
 	try
 	{
 		//Создаем экземпляр PE или PE+ класса с помощью фабрики
-		std::auto_ptr<pe_base> image = pe_factory::create_pe(pe_file);
+		pe_base image(pe_factory::create_pe(pe_file));
 
 		//Выведем имя секции, в которой находится точка входа PE-файла
 		//В хитрых PE-файлах точка входа может находиться в заголовке, тогда section_from_rva бросит исключение
-		std::cout << "EP section name: " << image->section_from_rva(image->get_ep()).get_name() << std::endl;
+		std::cout << "EP section name: " << image.section_from_rva(image.get_ep()).get_name() << std::endl;
 		//Длина "сырых" (raw) данных секции
-		std::cout << "EP section data length: " << image->section_data_length_from_rva(image->get_ep()) << std::endl;
+		std::cout << "EP section data length: " << image.section_data_length_from_rva(image.get_ep()) << std::endl;
 
 		//Если у PE-файла есть импорты, выведем имя секции, в которой они находятся
-		if(image->has_imports())
-			std::cout << "Import section name: " << image->section_from_directory(pe_win::image_directory_entry_import).get_name() << std::endl;
+		if(image.has_imports())
+			std::cout << "Import section name: " << image.section_from_directory(pe_win::image_directory_entry_import).get_name() << std::endl;
 	}
 	catch(const pe_exception& e)
 	{

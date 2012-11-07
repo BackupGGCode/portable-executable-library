@@ -1,6 +1,6 @@
 ﻿#include <iostream>
 #include <fstream>
-#include <pe_factory.h>
+#include <pe_bliss.h>
 #ifdef PE_BLISS_WINDOWS
 #include "lib.h"
 #endif
@@ -27,27 +27,27 @@ int main(int argc, char* argv[])
 	try
 	{
 		//Создаем экземпляр PE или PE+ класса с помощью фабрики
-		std::auto_ptr<pe_base> image = pe_factory::create_pe(pe_file);
+		pe_base image(pe_factory::create_pe(pe_file));
 
 		//Получим информацию о TLS PE-файла
 		//Если TLS нет, этот вызов выбросит исключение
-		pe_base::tls_info info = image->get_tls_info();
+		tls_info info(get_tls_info(image));
 		
 		//Пересоберем TLS
 		//Он, вероятно, будет иметь больший размер, чем до нашего редактирования,
 		//поэтому запишем его в новую секцию, чтобы все поместилось
 		//(мы не можем расширять существующие секции, если только секция не в самом конце файла)
-		pe_base::section new_tls;
+		section new_tls;
 		new_tls.get_raw_data().resize(1); //Мы не можем добавлять пустые секции, поэтому пусть у нее будет начальный размер данных 1
 		new_tls.set_name("new_tls"); //Имя секции
 		new_tls.readable(true); //Доступна на чтение
-		pe_base::section& attached_section = image->add_section(new_tls); //Добавим секцию и получим ссылку на добавленную секцию с просчитанными размерами
+		section& attached_section = image.add_section(new_tls); //Добавим секцию и получим ссылку на добавленную секцию с просчитанными размерами
 
 		if(info.get_callbacks_rva() != 0) //Если у TLS есть хотя бы один коллбек
 			info.add_tls_callback(0x100); //Добавим новый коллбек в TLS - относительный адрес, скорее всего, некорректен, поэтому программа не запустится (просто для примера)
 
 		info.set_raw_data("Hello, world!"); //Установим или заменим "сырые" данные TLS
-		info.set_raw_data_start_rva(image->rva_from_section_offset(attached_section, 0)); //Расположим их с начала добавленной секции
+		info.set_raw_data_start_rva(image.rva_from_section_offset(attached_section, 0)); //Расположим их с начала добавленной секции
 		info.recalc_raw_data_end_rva(); //Просчитаем новый конечный адрес "сырых" данных
 
 		//Пересобираем TLS, расположив их с 50-го байта (будет выровнено, секция будет автоматически расширена) новой секции и записав новые данные TLS в PE-заголовок
@@ -56,7 +56,7 @@ int main(int argc, char* argv[])
 		//tls_data_expand_raw позволяет увеличить "сырой" размер секции, то есть размер в файле
 		//tls_data_expand_virtual позволяет увеличить виртуальный размер секции с данными TLS
 		//Если не хватит места под данные TLS, будет записана только их часть, или вообще ничего записано не будет
-		image->rebuild_tls(info, attached_section, 50); 
+		rebuild_tls(image, info, attached_section, 50); 
 
 		//Создаем новый PE-файл
 		std::string base_file_name(argv[1]);
@@ -73,7 +73,7 @@ int main(int argc, char* argv[])
 		}
 
 		//Пересобираем PE-файл
-		image->rebuild_pe(new_pe_file);
+		rebuild_pe(image, new_pe_file);
 
 		std::cout << "PE was rebuilt and saved to " << base_file_name << std::endl;
 	}

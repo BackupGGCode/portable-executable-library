@@ -8,6 +8,13 @@
 
 namespace pe_bliss
 {
+//Enumeration of PE types
+enum pe_type
+{
+	pe_type_32,
+	pe_type_64
+};
+
 namespace pe_win
 {
 const uint32_t image_numberof_directory_entries = 16;
@@ -555,7 +562,7 @@ struct cursor_group
 //Structure representing CURSOR directory entry inside CURSOR file
 struct cursordirentry
 {
-	uint8_t Width; //todo [comment] Set to CURSOR_GROUP::Height/2.
+	uint8_t Width; //Set to CURSOR_GROUP::Height/2.
 	uint8_t Height;
 	uint8_t ColorCount;
 	uint8_t Reserved;

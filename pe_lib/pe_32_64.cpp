@@ -169,7 +169,7 @@ uint32_t pe<PEClassType>::strip_data_directories(uint32_t min_count, bool strip_
 	for(; i >= 0; i--)
 	{
 		//If directory exists, break
-		if(nt_headers_.OptionalHeader.DataDirectory[i].VirtualAddress && (i != image_directory_entry_iat || !strip_iat_directory))
+		if(nt_headers_.OptionalHeader.DataDirectory[i].VirtualAddress && (static_cast<uint32_t>(i) != image_directory_entry_iat || !strip_iat_directory))
 			break;
 
 		if(i <= static_cast<int>(min_count) - 2)

@@ -1,6 +1,6 @@
 ﻿#include <iostream>
 #include <fstream>
-#include <pe_factory.h>
+#include <pe_bliss.h>
 #ifdef PE_BLISS_WINDOWS
 #include "lib.h"
 #endif
@@ -27,17 +27,17 @@ int main(int argc, char* argv[])
 	try
 	{
 		//Создаем экземпляр PE или PE+ класса с помощью фабрики
-		std::auto_ptr<pe_base> image = pe_factory::create_pe(pe_file);
+		pe_base image(pe_factory::create_pe(pe_file));
 
 		//Получим список экспортируемых функций и информацию об экспорте
-		pe_base::export_info info;
-		pe_base::exported_functions_list exports;
+		export_info info;
+		exported_functions_list exports;
 
 		//Если экспортов у файла нет, этот вызов бросит исключение, но это не значит, что мы
 		//не можем создать таблицу экспортов с нуля
 		try
 		{
-			exports = image->get_exported_functions(info);
+			exports = get_exported_functions(image, info);
 		}
 		catch(const pe_exception&)
 		{
@@ -48,13 +48,13 @@ int main(int argc, char* argv[])
 		}
 
 		//Создаем новую экспортируемую функцию
-		pe_base::exported_function func;
+		exported_function func;
 		func.set_name("SuperKernelCall"); //Имя экспортируемой функции
 		func.set_rva(0x123); //Относительный адрес точки входа экспортируемой функции (некорректный, чисто для примера)
 
 		//Необходимо вычислить ординал функции, которую мы добавляем, чтобы не было повторных
 		//Для этого есть вспомогательная функция
-		func.set_ordinal(pe_base::get_export_ordinal_limits(exports).second + 1); //Сделаем наш ординал = максимальный ординал среди существующих экспортов + 1
+		func.set_ordinal(get_export_ordinal_limits(exports).second + 1); //Сделаем наш ординал = максимальный ординал среди существующих экспортов + 1
 		exports.push_back(func); //Добавим функцию к экспортам
 		
 		//Можно редактировать и существующие экспорты
@@ -63,13 +63,13 @@ int main(int argc, char* argv[])
 		//Она будет иметь больший размер, чем до нашего редактирования,
 		//поэтому запишем ее в новую секцию, чтобы все поместилось
 		//(мы не можем расширять существующие секции, если только секция не в самом конце файла)
-		pe_base::section new_exports;
+		section new_exports;
 		new_exports.get_raw_data().resize(1); //Мы не можем добавлять пустые секции, поэтому пусть у нее будет начальный размер данных 1
 		new_exports.set_name("new_exp"); //Имя секции
 		new_exports.readable(true); //Доступна на чтение
-		pe_base::section& attached_section = image->add_section(new_exports); //Добавим секцию и получим ссылку на добавленную секцию с просчитанными размерами
+		section& attached_section = image.add_section(new_exports); //Добавим секцию и получим ссылку на добавленную секцию с просчитанными размерами
 
-		image->rebuild_exports(info, exports, attached_section); //Пересобираем экспорты, расположив их с начала новой секции и записав новые данные таблиц экспорта в PE-заголовок
+		rebuild_exports(image, info, exports, attached_section); //Пересобираем экспорты, расположив их с начала новой секции и записав новые данные таблиц экспорта в PE-заголовок
 
 		//Создаем новый PE-файл
 		std::string base_file_name(argv[1]);
@@ -86,7 +86,7 @@ int main(int argc, char* argv[])
 		}
 
 		//Пересобираем PE-файл
-		image->rebuild_pe(new_pe_file);
+		rebuild_pe(image, new_pe_file);
 
 		std::cout << "PE was rebuilt and saved to " << base_file_name << std::endl;
 	}

@@ -1,6 +1,6 @@
 ﻿#include <iostream>
 #include <fstream>
-#include <pe_factory.h>
+#include <pe_bliss.h>
 #ifdef PE_BLISS_WINDOWS
 #include "lib.h"
 #endif
@@ -27,12 +27,12 @@ int main(int argc, char* argv[])
 	try
 	{
 		//Создаем экземпляр PE или PE+ класса с помощью фабрики
-		std::auto_ptr<pe_base> image = pe_factory::create_pe(pe_file);
+		pe_base image(pe_factory::create_pe(pe_file));
 
 		std::cout << "Reading PE image config info..." << std::hex << std::showbase << std::endl << std::endl;
 		
 		//Получаем конфигурацию
-		const pe_base::image_config_info info = image->get_image_config();
+		const image_config_info info(get_image_config(image));
 
 		//Выводим данные конфигурации
 		//Подробнее о полях - в MSDN
@@ -52,8 +52,8 @@ int main(int argc, char* argv[])
 			<< std::endl;
 
 		//Выведем адреса SE-хендлеров
-		const pe_base::image_config_info::se_handler_list& se_handlers = info.get_se_handler_rvas();
-		for(pe_base::image_config_info::se_handler_list::const_iterator it = se_handlers.begin(); it != se_handlers.end(); ++it)
+		const image_config_info::se_handler_list& se_handlers = info.get_se_handler_rvas();
+		for(image_config_info::se_handler_list::const_iterator it = se_handlers.begin(); it != se_handlers.end(); ++it)
 			std::cout << "SE Handler: " << (*it) << std::endl;
 	}
 	catch(const pe_exception& e)

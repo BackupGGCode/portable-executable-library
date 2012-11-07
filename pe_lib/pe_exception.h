@@ -76,13 +76,19 @@ public:
 		exports_list_is_empty,
 		duplicate_exported_function_ordinal,
 		duplicate_exported_function_name,
-		duplicate_exported_function_name_ordinal,
 
 		version_info_string_does_not_exist,
 
 		no_more_sections_can_be_added,
 
-		encoding_convertion_error
+		no_icon_group_found,
+		no_cursor_group_found,
+
+		encoding_convertion_error,
+
+		error_expanding_section,
+
+		cannot_rebuild_image
 	};
 
 public:

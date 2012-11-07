@@ -1,6 +1,6 @@
 ﻿#include <iostream>
 #include <fstream>
-#include <pe_factory.h>
+#include <pe_bliss.h>
 #ifdef PE_BLISS_WINDOWS
 #include "lib.h"
 #endif
@@ -27,10 +27,10 @@ int main(int argc, char* argv[])
 	try
 	{
 		//Создаем экземпляр PE или PE+ класса с помощью фабрики
-		std::auto_ptr<pe_base> image = pe_factory::create_pe(pe_file);
+		pe_base image(pe_factory::create_pe(pe_file));
 
 		//Если образ не .NET, выходим
-		if(!image->is_dotnet())
+		if(!image.is_dotnet())
 		{
 			std::cout << "Image is not .NET" << std::endl;
 			return 0;
@@ -39,7 +39,7 @@ int main(int argc, char* argv[])
 		std::cout << "Reading basic dotnet info..." << std::hex << std::showbase << std::endl << std::endl;
 		
 		//Получаем .NET-заголовок PE-файла
-		const pe_base::basic_dotnet_info info(image->get_basic_dotnet_info());
+		const basic_dotnet_info info(get_basic_dotnet_info(image));
 
 		//Выводим некоторую информацию
 		std::cout << "Major runtime version: " << info.get_major_runtime_version() << std::endl //Версия рантайма

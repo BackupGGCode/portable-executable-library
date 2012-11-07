@@ -1,6 +1,6 @@
 ﻿#include <iostream>
 #include <fstream>
-#include <pe_factory.h>
+#include <pe_bliss.h>
 #ifdef PE_BLISS_WINDOWS
 #include "lib.h"
 #endif
@@ -27,14 +27,14 @@ int main(int argc, char* argv[])
 	try
 	{
 		//Создаем экземпляр PE или PE+ класса с помощью фабрики
-		std::auto_ptr<pe_base> image = pe_factory::create_pe(pe_file);
+		pe_base image(pe_factory::create_pe(pe_file));
 		
 		//Удалим DOS stub и rich overlay
-		image->strip_stub_overlay();
+		image.strip_stub_overlay();
 
 		//Удалим ненужные DATA_DIRECTORY (нулевые)
 		//Очень малое количество линкеров умеют это делать
-		image->strip_data_directories(0);
+		image.strip_data_directories(0);
 
 		//Создаем новый PE-файл
 		std::string base_file_name(argv[1]);
@@ -51,10 +51,10 @@ int main(int argc, char* argv[])
 		}
 
 		//Пересобираем PE-файл с опцией сжатия DOS-header
-		//Усеньшения размера это не дает, но упаковывает NT-заголовки в DOS-заголовок
+		//Уменьшения размера это не дает, но упаковывает NT-заголовки в DOS-заголовок
 		//При пересборке автоматически убираются ненужные нулевые байты в самом конце образа,
 		//в результате чего размер образа становится немного меньше
-		image->rebuild_pe(new_pe_file, true);
+		rebuild_pe(image, new_pe_file, true);
 		
 		std::cout << "PE was rebuilt and saved to " << base_file_name << std::endl;
 	}

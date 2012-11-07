@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9,00"
-	Name="pe_lib"
+	Name="pe_bliss"
 	ProjectGUID="{4B658F8F-1722-4EEA-880C-A4A64DCA9F2C}"
-	RootNamespace="pe_lib"
+	RootNamespace="pe_bliss"
 	Keyword="Win32Proj"
 	TargetFrameworkVersion="196613"
 	>
@@ -51,6 +51,68 @@
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="4"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLibrarianTool"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Debug|x64"
+			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			ConfigurationType="4"
+			CharacterSet="1"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				TargetEnvironment="3"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				PreprocessorDefinitions="_WIN64;_DEBUG;_LIB"
+				MinimalRebuild="true"
+				BasicRuntimeChecks="3"
+				RuntimeLibrary="1"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -143,68 +205,6 @@
 			/>
 		</Configuration>
 		<Configuration
-			Name="Debug|x64"
-			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
-			ConfigurationType="4"
-			CharacterSet="1"
-			>
-			<Tool
-				Name="VCPreBuildEventTool"
-			/>
-			<Tool
-				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-				TargetEnvironment="3"
-			/>
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="0"
-				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
-				MinimalRebuild="true"
-				BasicRuntimeChecks="3"
-				RuntimeLibrary="1"
-				UsePrecompiledHeader="0"
-				WarningLevel="3"
-				DebugInformationFormat="3"
-			/>
-			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
-			/>
-			<Tool
-				Name="VCLibrarianTool"
-			/>
-			<Tool
-				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-			/>
-			<Tool
-				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCPostBuildEventTool"
-			/>
-		</Configuration>
-		<Configuration
 			Name="Release|x64"
 			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
@@ -232,7 +232,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				PreprocessorDefinitions="WIN32;NDEBUG;_LIB"
+				PreprocessorDefinitions="_WIN64;NDEBUG;_LIB"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
@@ -277,10 +277,6 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\pe_32_64.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\pe_base.cpp"
 				>
 			</File>
@@ -293,9 +289,153 @@
 				>
 			</File>
 			<File
-				RelativePath=".\pe_resource_manager.cpp"
+				RelativePath=".\pe_properties.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\pe_properties_generic.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\pe_rebuilder.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\pe_section.cpp"
+				>
+			</File>
+			<Filter
+				Name="Other"
+				>
+				<File
+					RelativePath=".\entropy.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\pe_checksum.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\pe_rich_data.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\utils.cpp"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="PE Resources"
+				>
+				<File
+					RelativePath=".\file_version_info.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\message_table.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\pe_resource_manager.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\pe_resource_viewer.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\resource_bitmap_reader.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\resource_bitmap_writer.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\resource_cursor_icon_reader.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\resource_cursor_icon_writer.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\resource_data_info.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\resource_message_list_reader.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\resource_string_table_reader.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\resource_version_info_reader.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\resource_version_info_writer.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\version_info_editor.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\version_info_viewer.cpp"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="PE Directories"
+				>
+				<File
+					RelativePath=".\pe_bound_import.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\pe_debug.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\pe_directory.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\pe_dotnet.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\pe_exception_directory.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\pe_exports.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\pe_imports.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\pe_load_config.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\pe_relocations.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\pe_resources.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\pe_tls.cpp"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -303,11 +443,15 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath=".\pe_32_64.h"
+				RelativePath=".\pe_base.h"
 				>
 			</File>
 			<File
-				RelativePath=".\pe_base.h"
+				RelativePath=".\pe_bliss.h"
+				>
+			</File>
+			<File
+				RelativePath=".\pe_bliss_resources.h"
 				>
 			</File>
 			<File
@@ -319,7 +463,19 @@
 				>
 			</File>
 			<File
-				RelativePath=".\pe_resource_manager.h"
+				RelativePath=".\pe_properties.h"
+				>
+			</File>
+			<File
+				RelativePath=".\pe_properties_generic.h"
+				>
+			</File>
+			<File
+				RelativePath=".\pe_rebuilder.h"
+				>
+			</File>
+			<File
+				RelativePath=".\pe_section.h"
 				>
 			</File>
 			<File
@@ -330,6 +486,142 @@
 				RelativePath=".\stdint_defs.h"
 				>
 			</File>
+			<Filter
+				Name="Other"
+				>
+				<File
+					RelativePath=".\entropy.h"
+					>
+				</File>
+				<File
+					RelativePath=".\pe_checksum.h"
+					>
+				</File>
+				<File
+					RelativePath=".\pe_rich_data.h"
+					>
+				</File>
+				<File
+					RelativePath=".\utils.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="PE Resources"
+				>
+				<File
+					RelativePath=".\file_version_info.h"
+					>
+				</File>
+				<File
+					RelativePath=".\message_table.h"
+					>
+				</File>
+				<File
+					RelativePath=".\pe_resource_manager.h"
+					>
+				</File>
+				<File
+					RelativePath=".\pe_resource_viewer.h"
+					>
+				</File>
+				<File
+					RelativePath=".\resource_bitmap_reader.h"
+					>
+				</File>
+				<File
+					RelativePath=".\resource_bitmap_writer.h"
+					>
+				</File>
+				<File
+					RelativePath=".\resource_cursor_icon_reader.h"
+					>
+				</File>
+				<File
+					RelativePath=".\resource_cursor_icon_writer.h"
+					>
+				</File>
+				<File
+					RelativePath=".\resource_data_info.h"
+					>
+				</File>
+				<File
+					RelativePath=".\resource_internal.h"
+					>
+				</File>
+				<File
+					RelativePath=".\resource_message_list_reader.h"
+					>
+				</File>
+				<File
+					RelativePath=".\resource_string_table_reader.h"
+					>
+				</File>
+				<File
+					RelativePath=".\resource_version_info_reader.h"
+					>
+				</File>
+				<File
+					RelativePath=".\resource_version_info_writer.h"
+					>
+				</File>
+				<File
+					RelativePath=".\version_info_editor.h"
+					>
+				</File>
+				<File
+					RelativePath=".\version_info_viewer.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="PE Directories"
+				>
+				<File
+					RelativePath=".\pe_bound_import.h"
+					>
+				</File>
+				<File
+					RelativePath=".\pe_debug.h"
+					>
+				</File>
+				<File
+					RelativePath=".\pe_directory.h"
+					>
+				</File>
+				<File
+					RelativePath=".\pe_dotnet.h"
+					>
+				</File>
+				<File
+					RelativePath=".\pe_exception_directory.h"
+					>
+				</File>
+				<File
+					RelativePath=".\pe_exports.h"
+					>
+				</File>
+				<File
+					RelativePath=".\pe_imports.h"
+					>
+				</File>
+				<File
+					RelativePath=".\pe_load_config.h"
+					>
+				</File>
+				<File
+					RelativePath=".\pe_relocations.h"
+					>
+				</File>
+				<File
+					RelativePath=".\pe_resources.h"
+					>
+				</File>
+				<File
+					RelativePath=".\pe_tls.h"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Resource Files"

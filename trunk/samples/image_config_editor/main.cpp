@@ -1,6 +1,6 @@
 ﻿#include <iostream>
 #include <fstream>
-#include <pe_factory.h>
+#include <pe_bliss.h>
 #ifdef PE_BLISS_WINDOWS
 #include "lib.h"
 #endif
@@ -27,17 +27,17 @@ int main(int argc, char* argv[])
 	try
 	{
 		//Создаем экземпляр PE или PE+ класса с помощью фабрики
-		std::auto_ptr<pe_base> image = pe_factory::create_pe(pe_file);
+		pe_base image(pe_factory::create_pe(pe_file));
 
 		//Получим информацию о директории Load Config
-		pe_base::image_config_info info = image->get_image_config();
+		image_config_info info(get_image_config(image));
 
 		//Но пересоберем эту директорию, расположив ее в новой секции
-		pe_base::section load_config;
+		section load_config;
 		load_config.get_raw_data().resize(1); //Мы не можем добавлять пустые секции, поэтому пусть у нее будет начальный размер данных 1
 		load_config.set_name("load_cfg"); //Имя секции
 		load_config.readable(true).writeable(true); //Доступна на чтение и запись
-		pe_base::section& attached_section = image->add_section(load_config); //Добавим секцию и получим ссылку на добавленную секцию с просчитанными размерами
+		section& attached_section = image.add_section(load_config); //Добавим секцию и получим ссылку на добавленную секцию с просчитанными размерами
 
 		//Если у файла была таблица SE Handler'ов
 		if(info.get_se_handler_table_va())
@@ -50,7 +50,7 @@ int main(int argc, char* argv[])
 
 		//Пересобираем директорию Image Load Config, пересобираем таблицу Lock-префиксов, если она имелась, а также
 		//таблицу SE Handler'ов, если она есть
-		image->rebuild_image_config(info, attached_section, 1);
+		rebuild_image_config(image, info, attached_section, 1);
 
 		//Создаем новый PE-файл
 		std::string base_file_name(argv[1]);
@@ -67,7 +67,7 @@ int main(int argc, char* argv[])
 		}
 
 		//Пересобираем PE-файл
-		image->rebuild_pe(new_pe_file);
+		rebuild_pe(image, new_pe_file);
 
 		std::cout << "PE was rebuilt and saved to " << base_file_name << std::endl;
 	}

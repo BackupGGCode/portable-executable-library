@@ -1,6 +1,6 @@
 ﻿#include <iostream>
 #include <fstream>
-#include <pe_factory.h>
+#include <pe_bliss.h>
 #ifdef PE_BLISS_WINDOWS
 #include "lib.h"
 #endif
@@ -27,21 +27,21 @@ int main(int argc, char* argv[])
 	try
 	{
 		//Создаем экземпляр PE или PE+ класса с помощью фабрики
-		std::auto_ptr<pe_base> image = pe_factory::create_pe(pe_file);
+		pe_base image(pe_factory::create_pe(pe_file));
 
 		//Получим список импортируемых библиотек и функций
-		pe_base::imported_functions_list imports = image->get_imported_functions();
+		imported_functions_list imports(get_imported_functions(image));
 
 		//Создадим новую библиотеку, из которой будем импортировать функции
-		pe_base::import_library new_lib;
+		import_library new_lib;
 		new_lib.set_name("kaimi_dx.dll"); //Пусть это будет testdll.dll
 
 		//Добавим к ней пару импортов функций
-		pe_base::imported_function func;
+		imported_function func;
 		func.set_name("Tralala"); //Один импорт - по имени Tralala
 		func.set_iat_va(0xf1ac); //Запишем ненулевой абсолютный адрес import address table
 
-		pe_base::imported_function func2;
+		imported_function func2;
 		func2.set_ordinal(5); //Другой импорт - по ординалу 5
 		func2.set_iat_va(0xf1be); //Запишем ненулевой абсолютный адрес import address table
 
@@ -59,15 +59,15 @@ int main(int argc, char* argv[])
 		//Она будет иметь больший размер, чем до нашего редактирования,
 		//поэтому запишем ее в новую секцию, чтобы все поместилось
 		//(мы не можем расширять существующие секции, если только секция не в самом конце файла)
-		pe_base::section new_imports;
+		section new_imports;
 		new_imports.get_raw_data().resize(1); //Мы не можем добавлять пустые секции, поэтому пусть у нее будет начальный размер данных 1
 		new_imports.set_name("new_imp"); //Имя секции
 		new_imports.readable(true).writeable(true); //Доступна на чтение и запись
-		pe_base::section& attached_section = image->add_section(new_imports); //Добавим секцию и получим ссылку на добавленную секцию с просчитанными размерами
+		section& attached_section = image.add_section(new_imports); //Добавим секцию и получим ссылку на добавленную секцию с просчитанными размерами
 
 		//Структура, отвечающая за настройки пересборщика импортов
-		pe_base::import_rebuilder_settings settings(true, false); //Модифицируем заголовок PE и не очищаем поле IMAGE_DIRECTORY_ENTRY_IAT
-		image->rebuild_imports(imports, attached_section, settings); //Пересобираем импорты
+		import_rebuilder_settings settings(true, false); //Модифицируем заголовок PE и не очищаем поле IMAGE_DIRECTORY_ENTRY_IAT
+		rebuild_imports(image, imports, attached_section, settings); //Пересобираем импорты
 
 		//Создаем новый PE-файл
 		std::string base_file_name(argv[1]);
@@ -84,7 +84,7 @@ int main(int argc, char* argv[])
 		}
 
 		//Пересобираем PE-файл
-		image->rebuild_pe(new_pe_file);
+		rebuild_pe(image, new_pe_file);
 
 		std::cout << "PE was rebuilt and saved to " << base_file_name << std::endl;
 	}

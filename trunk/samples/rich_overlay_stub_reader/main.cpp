@@ -1,6 +1,6 @@
 ﻿#include <iostream>
 #include <fstream>
-#include <pe_factory.h>
+#include <pe_bliss.h>
 #ifdef PE_BLISS_WINDOWS
 #include "lib.h"
 #endif
@@ -27,14 +27,14 @@ int main(int argc, char* argv[])
 	try
 	{
 		//Создаем экземпляр PE или PE+ класса с помощью фабрики
-		std::auto_ptr<pe_base> image = pe_factory::create_pe(pe_file);
+		pe_base image(pe_factory::create_pe(pe_file));
 
 		//Выведем длину DOS stub'а
-		std::cout << "Image stub length: " << image->get_stub_overlay().length() << std::endl << std::endl;
+		std::cout << "Image stub length: " << image.get_stub_overlay().length() << std::endl << std::endl;
 
 		//Перечисляем все RICH-записи
-		pe_base::rich_data_list data = image->get_rich_data();
-		for(pe_base::rich_data_list::const_iterator it = data.begin(); it != data.end(); ++it)
+		rich_data_list data = get_rich_data(image);
+		for(rich_data_list::const_iterator it = data.begin(); it != data.end(); ++it)
 		{
 			//Выводим информацию о записи
 			std::cout << "Number: " << (*it).get_number() << std::endl
@@ -44,7 +44,7 @@ int main(int argc, char* argv[])
 		}
 
 		//Отобразим информацию о том, есть ли у файла оверлей в конце (у некоторых инсталляторов, например, есть)
-		std::cout << "Has overlay in the end: " << (image->has_overlay() ? "YES" : "NO") << std::endl;
+		std::cout << "Has overlay in the end: " << (image.has_overlay() ? "YES" : "NO") << std::endl;
 	}
 	catch(const pe_exception& e)
 	{

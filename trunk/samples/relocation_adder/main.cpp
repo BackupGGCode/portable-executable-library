@@ -1,6 +1,6 @@
 ﻿#include <iostream>
 #include <fstream>
-#include <pe_factory.h>
+#include <pe_bliss.h>
 #ifdef PE_BLISS_WINDOWS
 #include "lib.h"
 #endif
@@ -27,19 +27,19 @@ int main(int argc, char* argv[])
 	try
 	{
 		//Создаем экземпляр PE или PE+ класса с помощью фабрики
-		std::auto_ptr<pe_base> image = pe_factory::create_pe(pe_file);
+		pe_base image(pe_factory::create_pe(pe_file));
 
 		//Перечислим и получим все записи из таблиц релокаций в PE-файле, кроме абсолютных
 		//Можно было бы включить в список и абсолютные записи (ABSOLUTE), передав в вызов true
 		//Эти записи не нужны при пересборке релокаций, они используются для выравнивания
 		//и будут добавлены автоматически пересборщиком
-		pe_base::relocation_table_list tables = image->get_relocations();
+		relocation_table_list tables(get_relocations(image));
 		
 		//Создаем новую таблицу релокаций
-		pe_base::relocation_table new_table;
+		relocation_table new_table;
 		new_table.set_rva(0x5678); //Относительный адрес релокаций в таблице - он некорректен, для примера, поэтому получившийся PE скорее всего не загрузится
 		//Добавим в таблицу новую релокацию
-		new_table.add_relocation(pe_base::relocation_entry(10, 3)); //Тип 3 - HIGHLOW-релокация, RRVA = 10, т.е. RVA = 0x5678 + 10
+		new_table.add_relocation(relocation_entry(10, 3)); //Тип 3 - HIGHLOW-релокация, RRVA = 10, т.е. RVA = 0x5678 + 10
 		//Добавляем таблицу
 		tables.push_back(new_table);
 
@@ -49,13 +49,13 @@ int main(int argc, char* argv[])
 		//Они будет иметь больший размер, чем до нашего редактирования,
 		//поэтому запишем их в новую секцию, чтобы все поместилось
 		//(мы не можем расширять существующие секции, если только секция не в самом конце файла)
-		pe_base::section new_relocs;
+		section new_relocs;
 		new_relocs.get_raw_data().resize(1); //Мы не можем добавлять пустые секции, поэтому пусть у нее будет начальный размер данных 1
 		new_relocs.set_name("new_rel"); //Имя секции
 		new_relocs.readable(true); //Доступна на чтение
-		pe_base::section& attached_section = image->add_section(new_relocs); //Добавим секцию и получим ссылку на добавленную секцию с просчитанными размерами
+		section& attached_section = image.add_section(new_relocs); //Добавим секцию и получим ссылку на добавленную секцию с просчитанными размерами
 
-		image->rebuild_relocations(tables, attached_section); //Пересобираем экспорты, расположив их с начала новой секции и записав новые данные таблиц релокаций в PE-заголовок
+		rebuild_relocations(image, tables, attached_section); //Пересобираем экспорты, расположив их с начала новой секции и записав новые данные таблиц релокаций в PE-заголовок
 
 		//Создаем новый PE-файл
 		std::string base_file_name(argv[1]);
@@ -72,7 +72,7 @@ int main(int argc, char* argv[])
 		}
 
 		//Пересобираем PE-файл
-		image->rebuild_pe(new_pe_file);
+		rebuild_pe(image, new_pe_file);
 
 		std::cout << "PE was rebuilt and saved to " << base_file_name << std::endl;
 	}

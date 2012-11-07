@@ -1,6 +1,6 @@
 ﻿#include <iostream>
 #include <fstream>
-#include <pe_factory.h>
+#include <pe_bliss.h>
 #ifdef PE_BLISS_WINDOWS
 #include "lib.h"
 #endif
@@ -27,10 +27,10 @@ int main(int argc, char* argv[])
 	try
 	{
 		//Создаем экземпляр PE или PE+ класса с помощью фабрики
-		std::auto_ptr<pe_base> image = pe_factory::create_pe(pe_file);
+		pe_base image(pe_factory::create_pe(pe_file));
 		
 		//Выведем темущий file alignment
-		std::cout << "File alignment: " << image->get_file_alignment() << std::endl;
+		std::cout << "File alignment: " << image.get_file_alignment() << std::endl;
 		
 		//Предложим выбрать новое выравнивание
 		unsigned int new_alignment_index = static_cast<unsigned int>(-1);
@@ -52,7 +52,7 @@ int main(int argc, char* argv[])
 		unsigned int available_aligns[] = {512, 1024, 2048, 4096};
 
 		//Изменим выравнивание на то, которое указал пользователь
-		image->realign_file(available_aligns[new_alignment_index]);
+		image.realign_file(available_aligns[new_alignment_index]);
 
 		//Создаем новый PE-файл
 		std::string base_file_name(argv[1]);
@@ -69,7 +69,7 @@ int main(int argc, char* argv[])
 		}
 
 		//Пересобираем PE-файл
-		image->rebuild_pe(new_pe_file);
+		rebuild_pe(image, new_pe_file);
 
 		std::cout << "PE was rebuilt and saved to " << base_file_name << std::endl;
 	}

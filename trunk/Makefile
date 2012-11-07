@@ -1,5 +1,5 @@
-TARGETS = pe_bliss samples_pack
-TARGETS_CLEAN = pe_clean samples_clean
+TARGETS = pe_bliss samples_pack tests_pack
+TARGETS_CLEAN = pe_clean samples_clean tests_clean
 
 all: $(TARGETS)
 
@@ -17,3 +17,8 @@ pe_clean:
 samples_clean:
 	$(MAKE) -C ./samples clean
 
+tests_pack: pe_bliss
+	$(MAKE) PE_DEBUG=$(PE_DEBUG) -C ./tests
+
+tests_clean:
+	$(MAKE) -C ./tests clean

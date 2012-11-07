@@ -1,7 +1,7 @@
 ﻿#include <iostream>
 #include <fstream>
-#include <pe_factory.h>
-#include <pe_resource_manager.h>
+#include <pe_bliss.h>
+#include <pe_bliss_resources.h>
 #ifdef PE_BLISS_WINDOWS
 #include "resource.h"
 #include "lib.h"
@@ -38,7 +38,7 @@ int main(int argc, char* argv[])
 	try
 	{
 		//Создаем экземпляр PE или PE+ класса с помощью фабрики
-		std::auto_ptr<pe_base> image = pe_factory::create_pe(pe_file);
+		pe_base image(pe_factory::create_pe(pe_file));
 
 		//Суть примера будет состоять в следующем:
 		//В сам пример вкомпиливается иконка в директорию с именем CUSTOM
@@ -48,7 +48,7 @@ int main(int argc, char* argv[])
 		//Наконец, добавить какую-нибудь информацию о версии к файлу
 
 		//Проверим, есть ли ресурсы у файла
-		if(!image->has_resources())
+		if(!image.has_resources())
 		{
 			std::cout << "Image has no resources" << std::endl;
 			return 0;
@@ -56,7 +56,7 @@ int main(int argc, char* argv[])
 
 		//Получаем корневую директорию ресурсов
 		std::cout << "Reading PE resources..." << std::hex << std::showbase << std::endl << std::endl;
-		pe_base::resource_directory root = image->get_resources();
+		resource_directory root(get_resources(image));
 
 		//Для облегчения работы с директориями и записями ресурсов созданы вспомогательные классы
 		//Этот класс позволяет извлекать из PE-файлов любые ресурсы и перезаписывать их
@@ -74,33 +74,33 @@ int main(int argc, char* argv[])
 
 		//Получим нашу иконку из этой директории: мы знаем, что ее ID=100 и она одна в директории имен, поэтому делаем так
 		//Получаем ее по нулевому индексу (можно было получить по языку, но это незачем, т.к. она единственная)
-		const pe_resource_viewer::resource_data_info data = res.get_resource_data_by_id(L"CUSTOM", IDR_CUSTOM1);
+		const resource_data_info data = res.get_resource_data_by_id(L"CUSTOM", IDR_CUSTOM1);
 
 		//Необходимо теперь добавить ее как главную иконку
 		//Иконка приложения - это иконка из той группы иконок, которая следует самой первой в списке групп иконок
 		//Помните, что сначала идут именованные ресурсы, а потом ресурсы с идентификаторами, и всё сортируется
 		//Создадим группу иконок с именем MAIN_ICON
-		res.add_icon(data.get_data(), //Данные файла иконки
+		resource_cursor_icon_writer(res).add_icon(data.get_data(), //Данные файла иконки
 			L"MAIN_ICON", //Имя группы иконок (помните, у нас три картинки внутри иконки, они будут находиться в этой группе)
 			0, //Язык - нам неважен
-			pe_resource_manager::icon_place_after_max_icon_id, //Вариант расположения иконок в существующей группе - нам он неважен, так как мы создаем новую группу
+			resource_cursor_icon_writer::icon_place_after_max_icon_id, //Вариант расположения иконок в существующей группе - нам он неважен, так как мы создаем новую группу
 			data.get_codepage(), //Сохраним исходную Codepage
 			0 //Timestamp - неважен
 			);
 		
-		//Теперь удалим уже ненужную директорию CUSTOM
+		//Теперь удалим уже ненужный ресурс CUSTOM
 		res.remove_resource(L"CUSTOM");
 		
 		//Теперь создадим информацию о версии
-		pe_resource_viewer::file_version_info file_info; //Базовая информация о файле
+		file_version_info file_info; //Базовая информация о файле
 		file_info.set_special_build(true); //Это будет специальный билд
-		file_info.set_file_os(pe_resource_viewer::file_version_info::file_os_nt_win32); //Система, на которой работает файл
+		file_info.set_file_os(file_version_info::file_os_nt_win32); //Система, на которой работает файл
 		file_info.set_file_version_ms(0x00010002); //Версия файла будет 1.2.3.4
 		file_info.set_file_version_ls(0x00030004);
 
 		//Теперь создадим строки с информацией и трансляции (переводы)
-		pe_resource_viewer::lang_string_values_map strings;
-		pe_resource_viewer::translation_values_map translations;
+		lang_string_values_map strings;
+		translation_values_map translations;
 
 		//Для работы со строками и трансляциями есть вспомогательный класс
 		version_info_editor version(strings, translations);
@@ -125,25 +125,25 @@ int main(int argc, char* argv[])
 		version.set_property(L"MyLittleProperty", L"Secret Value");
 
 		//Установим информацию о версии
-		res.set_version_info(file_info, strings, translations, 1033); //1033 - русский язык
+		resource_version_info_writer(res).set_version_info(file_info, strings, translations, 1033); //1033 - русский язык
 		
 		//Осталось переименовать старую секцию ресурсов
 		//Она называется .rsrc
 		//Переименование необходимо для того, чтобы Windows Explorer смог считать из новой секции иконку
-		image->section_from_directory(pe_win::image_directory_entry_resource).set_name("oldres");
+		image.section_from_directory(pe_win::image_directory_entry_resource).set_name("oldres");
 
 		//Пересоберем ресурсы
 		//Они будет иметь больший размер, чем до нашего редактирования,
 		//поэтому запишем их в новую секцию, чтобы все поместилось
 		//(мы не можем расширять существующие секции, если только секция не в самом конце файла)
-		pe_base::section new_resources;
+		section new_resources;
 		new_resources.get_raw_data().resize(1); //Мы не можем добавлять пустые секции, поэтому пусть у нее будет начальный размер данных 1
 		new_resources.set_name(".rsrc"); //Имя секции
 		new_resources.readable(true); //Доступна на чтение
-		pe_base::section& attached_section = image->add_section(new_resources); //Добавим секцию и получим ссылку на добавленную секцию с просчитанными размерами
+		section& attached_section = image.add_section(new_resources); //Добавим секцию и получим ссылку на добавленную секцию с просчитанными размерами
 		
 		//Теперь пересоберем ресурсы, расположив их в самом начале новой секции и поправив PE-заголовок, записав туда новые параметры директории ресурсы
-		image->rebuild_resources(root, attached_section);
+		rebuild_resources(image, root, attached_section);
 		
 		//Создаем новый PE-файл
 		std::string base_file_name(pe_filename);
@@ -160,7 +160,7 @@ int main(int argc, char* argv[])
 		}
 
 		//Пересобираем PE-файл
-		image->rebuild_pe(new_pe_file);
+		rebuild_pe(image, new_pe_file);
 
 		std::cout << "PE was rebuilt and saved to " << base_file_name << std::endl;
 	}

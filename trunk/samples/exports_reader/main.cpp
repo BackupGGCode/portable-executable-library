@@ -1,6 +1,6 @@
 ﻿#include <iostream>
 #include <fstream>
-#include <pe_factory.h>
+#include <pe_bliss.h>
 #ifdef PE_BLISS_WINDOWS
 #include "lib.h"
 #endif
@@ -27,10 +27,10 @@ int main(int argc, char* argv[])
 	try
 	{
 		//Создаем экземпляр PE или PE+ класса с помощью фабрики
-		std::auto_ptr<pe_base> image = pe_factory::create_pe(pe_file);
+		pe_base image(pe_factory::create_pe(pe_file));
 
 		//Проверим, есть ли экспорты у PE-файла
-		if(!image->has_exports())
+		if(!image.has_exports())
 		{
 			std::cout << "Image has no exports" << std::endl;
 			return 0;
@@ -39,8 +39,8 @@ int main(int argc, char* argv[])
 		std::cout << "Reading PE exports..." << std::hex << std::showbase << std::endl << std::endl;
 		
 		//Получаем полную информацию об экспортах и список экспортируемых функций
-		pe_base::export_info info;
-		const pe_base::exported_functions_list exports = image->get_exported_functions(info);
+		export_info info;
+		const exported_functions_list exports = get_exported_functions(image, info);
 
 		//Выведем некоторую информацию об экспорте:
 		std::cout << "Export info" << std::endl
@@ -50,9 +50,9 @@ int main(int argc, char* argv[])
 			<< std::endl;
 
 		//Перечисляем секции и выводим информацию о них
-		for(pe_base::exported_functions_list::const_iterator it = exports.begin(); it != exports.end(); ++it)
+		for(exported_functions_list::const_iterator it = exports.begin(); it != exports.end(); ++it)
 		{
-			const pe_base::exported_function& func = *it; //Экспортируемая функция
+			const exported_function& func = *it; //Экспортируемая функция
 			std::cout << "[+] ";
 			if(func.has_name()) //Если функция имеет имя, выведем его и ординал имени
 				std::cout << func.get_name() << ", name ordinal: " << func.get_name_ordinal() << " ";

@@ -1,6 +1,6 @@
 ﻿#include <iostream>
 #include <fstream>
-#include <pe_factory.h>
+#include <pe_bliss.h>
 #ifdef PE_BLISS_WINDOWS
 #include "lib.h"
 #endif
@@ -27,10 +27,10 @@ int main(int argc, char* argv[])
 	try
 	{
 		//Создаем экземпляр PE или PE+ класса с помощью фабрики
-		std::auto_ptr<pe_base> image = pe_factory::create_pe(pe_file);
+		pe_base image(pe_factory::create_pe(pe_file));
 		
 		//Проверим, есть ли отладочная информация у файла
-		if(!image->has_debug())
+		if(!image.has_debug())
 		{
 			std::cout << "Image has no debug information" << std::endl;
 			return 0;
@@ -39,54 +39,54 @@ int main(int argc, char* argv[])
 		std::cout << "Reading PE debug information..." << std::hex << std::showbase << std::endl << std::endl;
 
 		//Получаем отладочную информацию, находящуюся в PE-файле
-		const pe_base::debug_info_list info_list = image->get_debug_information();
+		const debug_info_list info_list(get_debug_information(image));
 		
 		//Перечисоляем все отладочные записи
-		for(pe_base::debug_info_list::const_iterator it = info_list.begin(); it != info_list.end(); ++it)
+		for(debug_info_list::const_iterator it = info_list.begin(); it != info_list.end(); ++it)
 		{
-			const pe_base::debug_info& info = *it;
+			const debug_info& info = *it;
 
 			//Выведем тип отладочной информации
 			std::cout << "Debug info type: ";
 			switch(info.get_type())
 			{
-			case pe_base::debug_info::debug_type_borland:
+			case debug_info::debug_type_borland:
 				std::cout << "Borland";
 				break;
 
-			case pe_base::debug_info::debug_type_clsid:
+			case debug_info::debug_type_clsid:
 				std::cout << "CLSID";
 				break;
 
-			case pe_base::debug_info::debug_type_codeview:
+			case debug_info::debug_type_codeview:
 				std::cout << "CodeView";
 				break;
 
-			case pe_base::debug_info::debug_type_coff:
+			case debug_info::debug_type_coff:
 				std::cout << "COFF";
 				break;
 
-			case pe_base::debug_info::debug_type_exception:
+			case debug_info::debug_type_exception:
 				std::cout << "Exception";
 				break;
 
-			case pe_base::debug_info::debug_type_fixup:
+			case debug_info::debug_type_fixup:
 				std::cout << "Fixup";
 				break;
 
-			case pe_base::debug_info::debug_type_fpo:
+			case debug_info::debug_type_fpo:
 				std::cout << "FPO";
 				break;
 
-			case pe_base::debug_info::debug_type_misc:
+			case debug_info::debug_type_misc:
 				std::cout << "Misc";
 				break;
 
-			case pe_base::debug_info::debug_type_omap_from_src:
+			case debug_info::debug_type_omap_from_src:
 				std::cout << "OMAP from src";
 				break;
 
-			case pe_base::debug_info::debug_type_omap_to_src:
+			case debug_info::debug_type_omap_to_src:
 				std::cout << "OMAP to src";
 				break;
 
@@ -101,28 +101,28 @@ int main(int argc, char* argv[])
 			//Получим дополнительную информацию, если таковая имеется
 			switch(info.get_advanced_info_type())
 			{
-			case pe_base::debug_info::advanced_info_pdb_7_0:
+			case debug_info::advanced_info_pdb_7_0:
 				{
 					std::cout << "Advanced info - PDB 7.0" << std::endl; //PDB 7.0
-					pe_base::pdb_7_0_info advanced = info.get_advanced_debug_info<pe_base::pdb_7_0_info>();
+					pdb_7_0_info advanced = info.get_advanced_debug_info<pdb_7_0_info>();
 					std::cout << "PDB file name: " << advanced.get_pdb_file_name() << std::endl; //Имя файла PDB
 					std::cout << "Age: " << advanced.get_age() << std::endl; //Возраст (билд)
 				}
 				break;
 
-			case pe_base::debug_info::advanced_info_pdb_2_0:
+			case debug_info::advanced_info_pdb_2_0:
 				{
 					std::cout << "Advanced info - PDB 2.0" << std::endl; //PDB 2.0
-					pe_base::pdb_2_0_info advanced = info.get_advanced_debug_info<pe_base::pdb_2_0_info>();
+					pdb_2_0_info advanced = info.get_advanced_debug_info<pdb_2_0_info>();
 					std::cout << "PDB file name: " << advanced.get_pdb_file_name() << std::endl; //Имя файла PDB
 					std::cout << "Age: " << advanced.get_age() << std::endl; //Возраст (билд)
 				}
 				break;
 
-			case pe_base::debug_info::advanced_info_misc:
+			case debug_info::advanced_info_misc:
 				{
 					std::cout << "Advanced info - Misc" << std::endl; //Misc
-					pe_base::misc_debug_info advanced = info.get_advanced_debug_info<pe_base::misc_debug_info>();
+					misc_debug_info advanced = info.get_advanced_debug_info<misc_debug_info>();
 					std::cout << "Advanced data is EXE name: " << (advanced.is_exe_name() ? "YES" : "NO") << std::endl; //Если данные в структуре - имя EXE-файла
 
 					//Выведем строковые данные
@@ -133,10 +133,10 @@ int main(int argc, char* argv[])
 				}
 				break;
 
-			case pe_base::debug_info::advanced_info_coff:
+			case debug_info::advanced_info_coff:
 				{
 					std::cout << "Advanced info - COFF" << std::endl; //COFF
-					pe_base::coff_debug_info advanced = info.get_advanced_debug_info<pe_base::coff_debug_info>();
+					coff_debug_info advanced = info.get_advanced_debug_info<coff_debug_info>();
 					std::cout << "LVA to first line number: " << advanced.get_lva_to_first_line_number() << std::endl; //Адрес первого элемента в массиве номеров строк
 					std::cout << "LVA to first symbol: " << advanced.get_lva_to_first_symbol() << std::endl; //Адрес первого элемента в массиве символов
 					std::cout << "Number of line numbers: " << advanced.get_number_of_line_numbers() << std::endl; //Количество номеров строк
@@ -149,11 +149,11 @@ int main(int argc, char* argv[])
 					std::cout << std::endl << "Symbol list:" << std::endl;
 
 					//Получим список символов
-					const pe_base::coff_debug_info::coff_symbols_list& symbols = advanced.get_symbols();
-					for(pe_base::coff_debug_info::coff_symbols_list::const_iterator symbol_it = symbols.begin(); symbol_it != symbols.end(); ++symbol_it)
+					const coff_debug_info::coff_symbols_list& symbols = advanced.get_symbols();
+					for(coff_debug_info::coff_symbols_list::const_iterator symbol_it = symbols.begin(); symbol_it != symbols.end(); ++symbol_it)
 					{
 						//Выведем информацию об отладочных символах
-						const pe_base::coff_debug_info::coff_symbol& symbol = *symbol_it; //Отладочный символ
+						const coff_debug_info::coff_symbol& symbol = *symbol_it; //Отладочный символ
 						std::cout << "Index: " << symbol.get_index() << std::endl
 							<< "RVA: " << symbol.get_rva() << std::endl
 							<< "Section number: " << symbol.get_section_number() << std::endl
@@ -165,11 +165,11 @@ int main(int argc, char* argv[])
 				}
 				break;
 
-			case pe_base::debug_info::advanced_info_codeview_4_0:
+			case debug_info::advanced_info_codeview_4_0:
 				std::cout << "Advanced info - CodeView 4.0" << std::endl; //CodeView 4.0
 				break;
 
-			case pe_base::debug_info::advanced_info_codeview_5_0:
+			case debug_info::advanced_info_codeview_5_0:
 				std::cout << "Advanced info - CodeView 5.0" << std::endl; //CodeView 5.0
 				break;
 				
